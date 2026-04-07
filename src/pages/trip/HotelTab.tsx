@@ -63,11 +63,10 @@ export function HotelTab({ tripId }: Props) {
 
           {hotel.booking?.platform && (
             <InfoRow label="訂房平台" value={
-              <>
-                {hotel.booking.platform}
-                {hotel.booking.orderNumber && ` ${hotel.booking.orderNumber}`}
-                {hotel.booking.assignee && <span className="tag ml-2">{hotel.booking.assignee}</span>}
-              </>
+              <div className="flex items-center gap-2">
+                <span>{hotel.booking.platform}{hotel.booking.orderNumber && ` ${hotel.booking.orderNumber}`}</span>
+                {hotel.booking.assignee && <span className="tag">{hotel.booking.assignee}</span>}
+              </div>
             } />
           )}
           <InfoRow label="價格" value={hotel.booking?.amount} />
