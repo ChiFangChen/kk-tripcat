@@ -71,7 +71,7 @@ export function SettingsPage() {
       <div className="card mb-4">
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-semibold text-sm"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</h3>
-          <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setNotesText(template.notes); setEditingNotes(true) }}>
+          <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => { setNotesText(template.notes); setEditingNotes(true) }}>
             <FontAwesomeIcon icon={faPen} />
           </button>
         </div>
@@ -83,7 +83,7 @@ export function SettingsPage() {
       {/* Categories */}
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-semibold">準備事項分類</h3>
-        <button className="btn btn-primary btn-sm" onClick={() => setAddingCategory(true)}><FontAwesomeIcon icon={faPlus} className="mr-1" />分類</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setAddingCategory(true)}><FontAwesomeIcon icon={faPlus} /></button>
       </div>
 
       {template.categories.map(cat => (
@@ -91,13 +91,13 @@ export function SettingsPage() {
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-semibold text-sm">{cat.name} ({cat.items.length})</h4>
             <div className="flex gap-2">
-              <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>
                 <FontAwesomeIcon icon={faPen} />
               </button>
-              <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>
                 <FontAwesomeIcon icon={faPlus} />
               </button>
-              <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteCategory(cat.name)}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteCategory(cat.name)}>
                 <FontAwesomeIcon icon={faTrash} />
               </button>
             </div>
@@ -106,7 +106,7 @@ export function SettingsPage() {
             {cat.items.map(item => (
               <div key={item.id} className="flex justify-between items-center py-0.5">
                 <span>{item.text}</span>
-                <button className="text-red-500 text-xs p-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteItem(cat.name, item.id)}>
+                <button className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteItem(cat.name, item.id)}>
                   <FontAwesomeIcon icon={faTrash} className="text-[10px]" />
                 </button>
               </div>

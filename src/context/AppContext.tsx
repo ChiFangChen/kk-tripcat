@@ -103,7 +103,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | null>(null)
 
 function loadInitialState(): AppState {
-  const seeded = storage.getItem<boolean>('seeded-v2')
+  const seeded = storage.getItem<boolean>('seeded-v3')
   let trips = storage.getItem<Trip[]>('trips') || []
   const template = storage.getItem<Template>('template') || defaultTemplate
   const tips = storage.getItem<TipNote[]>('tips') || []
@@ -125,7 +125,7 @@ function loadInitialState(): AppState {
         shopping: [],
       },
     }
-    storage.setItem('seeded-v2', true)
+    storage.setItem('seeded-v3', true)
   }
 
   return { trips, template, tips, favorites, tripData, userId: null }

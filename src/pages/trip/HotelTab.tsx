@@ -39,7 +39,7 @@ export function HotelTab({ tripId }: Props) {
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">飯店資訊</h2>
         <button className="btn btn-primary btn-sm" onClick={() => setEditing(newHotel())}>
-          <FontAwesomeIcon icon={faPlus} className="mr-1" />飯店
+          <FontAwesomeIcon icon={faPlus} />
         </button>
       </div>
 
@@ -52,10 +52,10 @@ export function HotelTab({ tripId }: Props) {
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold">{hotel.name || '飯店'}</h3>
             <div className="flex gap-2">
-              <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditing(hotel)}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditing(hotel)}>
                 <FontAwesomeIcon icon={faPen} />
               </button>
-              <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => remove(hotel.id)}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => remove(hotel.id)}>
                 <FontAwesomeIcon icon={faTrash} />
               </button>
             </div>

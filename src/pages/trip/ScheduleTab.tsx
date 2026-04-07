@@ -95,7 +95,7 @@ export function ScheduleTab({ tripId }: Props) {
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">行程表</h2>
         <button className="btn btn-primary btn-sm" onClick={() => setShowAddDay(true)}>
-          <FontAwesomeIcon icon={faPlus} className="mr-1" />天
+          <FontAwesomeIcon icon={faPlus} />
         </button>
       </div>
 
@@ -114,9 +114,8 @@ export function ScheduleTab({ tripId }: Props) {
                 <span className="text-xs text-slate-400">{day.date}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">{day.activities.length} 項</span>
                 <button
-                  className="text-red-500 text-xs p-1 bg-red-50 dark:bg-red-900/30 rounded"
+                  className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
                   onClick={(e) => { e.stopPropagation(); deleteDay(dayIndex) }}
                 >
                   <FontAwesomeIcon icon={faTrash} className="text-[10px]" />
@@ -129,29 +128,21 @@ export function ScheduleTab({ tripId }: Props) {
                 {day.activities.map(activity => (
                   <div
                     key={activity.id}
-                    className="flex items-start gap-3 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
+                    className="flex items-start gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
                     onClick={() => setSelectedActivity({ activity, dayIndex })}
                   >
+                    <span className="text-xs text-slate-400 font-mono w-11 flex-shrink-0 pt-0.5">{activity.time || ''}</span>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        {activity.time && <span className="text-xs text-slate-400 font-mono">{activity.time}</span>}
-                        <span className="text-sm font-medium">{activity.name}</span>
-                      </div>
-                      {activity.address && <p className="text-xs text-slate-400 mt-0.5">{activity.address}</p>}
-                      {activity.booking?.platform && (
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {activity.booking.platform}
-                          {activity.booking.assignee && <span className="tag ml-1">{activity.booking.assignee}</span>}
-                        </p>
-                      )}
+                      <span className="text-sm font-medium">{activity.name}</span>
+                      {activity.note && <p className="text-xs text-slate-400 mt-0.5">{activity.note}</p>}
                     </div>
                   </div>
                 ))}
                 <button
-                  className="text-sky-600 text-xs mt-2 px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded"
+                  className="text-slate-500 dark:text-slate-400 text-xs mt-2 px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded"
                   onClick={() => addActivity(dayIndex)}
                 >
-                  <FontAwesomeIcon icon={faPlus} className="mr-1" />活動
+                  <FontAwesomeIcon icon={faPlus} />
                 </button>
               </div>
             )}
@@ -165,7 +156,7 @@ export function ScheduleTab({ tripId }: Props) {
           <FontAwesomeIcon icon={faNoteSticky} className="mr-2 text-amber-400" />行程筆記
         </h2>
         <button className="btn btn-primary btn-sm" onClick={() => setShowAddNote(true)}>
-          <FontAwesomeIcon icon={faPlus} className="mr-1" />筆記
+          <FontAwesomeIcon icon={faPlus} />
         </button>
       </div>
 
@@ -177,10 +168,10 @@ export function ScheduleTab({ tripId }: Props) {
             <div className="flex justify-between items-center mb-1">
               <h3 className="font-semibold text-sm">{note.title}</h3>
               <div className="flex gap-2">
-                <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingNote(note)}>
+                <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditingNote(note)}>
                   <FontAwesomeIcon icon={faPen} />
                 </button>
-                <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteNote(note.id)}>
+                <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteNote(note.id)}>
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
               </div>

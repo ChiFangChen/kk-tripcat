@@ -67,7 +67,7 @@ export function TransportTab({ tripId }: Props) {
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">交通資訊</h2>
         <button className="btn btn-primary btn-sm" onClick={openAdd}>
-          <FontAwesomeIcon icon={faPlus} className="mr-1" />交通
+          <FontAwesomeIcon icon={faPlus} />
         </button>
       </div>
 
@@ -99,10 +99,10 @@ export function TransportTab({ tripId }: Props) {
             <div>
               <div className="whitespace-pre-wrap text-sm mb-2">{item.content || '(尚無內容)'}</div>
               <div className="flex gap-2">
-                <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setEditingId(item.id); setEditContent(item.content) }}>
+                <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => { setEditingId(item.id); setEditContent(item.content) }}>
                   <FontAwesomeIcon icon={faPen} />
                 </button>
-                <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteItem(item.id)}>
+                <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteItem(item.id)}>
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
               </div>
