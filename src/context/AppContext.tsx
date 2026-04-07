@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, useRef, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useReducer, useEffect, useRef, useState, useCallback, type ReactNode } from 'react'
 import type { User, Trip, Template, TipNote, FavoriteItem, ChecklistItem, FlightInfo, Hotel, ScheduleDay, ScheduleNote, TransportItem, ShoppingItem } from '../types'
 import { USER_COLORS } from '../types'
 import * as storage from '../utils/storage'
@@ -157,6 +157,7 @@ function reducer(state: AppState, action: Action): AppState {
 interface AppContextType {
   state: AppState
   dispatch: React.Dispatch<Action>
+  loading: boolean
   login: (user: User) => void
   logout: () => void
   register: (username: string, password: string, displayName: string) => Promise<User>
@@ -207,6 +208,7 @@ function loadInitialState(): AppState {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, null, loadInitialState)
+  const [loading, setLoading] = useState(isFirebaseConfigured())
   const dbRef = useRef<Firestore | null>(null)
   const firebaseListeningRef = useRef(false)
   const tripSubsRef = useRef<Record<string, () => void>>({})
@@ -220,9 +222,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dbRef.current = db
         if (db) {
           firebaseListeningRef.current = true
-          const unsub1 = subscribeToUsers(db, (users) => dispatch({ type: 'SET_USERS', users }))
-          const unsub2 = subscribeToTrips(db, (trips) => dispatch({ type: 'SET_TRIPS', trips }))
+          let usersLoaded = false
+          let tripsLoaded = false
+          const checkReady = () => {
+            if (usersLoaded && tripsLoaded) setLoading(false)
+          }
+          const unsub1 = subscribeToUsers(db, (users) => {
+            dispatch({ type: 'SET_USERS', users })
+            usersLoaded = true
+            checkReady()
+          })
+          const unsub2 = subscribeToTrips(db, (trips) => {
+            dispatch({ type: 'SET_TRIPS', trips })
+            tripsLoaded = true
+            checkReady()
+          })
           cleanups = [unsub1, unsub2]
+        } else {
+          setLoading(false)
         }
       })
       return () => {
@@ -373,6 +390,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       state,
       dispatch,
+      loading,
       login,
       logout,
       register,

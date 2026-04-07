@@ -15,7 +15,7 @@ import type { TabType } from './types'
 import './App.css'
 
 function AppContent() {
-  const { state, dispatch } = useApp()
+  const { state, dispatch, loading } = useApp()
   const [authPage, setAuthPage] = useState<'login' | 'register'>('login')
   const [activeTab, setActiveTab] = useState<TabType>('trips')
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
@@ -61,6 +61,16 @@ function AppContent() {
   // Viewer mode: no login needed, read-only
   if (viewTripId) {
     return <TripDetailPage tripId={viewTripId} onBack={() => window.location.href = window.location.pathname} viewOnly />
+  }
+
+  // Loading Firebase data
+  if (loading) {
+    return (
+      <div className="identity-page">
+        <div className="login-logo">🐱</div>
+        <p className="text-slate-400 mt-4">載入中...</p>
+      </div>
+    )
   }
 
   // Not logged in
