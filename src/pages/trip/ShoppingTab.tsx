@@ -208,7 +208,6 @@ export function ShoppingTab({ tripId }: Props) {
               className="form-input"
               value={newItem}
               onChange={e => setNewItem(e.target.value)}
-              placeholder="例：防曬乳"
               onKeyDown={e => e.key === 'Enter' && addItem()}
               autoFocus
             />

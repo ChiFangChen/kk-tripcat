@@ -221,7 +221,7 @@ export function SettingsPage() {
       {/* Add category modal */}
       {addingCategory && (
         <Modal title="新增分類" onClose={() => setAddingCategory(false)}>
-          <input className="form-input" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="分類名稱" onKeyDown={e => e.key === 'Enter' && addCategory()} autoFocus />
+          <input className="form-input" value={newCatName} onChange={e => setNewCatName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCategory()} autoFocus />
           <button className="btn btn-primary w-full mt-3" onClick={addCategory}>新增</button>
         </Modal>
       )}
@@ -255,7 +255,6 @@ export function SettingsPage() {
                   className="form-input flex-1"
                   value={addSubName}
                   onChange={e => setAddSubName(e.target.value)}
-                  placeholder="新次項目名稱"
                   autoFocus
                   onKeyDown={e => {
                     if (e.key === 'Enter' && addSubName.trim()) {
@@ -368,7 +367,6 @@ export function SettingsPage() {
                           className="form-input flex-1"
                           value={newSubName}
                           onChange={e => setNewSubName(e.target.value)}
-                          placeholder="新次項目名稱"
                           autoFocus
                         />
                         <button className="btn btn-sm btn-secondary" onClick={() => setCreatingNewSub(false)}>取消</button>
@@ -382,7 +380,6 @@ export function SettingsPage() {
                     className="form-input"
                     value={newItemText}
                     onChange={e => setNewItemText(e.target.value)}
-                    placeholder="例：護照"
                     onKeyDown={e => e.key === 'Enter' && addItem(addingItemTo)}
                     autoFocus={subs.length === 0}
                   />
