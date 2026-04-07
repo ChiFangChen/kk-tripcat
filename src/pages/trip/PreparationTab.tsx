@@ -28,6 +28,9 @@ export function PreparationTab({ tripId }: Props) {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [newCategoryName, setNewCategoryName] = useState('')
   const [creatingCategory, setCreatingCategory] = useState(false)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
+  const [newSubName, setNewSubName] = useState('')
+  const [creatingSubcategory, setCreatingSubcategory] = useState(false)
 
   const items = tripData.checklist
   const notes = tripData.preparationNotes
@@ -59,22 +62,45 @@ export function PreparationTab({ tripId }: Props) {
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: updated } })
   }
 
+  // Get subcategories for a given category
+  function getSubcategories(cat: string): string[] {
+    const subs: string[] = []
+    for (const item of items) {
+      if ((item.category || '其他') === cat && item.subcategory && !subs.includes(item.subcategory)) {
+        subs.push(item.subcategory)
+      }
+    }
+    return subs
+  }
+
+  function selectCategory(cat: string) {
+    setSelectedCategory(cat)
+    setSelectedSubcategory(null)
+    setCreatingSubcategory(false)
+    setNewSubName('')
+  }
+
   function openAddModal() {
     setNewItem('')
     setSelectedCategory(existingCategories[0] || '其他')
     setNewCategoryName('')
     setCreatingCategory(false)
+    setSelectedSubcategory(null)
+    setNewSubName('')
+    setCreatingSubcategory(false)
     setShowAddModal(true)
   }
 
   function addItem() {
     if (!newItem.trim()) return
     const category = creatingCategory ? newCategoryName.trim() || '其他' : selectedCategory || '其他'
+    const subcategory = creatingSubcategory ? (newSubName.trim() || undefined) : (selectedSubcategory || undefined)
     const item: ChecklistItem = {
       id: generateId(),
       text: newItem.trim(),
       checked: false,
       category,
+      subcategory,
     }
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: [...items, item] } })
     setNewItem('')
@@ -244,7 +270,7 @@ export function PreparationTab({ tripId }: Props) {
                   <button
                     key={cat}
                     className={`btn btn-sm ${selectedCategory === cat ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setSelectedCategory(cat)}
+                    onClick={() => selectCategory(cat)}
                   >
                     {cat}
                   </button>
@@ -271,6 +297,55 @@ export function PreparationTab({ tripId }: Props) {
               </div>
             )}
           </div>
+          {/* Subcategory picker — only if selected category has subcategories */}
+          {!creatingCategory && (() => {
+            const subs = getSubcategories(selectedCategory)
+            if (subs.length === 0 && !creatingSubcategory) return null
+            return (
+              <div className="form-group">
+                <label className="form-label">次分類</label>
+                {!creatingSubcategory ? (
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      className={`btn btn-sm ${selectedSubcategory === null ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setSelectedSubcategory(null)}
+                    >
+                      無
+                    </button>
+                    {subs.map(sub => (
+                      <button
+                        key={sub}
+                        className={`btn btn-sm ${selectedSubcategory === sub ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedSubcategory(sub)}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => setCreatingSubcategory(true)}
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="mr-1" />新次分類
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      className="form-input flex-1"
+                      value={newSubName}
+                      onChange={e => setNewSubName(e.target.value)}
+                      placeholder="輸入新次分類名稱"
+                      autoFocus
+                    />
+                    <button className="btn btn-sm btn-secondary" onClick={() => setCreatingSubcategory(false)}>
+                      取消
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
           <div className="form-group">
             <label className="form-label">項目內容</label>
             <input
