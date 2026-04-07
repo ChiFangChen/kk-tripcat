@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronLeft, faUsers, faUser } from '@fortawesome/free-solid-svg-icons'
+import { faChevronLeft, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { MemberMenu } from '../components/MemberMenu'
 import { UserMenu } from '../components/UserMenu'
@@ -59,9 +59,15 @@ export function TripDetailPage({ tripId, onBack }: Props) {
           <button className="header-icon-btn" onClick={() => setShowMembers(true)}>
             <FontAwesomeIcon icon={faUsers} />
           </button>
-          <button className="identity-badge" onClick={() => setShowUserMenu(true)}>
-            <FontAwesomeIcon icon={faUser} />
-          </button>
+          {state.auth.currentUser && (
+            <button
+              className="identity-badge"
+              onClick={() => setShowUserMenu(true)}
+              style={{ backgroundColor: state.auth.currentUser.color, color: 'white' }}
+            >
+              {state.auth.currentUser.displayName.charAt(0)}
+            </button>
+          )}
         </div>
       </div>
 

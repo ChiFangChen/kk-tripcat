@@ -1,6 +1,19 @@
-import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, type User } from 'firebase/auth'
-import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, onSnapshot, query, type Unsubscribe } from 'firebase/firestore'
+import { initializeApp, type FirebaseApp } from 'firebase/app'
+import { getAuth, signInAnonymously } from 'firebase/auth'
+import {
+  getFirestore,
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+  type Firestore,
+} from 'firebase/firestore'
+import type { User, Trip, Template } from '../types'
+import type { SharedTripData, UserTripData } from '../context/AppContext'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,43 +24,142 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-const app = initializeApp(firebaseConfig)
-export const auth = getAuth(app)
-export const db = getFirestore(app)
+let app: FirebaseApp | null = null
+let db: Firestore | null = null
 
-const googleProvider = new GoogleAuthProvider()
-
-export async function loginWithGoogle() {
-  return signInWithPopup(auth, googleProvider)
+export function isFirebaseConfigured(): boolean {
+  return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId)
 }
 
-export async function logout() {
-  return signOut(auth)
+export async function initFirebase(): Promise<Firestore | null> {
+  if (!isFirebaseConfigured()) return null
+  if (db) return db
+  try {
+    app = initializeApp(firebaseConfig)
+    const auth = getAuth(app)
+    await signInAnonymously(auth)
+    db = getFirestore(app)
+    return db
+  } catch (error) {
+    console.error('Firebase init failed:', error)
+    return null
+  }
 }
 
-export function onAuthChange(callback: (user: User | null) => void) {
-  return onAuthStateChanged(auth, callback)
-}
+// --- Users (shared ccUsers collection) ---
 
-function userCollection(userId: string, name: string) {
-  return collection(db, 'users', userId, name)
-}
-
-export async function loadCollection<T>(userId: string, name: string): Promise<T[]> {
-  const snap = await getDocs(userCollection(userId, name))
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }) as T)
-}
-
-export async function saveDoc(userId: string, collectionName: string, id: string, data: Record<string, unknown>) {
-  await setDoc(doc(db, 'users', userId, collectionName, id), data)
-}
-
-export async function deleteDocument(userId: string, collectionName: string, id: string) {
-  await deleteDoc(doc(db, 'users', userId, collectionName, id))
-}
-
-export function subscribeCollection(userId: string, name: string, callback: (docs: Record<string, unknown>[]) => void): Unsubscribe {
-  return onSnapshot(query(userCollection(userId, name)), (snap) => {
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+export function subscribeToUsers(
+  db: Firestore,
+  callback: (users: User[]) => void
+): () => void {
+  return onSnapshot(collection(db, 'ccUsers'), (snapshot) => {
+    const users = snapshot.docs.map((doc) => doc.data() as User)
+    users.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    callback(users)
   })
+}
+
+export async function syncUser(db: Firestore, user: User): Promise<void> {
+  await setDoc(doc(db, 'ccUsers', user.id), user)
+}
+
+export async function findUserByUsername(db: Firestore, username: string): Promise<User | null> {
+  const q = query(collection(db, 'ccUsers'), where('username', '==', username))
+  const snapshot = await getDocs(q)
+  if (snapshot.empty) return null
+  return snapshot.docs[0].data() as User
+}
+
+// --- Trips ---
+
+export function subscribeToTrips(
+  db: Firestore,
+  callback: (trips: Trip[]) => void
+): () => void {
+  return onSnapshot(collection(db, 'tcTrips'), (snapshot) => {
+    const trips = snapshot.docs.map((doc) => doc.data() as Trip)
+    trips.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    callback(trips)
+  })
+}
+
+export async function syncTrip(db: Firestore, trip: Trip): Promise<void> {
+  await setDoc(doc(db, 'tcTrips', trip.id), trip)
+}
+
+export async function deleteTripFromFirestore(db: Firestore, id: string): Promise<void> {
+  await deleteDoc(doc(db, 'tcTrips', id))
+}
+
+// --- Shared trip data (schedule, flights, hotels, transport, scheduleNotes) ---
+
+export function subscribeToSharedTripData(
+  db: Firestore,
+  tripId: string,
+  callback: (data: SharedTripData) => void
+): () => void {
+  return onSnapshot(doc(db, 'tcTripShared', tripId), (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as SharedTripData)
+    } else {
+      callback({ schedule: [], scheduleNotes: [], flights: [], hotels: [], transport: [] })
+    }
+  })
+}
+
+export async function syncSharedTripData(db: Firestore, tripId: string, data: SharedTripData): Promise<void> {
+  await setDoc(doc(db, 'tcTripShared', tripId), data)
+}
+
+export async function deleteSharedTripData(db: Firestore, tripId: string): Promise<void> {
+  await deleteDoc(doc(db, 'tcTripShared', tripId))
+}
+
+// --- Per-user trip data (checklist, shopping, preparationNotes) ---
+
+function userTripDocId(tripId: string, userId: string) {
+  return `${tripId}_${userId}`
+}
+
+export function subscribeToUserTripData(
+  db: Firestore,
+  tripId: string,
+  userId: string,
+  callback: (data: UserTripData) => void
+): () => void {
+  return onSnapshot(doc(db, 'tcTripUser', userTripDocId(tripId, userId)), (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as UserTripData)
+    } else {
+      callback({ checklist: [], shopping: [], preparationNotes: '' })
+    }
+  })
+}
+
+export async function syncUserTripData(db: Firestore, tripId: string, userId: string, data: UserTripData): Promise<void> {
+  await setDoc(doc(db, 'tcTripUser', userTripDocId(tripId, userId)), data)
+}
+
+export async function deleteUserTripData(db: Firestore, tripId: string, userId: string): Promise<void> {
+  await deleteDoc(doc(db, 'tcTripUser', userTripDocId(tripId, userId)))
+}
+
+// --- Templates ---
+
+export function subscribeToTemplate(
+  db: Firestore,
+  userId: string,
+  callback: (template: Template | null) => void
+): () => void {
+  return onSnapshot(doc(db, 'tcTemplates', userId), (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as Template)
+    } else {
+      callback(null)
+    }
+  })
+}
+
+export async function syncTemplate(db: Firestore, userId: string, template: Template): Promise<void> {
+  await setDoc(doc(db, 'tcTemplates', userId), template)
 }

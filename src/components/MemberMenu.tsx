@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faTrash, faCrown } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faTrash, faCrown, faUserPlus } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { Modal } from './Modal'
 
@@ -10,25 +10,27 @@ interface Props {
 }
 
 export function MemberMenu({ tripId, onClose }: Props) {
-  const { state, dispatch } = useApp()
+  const { state, dispatch, getUserName, getUserColor, isTripAdmin } = useApp()
   const trip = state.trips.find(t => t.id === tripId)
-  const [newName, setNewName] = useState('')
+  const [showAddMember, setShowAddMember] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const admin = trip ? isTripAdmin(trip) : false
 
   if (!trip) return null
 
-  // First companion is treated as admin for now
-  const members = trip.companions
+  const members = trip.members
+  const nonMembers = state.users.filter(u => !u.deleted && !members.includes(u.id))
 
   function addMember() {
-    if (!newName.trim() || !trip) return
-    if (members.includes(newName.trim())) return
-    dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, companions: [...members, newName.trim()] } })
-    setNewName('')
+    if (!selectedUserId || !trip) return
+    dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, members: [...members, selectedUserId] } })
+    setSelectedUserId('')
+    setShowAddMember(false)
   }
 
-  function removeMember(name: string) {
-    if (!trip) return
-    dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, companions: members.filter(m => m !== name) } })
+  function removeMember(userId: string) {
+    if (!trip || userId === trip.creatorId) return
+    dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, members: members.filter(m => m !== userId) } })
   }
 
   return (
@@ -37,14 +39,15 @@ export function MemberMenu({ tripId, onClose }: Props) {
         {members.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-2">尚無旅伴</p>
         ) : (
-          members.map((name, i) => (
-            <div key={name} className="flex items-center gap-2 py-1.5">
-              {i === 0 && <FontAwesomeIcon icon={faCrown} className="text-amber-400 text-xs" />}
-              <span className="flex-1 text-sm font-medium">{name}</span>
-              {i !== 0 && (
+          members.map(userId => (
+            <div key={userId} className="flex items-center gap-2 py-1.5">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: getUserColor(userId) }} />
+              {userId === trip.creatorId && <FontAwesomeIcon icon={faCrown} className="text-amber-400 text-xs" />}
+              <span className="flex-1 text-sm font-medium">{getUserName(userId)}</span>
+              {admin && userId !== trip.creatorId && (
                 <button
                   className="text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() => removeMember(name)}
+                  onClick={() => removeMember(userId)}
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
@@ -53,18 +56,28 @@ export function MemberMenu({ tripId, onClose }: Props) {
           ))
         )}
 
-        <div className="flex gap-2 mt-2">
-          <input
-            className="form-input flex-1"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            placeholder="新增旅伴名稱"
-            onKeyDown={e => e.key === 'Enter' && addMember()}
-          />
-          <button className="btn btn-primary" onClick={addMember}>
-            <FontAwesomeIcon icon={faPlus} />
+        {admin && !showAddMember && nonMembers.length > 0 && (
+          <button className="btn btn-secondary w-full mt-2" onClick={() => setShowAddMember(true)}>
+            <FontAwesomeIcon icon={faUserPlus} className="mr-1" />新增旅伴
           </button>
-        </div>
+        )}
+
+        {showAddMember && (
+          <div className="mt-2 flex flex-col gap-2">
+            <select className="form-input" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)}>
+              <option value="">選擇使用者...</option>
+              {nonMembers.map(u => (
+                <option key={u.id} value={u.id}>{u.displayName}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <button className="btn btn-secondary flex-1" onClick={() => setShowAddMember(false)}>取消</button>
+              <button className="btn btn-primary flex-1" onClick={addMember} disabled={!selectedUserId}>
+                <FontAwesomeIcon icon={faPlus} className="mr-1" />新增
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </Modal>
   )

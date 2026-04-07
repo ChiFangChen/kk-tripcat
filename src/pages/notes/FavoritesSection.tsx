@@ -8,19 +8,19 @@ import { formatDate } from '../../utils/date'
 import type { FavoriteItem, Purchase } from '../../types'
 
 export function FavoritesSection() {
-  const { state, dispatch } = useApp()
+  const { state, dispatch, setUserTripData } = useApp()
   const [editing, setEditing] = useState<FavoriteItem | null>(null)
   const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null)
 
   function remove(id: string) {
     dispatch({ type: 'DELETE_FAVORITE', favoriteId: id })
     // Also unstar in all shopping lists
-    Object.entries(state.tripData).forEach(([tripId, data]) => {
+    Object.entries(state.userTripData).forEach(([tripId, data]) => {
       const updated = data.shopping.map(item =>
         item.favoriteId === id ? { ...item, starred: false, favoriteId: undefined } : item
       )
       if (updated.some((item, i) => item !== data.shopping[i])) {
-        dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: updated } })
+        setUserTripData(tripId, { shopping: updated })
       }
     })
     setEditing(null)

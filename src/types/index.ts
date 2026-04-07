@@ -1,3 +1,19 @@
+export interface User {
+  id: string
+  username: string
+  password: string
+  displayName: string
+  color: string
+  isAdmin?: boolean
+  deleted?: boolean
+  createdAt: string
+}
+
+export const USER_COLORS = [
+  '#7EC8E3', '#F87171', '#FBBF24', '#34D399', '#A78BFA',
+  '#FB923C', '#38BDF8', '#F472B6', '#4ADE80', '#C084FC',
+]
+
 export type TripType = '情侶' | '朋友' | '家人' | '獨旅' | ''
 
 export interface Trip {
@@ -7,7 +23,8 @@ export interface Trip {
   endDate: string
   country: string
   tripType: TripType
-  companions: string[]
+  members: string[]  // user IDs
+  creatorId: string   // admin user ID
   tags: string[]
   createdAt: string
   gotReady: boolean

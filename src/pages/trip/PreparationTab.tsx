@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function PreparationTab({ tripId }: Props) {
-  const { state, dispatch, getTripData } = useApp()
+  const { state, dispatch, setUserTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const trip = state.trips.find(t => t.id === tripId)
   const [showCompleted, setShowCompleted] = useState(false)
@@ -59,7 +59,7 @@ export function PreparationTab({ tripId }: Props) {
 
   function toggleCheck(id: string) {
     const updated = items.map(i => i.id === id ? { ...i, checked: !i.checked } : i)
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: updated } })
+    setUserTripData(tripId, { checklist: updated })
   }
 
   // Get subcategories for a given category
@@ -102,18 +102,18 @@ export function PreparationTab({ tripId }: Props) {
       category,
       subcategory,
     }
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: [...items, item] } })
+    setUserTripData(tripId, { checklist: [...items, item] })
     setNewItem('')
     setShowAddModal(false)
   }
 
   function updateItem(updated: ChecklistItem) {
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: items.map(i => i.id === updated.id ? updated : i) } })
+    setUserTripData(tripId, { checklist: items.map(i => i.id === updated.id ? updated : i) })
     setEditingItem(null)
   }
 
   function deleteItem(id: string) {
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: items.filter(i => i.id !== id) } })
+    setUserTripData(tripId, { checklist: items.filter(i => i.id !== id) })
     setEditingItem(null)
   }
 
@@ -124,7 +124,7 @@ export function PreparationTab({ tripId }: Props) {
       fabTimer.current = setTimeout(() => setFabExpanded(false), 3000)
     } else {
       if (!trip) return
-      dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, gotReady: !trip.gotReady } })
+      dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, gotReady: !trip.gotReady })
       setFabExpanded(false)
       if (fabTimer.current) clearTimeout(fabTimer.current)
     }

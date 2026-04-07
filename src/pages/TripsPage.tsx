@@ -15,7 +15,7 @@ const tripTypes: TripType[] = ['情侶', '朋友', '家人', '獨旅']
 type Step = 'list' | 'template' | 'info'
 
 export function TripsPage({ onSelectTrip }: Props) {
-  const { state, dispatch } = useApp()
+  const { state, dispatch, setSharedTripData, setUserTripData, getUserName, getUserColor } = useApp()
   const [step, setStep] = useState<Step>('list')
 
   // Template selection state
@@ -30,7 +30,6 @@ export function TripsPage({ onSelectTrip }: Props) {
     endDate: '',
     country: '',
     tripType: '' as TripType,
-    companions: '',
     tags: '',
   })
 
@@ -146,9 +145,10 @@ export function TripsPage({ onSelectTrip }: Props) {
   }
 
   function handleCreate() {
-    if (!form.name || !form.startDate) return
+    if (!form.name || !form.startDate || !state.auth.currentUser) return
 
     const tripId = generateId()
+    const userId = state.auth.currentUser.id
     const trip: Trip = {
       id: tripId,
       name: form.name,
@@ -156,7 +156,8 @@ export function TripsPage({ onSelectTrip }: Props) {
       endDate: form.endDate || form.startDate,
       country: form.country,
       tripType: form.tripType,
-      companions: form.companions ? form.companions.split(',').map(s => s.trim()).filter(Boolean) : [],
+      members: [userId],
+      creatorId: userId,
       tags: form.tags ? form.tags.split(',').map(s => s.trim()).filter(Boolean) : [],
       createdAt: new Date().toISOString(),
       gotReady: false,
@@ -179,23 +180,21 @@ export function TripsPage({ onSelectTrip }: Props) {
     }
 
     dispatch({ type: 'ADD_TRIP', trip })
-    dispatch({
-      type: 'SET_TRIP_DATA',
-      tripId,
-      data: {
-        checklist,
-        preparationNotes: state.template.notes,
-        flights: [],
-        hotels: [],
-        schedule: [],
-        scheduleNotes: [],
-        transport: [],
-        shopping: [],
-      },
+    setSharedTripData(tripId, {
+      schedule: [],
+      scheduleNotes: [],
+      flights: [],
+      hotels: [],
+      transport: [],
+    })
+    setUserTripData(tripId, {
+      checklist,
+      shopping: [],
+      preparationNotes: state.template.notes,
     })
 
     // Reset
-    setForm({ name: '', startDate: '', endDate: '', country: '', tripType: '', companions: '', tags: '' })
+    setForm({ name: '', startDate: '', endDate: '', country: '', tripType: '', tags: '' })
     setStep('list')
     onSelectTrip(tripId)
   }
@@ -335,10 +334,6 @@ export function TripsPage({ onSelectTrip }: Props) {
           </div>
         </div>
         <div className="form-group">
-          <label className="form-label">同行人（逗號分隔）</label>
-          <input className="form-input" value={form.companions} onChange={e => setForm({ ...form, companions: e.target.value })} placeholder="例：小明, 小美" />
-        </div>
-        <div className="form-group">
           <label className="form-label">標籤（逗號分隔）</label>
           <input className="form-input" value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder="例：清邁, 泰服, 潑水節" />
         </div>
@@ -374,8 +369,14 @@ export function TripsPage({ onSelectTrip }: Props) {
                 <span key={tag} className="tag">{tag}</span>
               ))}
             </div>
-            {trip.companions.length > 0 && (
-              <p className="text-xs text-slate-400 mt-1.5">同行：{trip.companions.join('、')}</p>
+            {trip.members.length > 1 && (
+              <div className="flex items-center gap-1 mt-1.5">
+                {trip.members.map(userId => (
+                  <span key={userId} className="w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center" style={{ backgroundColor: getUserColor(userId) }}>
+                    {getUserName(userId).charAt(0)}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
         ))
