@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { Modal } from '../../components/Modal'
 import { generateId } from '../../utils/id'
@@ -41,7 +43,7 @@ export function TipsSection() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">心得 & Tips</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditing(newTip())}>+ 新筆記</button>
+        <button className="btn-round-add" onClick={() => setEditing(newTip())}><FontAwesomeIcon icon={faPlus} className="text-xs" /></button>
       </div>
 
       <input

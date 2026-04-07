@@ -83,7 +83,7 @@ export function SettingsPage() {
       {/* Categories */}
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-semibold">準備事項分類</h3>
-        <button className="btn btn-primary btn-sm" onClick={() => setAddingCategory(true)}><FontAwesomeIcon icon={faPlus} /></button>
+        <button className="btn-round-add" onClick={() => setAddingCategory(true)}><FontAwesomeIcon icon={faPlus} className="text-xs" /></button>
       </div>
 
       {template.categories.map(cat => (

@@ -38,8 +38,8 @@ export function HotelTab({ tripId }: Props) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">飯店資訊</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditing(newHotel())}>
-          <FontAwesomeIcon icon={faPlus} />
+        <button className="btn-round-add" onClick={() => setEditing(newHotel())}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 

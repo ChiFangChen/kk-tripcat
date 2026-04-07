@@ -155,7 +155,7 @@ export function PreparationTab({ tripId }: Props) {
         <span className="text-xs text-slate-400 w-8 text-right">
           {items.length ? Math.round((checked.length / items.length) * 100) : 0}%
         </span>
-        <button className="btn btn-primary btn-sm !p-1.5 !rounded-full w-7 h-7 flex items-center justify-center" onClick={openAddModal}>
+        <button className="btn-round-add" onClick={openAddModal}>
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>

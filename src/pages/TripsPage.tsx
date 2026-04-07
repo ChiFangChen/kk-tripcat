@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faThumbtack, faCat, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
+import { faThumbtack, faCat, faChevronLeft, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { generateId } from '../utils/id'
 import { formatDate } from '../utils/date'
@@ -352,7 +352,7 @@ export function TripsPage({ onSelectTrip }: Props) {
     <div className="page-container">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">旅程</h1>
-        <button className="btn btn-primary" onClick={startCreate}>+ 新旅程</button>
+        <button className="btn-round-add" onClick={startCreate}><FontAwesomeIcon icon={faPlus} className="text-xs" /></button>
       </div>
 
       {sortedTrips.length === 0 ? (

@@ -69,8 +69,8 @@ export function FlightTab({ tripId }: Props) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">航班資訊</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditingFlight(newFlight())}>
-          <FontAwesomeIcon icon={faPlus} />
+        <button className="btn-round-add" onClick={() => setEditingFlight(newFlight())}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 
@@ -122,10 +122,10 @@ export function FlightTab({ tripId }: Props) {
           ))}
 
           <button
-            className="btn btn-secondary btn-sm mt-3"
+            className="btn-round-add mt-3"
             onClick={() => { setEditingLeg(newLeg()); setEditingFlightId(flight.id) }}
           >
-            <FontAwesomeIcon icon={faPlus} />
+            <FontAwesomeIcon icon={faPlus} className="text-xs" />
           </button>
         </div>
       ))}
