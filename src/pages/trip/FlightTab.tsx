@@ -115,8 +115,18 @@ export function FlightTab({ tripId }: Props) {
               </div>
               <InfoRow label="日期" value={leg.date} />
               <InfoRow label="航班" value={`${leg.flightNumber}${leg.aircraft ? ` (${leg.aircraft})` : ''}`} />
-              <InfoRow label="起飛" value={`${leg.departureTime} / ${leg.departureAirport}`} />
-              <InfoRow label="抵達" value={`${leg.arrivalTime} / ${leg.arrivalAirport}`} />
+              <InfoRow label="起飛" value={
+                <div className="flex items-center gap-2">
+                  <span>{leg.departureTime} / {leg.departureAirport}</span>
+                  {leg.departureTerminal && <span className="tag">{leg.departureTerminal}</span>}
+                </div>
+              } />
+              <InfoRow label="抵達" value={
+                <div className="flex items-center gap-2">
+                  <span>{leg.arrivalTime} / {leg.arrivalAirport}</span>
+                  {leg.arrivalTerminal && <span className="tag">{leg.arrivalTerminal}</span>}
+                </div>
+              } />
               <InfoRow label="飛行時間" value={leg.duration} />
             </div>
           ))}
@@ -174,8 +184,10 @@ function LegForm({ leg, onSave }: { leg: FlightLeg; onSave: (l: FlightLeg) => vo
       <div className="form-group"><label className="form-label">機型</label><input className="form-input" value={form.aircraft || ''} onChange={e => setForm({ ...form, aircraft: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">起飛時間</label><input className="form-input" value={form.departureTime} onChange={e => setForm({ ...form, departureTime: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">起飛機場</label><input className="form-input" value={form.departureAirport} onChange={e => setForm({ ...form, departureAirport: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">起飛航廈</label><input className="form-input" value={form.departureTerminal || ''} onChange={e => setForm({ ...form, departureTerminal: e.target.value })} placeholder="T2" /></div>
       <div className="form-group"><label className="form-label">抵達時間</label><input className="form-input" value={form.arrivalTime} onChange={e => setForm({ ...form, arrivalTime: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">抵達機場</label><input className="form-input" value={form.arrivalAirport} onChange={e => setForm({ ...form, arrivalAirport: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">抵達航廈</label><input className="form-input" value={form.arrivalTerminal || ''} onChange={e => setForm({ ...form, arrivalTerminal: e.target.value })} placeholder="T1" /></div>
       <div className="form-group"><label className="form-label">飛行時間</label><input className="form-input" value={form.duration || ''} onChange={e => setForm({ ...form, duration: e.target.value })} /></div>
       <button className="btn btn-primary w-full" onClick={() => onSave(form)}>儲存</button>
     </div>

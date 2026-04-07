@@ -50,8 +50,10 @@ export interface FlightLeg {
   aircraft?: string
   departureTime: string
   departureAirport: string
+  departureTerminal?: string
   arrivalTime: string
   arrivalAirport: string
+  arrivalTerminal?: string
   duration?: string
 }
 

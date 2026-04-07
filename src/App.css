@@ -430,7 +430,7 @@ textarea.form-input {
 .info-label {
   font-weight: 500;
   color: var(--color-text-secondary);
-  min-width: 80px;
+  min-width: 60px;
   flex-shrink: 0;
 }
 
