@@ -116,15 +116,15 @@ export function ScheduleTab({ tripId }: Props) {
         schedule.map((day, dayIndex) => (
           <div key={dayIndex} className="card mb-2">
             <div
-              className="flex items-center gap-2 cursor-pointer"
+              className="flex items-center justify-between cursor-pointer"
               onClick={() => toggleDay(dayIndex)}
               onDoubleClick={(e) => { e.stopPropagation(); setEditingDayIndex(dayIndex) }}
             >
+              <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
               <FontAwesomeIcon
                 icon={collapsedDays[dayIndex] ? faChevronDown : faChevronUp}
                 className="text-xs text-slate-400"
               />
-              <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
             </div>
 
             {!collapsedDays[dayIndex] && (
