@@ -55,6 +55,8 @@ export interface FlightLeg {
   arrivalAirport: string
   arrivalTerminal?: string
   duration?: string
+  meal?: string
+  seat?: string
 }
 
 export interface Hotel {

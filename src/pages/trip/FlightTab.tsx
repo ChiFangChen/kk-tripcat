@@ -130,6 +130,8 @@ export function FlightTab({ tripId }: Props) {
                   </div>
                 } />
                 <InfoRow label="飛行時間" value={leg.duration} />
+                <InfoRow label="餐點" value={leg.meal} />
+                <InfoRow label="座位" value={leg.seat} />
               </div>
             </div>
           ))}
@@ -205,6 +207,8 @@ function LegForm({ leg, onSave, onDelete }: { leg: FlightLeg; onSave: (l: Flight
       <div className="form-group"><label className="form-label">抵達機場</label><input className="form-input" value={form.arrivalAirport} onChange={e => setForm({ ...form, arrivalAirport: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">抵達航廈</label><input className="form-input" value={form.arrivalTerminal || ''} onChange={e => setForm({ ...form, arrivalTerminal: e.target.value })} placeholder="T1" /></div>
       <div className="form-group"><label className="form-label">飛行時間</label><input className="form-input" value={form.duration || ''} onChange={e => setForm({ ...form, duration: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">餐點</label><input className="form-input" value={form.meal || ''} onChange={e => setForm({ ...form, meal: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">座位</label><input className="form-input" value={form.seat || ''} onChange={e => setForm({ ...form, seat: e.target.value })} /></div>
       <button className="btn btn-primary w-full" onClick={() => onSave(form)}>儲存</button>
       {onDelete && (
         <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
