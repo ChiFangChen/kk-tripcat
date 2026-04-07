@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faPen, faTrash, faChevronDown, faChevronUp, faNoteSticky } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faPen, faTrash, faChevronDown, faChevronUp, faNoteSticky, faLocationDot } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { useDoubleTap } from '../../hooks/useDoubleTap'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { Modal } from '../../components/Modal'
 import { InfoRow } from '../../components/InfoRow'
 import { generateId } from '../../utils/id'
-import { formatDate } from '../../utils/date'
+import { formatDate, isToday } from '../../utils/date'
 import type { ScheduleDay, ScheduleActivity, ScheduleNote, BookingInfo } from '../../types'
 
 interface Props {
@@ -123,6 +123,7 @@ export function ScheduleTab({ tripId }: Props) {
                 onClick={doubleTap(`day-${dayIndex}`, () => setEditingDayIndex(dayIndex))}
               >
                 {day.label || formatDate(day.date)}
+                {isToday(day.date) && <FontAwesomeIcon icon={faLocationDot} className="ml-1.5 text-rose-500" />}
               </h3>
               <FontAwesomeIcon
                 icon={collapsedDays[dayIndex] ? faChevronDown : faChevronUp}
