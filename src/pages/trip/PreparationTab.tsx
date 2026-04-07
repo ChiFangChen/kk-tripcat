@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleCheck, faSuitcaseRolling, faThumbtack, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
+import { useDoubleTap } from '../../hooks/useDoubleTap'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { Modal } from '../../components/Modal'
 import { generateId } from '../../utils/id'
@@ -19,6 +20,7 @@ export function PreparationTab({ tripId }: Props) {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null)
   const [fabExpanded, setFabExpanded] = useState(false)
+  const doubleTap = useDoubleTap()
   const fabTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Add form state
@@ -185,7 +187,7 @@ export function PreparationTab({ tripId }: Props) {
           <div
             key={item.id}
             className={`checklist-item ${item.checked ? 'checked' : ''}`}
-            onDoubleClick={() => setEditingItem(item)}
+            onClick={doubleTap(item.id, () => setEditingItem(item))}
           >
             <input
               type="checkbox"

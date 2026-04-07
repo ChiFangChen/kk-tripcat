@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
+import { useDoubleTap } from '../../hooks/useDoubleTap'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { InfoRow } from '../../components/InfoRow'
 import { generateId } from '../../utils/id'
@@ -18,6 +19,7 @@ export function FlightTab({ tripId }: Props) {
   const [editingFlight, setEditingFlight] = useState<FlightInfo | null>(null)
   const [editingLeg, setEditingLeg] = useState<FlightLeg | null>(null)
   const [editingFlightId, setEditingFlightId] = useState<string | null>(null)
+  const doubleTap = useDoubleTap()
 
   function saveFlight(flight: FlightInfo) {
     const exists = flights.find(f => f.id === flight.id)
@@ -85,7 +87,7 @@ export function FlightTab({ tripId }: Props) {
         <div key={flight.id} className="card">
           <h3
             className="font-semibold mb-2 cursor-pointer"
-            onDoubleClick={() => setEditingFlight(flight)}
+            onClick={doubleTap(flight.id, () => setEditingFlight(flight))}
           >
             {flight.airline || '航班'}
           </h3>
@@ -102,7 +104,7 @@ export function FlightTab({ tripId }: Props) {
             <div key={leg.id} className="mt-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
               <span
                 className="font-medium text-sm cursor-pointer"
-                onDoubleClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}
+                onClick={doubleTap(leg.id, () => { setEditingLeg(leg); setEditingFlightId(flight.id) })}
               >
                 {leg.direction}
               </span>
