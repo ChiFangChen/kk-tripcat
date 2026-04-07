@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChevronLeft } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { PreparationTab } from './trip/PreparationTab'
 import { FlightTab } from './trip/FlightTab'
@@ -46,7 +48,7 @@ export function TripDetailPage({ tripId, onBack }: Props) {
   return (
     <div>
       <div className="page-header">
-        <button onClick={onBack} className="text-sky-500 text-sm">← 返回</button>
+        <button onClick={onBack} className="text-sky-600 p-2"><FontAwesomeIcon icon={faChevronLeft} /></button>
         <h1>{trip.name}</h1>
         <div className="w-12" />
       </div>

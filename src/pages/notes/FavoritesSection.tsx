@@ -63,8 +63,8 @@ export function FavoritesSection() {
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-semibold"><FontAwesomeIcon icon={faStar} className="text-amber-400 mr-1" />{fav.name}</h3>
               <div className="flex gap-2">
-                <button className="text-sky-500 text-xs" onClick={() => setAddingPurchaseTo(fav.id)}>+ 紀錄</button>
-                <button className="text-red-400 text-xs" onClick={() => remove(fav.id)}>刪除</button>
+                <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setAddingPurchaseTo(fav.id)}>+ 紀錄</button>
+                <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => remove(fav.id)}>刪除</button>
               </div>
             </div>
 
@@ -79,7 +79,7 @@ export function FavoritesSection() {
                       {p.tripName && <span className="text-slate-400 ml-1">({p.tripName})</span>}
                       {p.note && <span className="text-slate-400 ml-1">- {p.note}</span>}
                     </div>
-                    <button className="text-red-400 text-xs" onClick={() => deletePurchase(fav.id, p.id)}>✕</button>
+                    <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deletePurchase(fav.id, p.id)}>✕</button>
                   </div>
                 ))}
               </div>

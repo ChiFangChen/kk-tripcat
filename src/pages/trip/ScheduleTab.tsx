@@ -90,7 +90,7 @@ export function ScheduleTab({ tripId }: Props) {
                   <th key={i}>
                     <div className="flex justify-between items-center">
                       <span>{day.label}</span>
-                      <button className="text-white/70 text-xs ml-2" onClick={() => deleteDay(i)}>✕</button>
+                      <button className="text-white/80 text-xs ml-2 px-1.5 py-0.5 bg-white/10 rounded" onClick={() => deleteDay(i)}>✕</button>
                     </div>
                   </th>
                 ))}
@@ -111,7 +111,7 @@ export function ScheduleTab({ tripId }: Props) {
                       </div>
                     ))}
                     <button
-                      className="text-sky-500 text-xs mt-1"
+                      className="text-sky-600 text-xs mt-1 px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded"
                       onClick={() => addActivity(dayIndex)}
                     >
                       + 活動

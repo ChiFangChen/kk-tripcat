@@ -98,8 +98,8 @@ export function TransportTab({ tripId }: Props) {
             <div>
               <div className="whitespace-pre-wrap text-sm mb-2">{item.content || '(尚無內容)'}</div>
               <div className="flex gap-2">
-                <button className="text-sky-500 text-xs" onClick={() => { setEditingId(item.id); setEditContent(item.content) }}>編輯</button>
-                <button className="text-red-400 text-xs" onClick={() => deleteItem(item.id)}>刪除</button>
+                <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setEditingId(item.id); setEditContent(item.content) }}>編輯</button>
+                <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteItem(item.id)}>刪除</button>
               </div>
             </div>
           )}
