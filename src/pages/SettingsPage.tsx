@@ -91,11 +91,11 @@ export function SettingsPage() {
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-semibold text-sm">{cat.name} ({cat.items.length})</h4>
             <div className="flex gap-2">
-              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>
-                <FontAwesomeIcon icon={faPen} />
-              </button>
               <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>
                 <FontAwesomeIcon icon={faPlus} />
+              </button>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>
+                <FontAwesomeIcon icon={faPen} />
               </button>
               <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteCategory(cat.name)}>
                 <FontAwesomeIcon icon={faTrash} />
@@ -103,14 +103,31 @@ export function SettingsPage() {
             </div>
           </div>
           <div className="text-sm text-slate-500">
-            {cat.items.map(item => (
-              <div key={item.id} className="flex justify-between items-center py-0.5">
-                <span>{item.text}</span>
-                <button className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteItem(cat.name, item.id)}>
-                  <FontAwesomeIcon icon={faTrash} className="text-[10px]" />
-                </button>
-              </div>
-            ))}
+            {(() => {
+              const subs: string[] = []
+              const grouped: Record<string, typeof cat.items> = {}
+              for (const item of cat.items) {
+                const sub = item.subcategory || ''
+                if (!(sub in grouped)) { grouped[sub] = []; subs.push(sub) }
+                grouped[sub].push(item)
+              }
+              const hasSubs = subs.some(s => s !== '')
+              return subs.map(sub => (
+                <div key={sub || '_none'}>
+                  {hasSubs && sub && (
+                    <p className="text-xs font-medium text-slate-400 mt-2 mb-0.5 first:mt-0">{sub}</p>
+                  )}
+                  {grouped[sub].map(item => (
+                    <div key={item.id} className="flex justify-between items-center py-0.5">
+                      <span className={hasSubs && sub ? 'ml-3' : ''}>{item.text}</span>
+                      <button className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteItem(cat.name, item.id)}>
+                        <FontAwesomeIcon icon={faTrash} className="text-[10px]" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ))
+            })()}
           </div>
         </div>
       ))}
