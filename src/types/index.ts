@@ -18,6 +18,7 @@ export interface ChecklistItem {
   text: string
   checked: boolean
   category: string
+  subcategory?: string
 }
 
 export interface BookingInfo {
@@ -114,6 +115,7 @@ export interface TemplateItem {
   id: string
   text: string
   category: string
+  subcategory?: string
 }
 
 export interface TipNote {

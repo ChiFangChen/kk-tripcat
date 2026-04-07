@@ -32,7 +32,6 @@ const templateCategories: TemplateCategory[] = [
       { id: 'tp-16', text: '墨鏡', category: '衣物' },
       { id: 'tp-17', text: '圍巾', category: '衣物' },
       { id: 'tp-18', text: '手套', category: '衣物' },
-      { id: 'tp-19', text: '飾品（耳環/手環/項鍊）', category: '衣物' },
     ],
   },
   {
@@ -66,17 +65,18 @@ const templateCategories: TemplateCategory[] = [
     name: '美容',
     items: [
       // 化妝品
-      { id: 'tp-37', text: '化妝品', category: '美容' },
+      { id: 'tp-37', text: '化妝品', category: '美容', subcategory: '化妝品' },
+      { id: 'tp-19', text: '飾品（耳環/手環/項鍊）', category: '美容', subcategory: '化妝品' },
       // 頭髮
-      { id: 'tp-38', text: '髮夾', category: '美容' },
-      { id: 'tp-39', text: '髮圈', category: '美容' },
-      { id: 'tp-40', text: '橡皮筋', category: '美容' },
-      { id: 'tp-41', text: '綁髮道具', category: '美容' },
-      { id: 'tp-42', text: '梳子', category: '美容' },
+      { id: 'tp-38', text: '髮夾', category: '美容', subcategory: '頭髮' },
+      { id: 'tp-39', text: '髮圈', category: '美容', subcategory: '頭髮' },
+      { id: 'tp-40', text: '橡皮筋', category: '美容', subcategory: '頭髮' },
+      { id: 'tp-41', text: '綁髮道具', category: '美容', subcategory: '頭髮' },
+      { id: 'tp-42', text: '梳子', category: '美容', subcategory: '頭髮' },
       // 指甲
-      { id: 'tp-43', text: '指甲刀', category: '美容' },
-      { id: 'tp-44', text: '剪刀', category: '美容' },
-      { id: 'tp-45', text: '凝膠指甲油 & 紫外光', category: '美容' },
+      { id: 'tp-43', text: '指甲刀', category: '美容', subcategory: '指甲' },
+      { id: 'tp-44', text: '剪刀', category: '美容', subcategory: '指甲' },
+      { id: 'tp-45', text: '凝膠指甲油 & 紫外光', category: '美容', subcategory: '指甲' },
     ],
   },
   {
@@ -191,6 +191,7 @@ export const seedChecklist: ChecklistItem[] = templateCategories.flatMap(cat =>
     text: item.text,
     checked: false,
     category: cat.name,
+    subcategory: item.subcategory,
   }))
 )
 
