@@ -1,7 +1,9 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faStar, faLink, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faStar, faLink, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
+import { useDoubleTap } from '../../hooks/useDoubleTap'
+import { Modal } from '../../components/Modal'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { generateId } from '../../utils/id'
 import { formatDate } from '../../utils/date'
@@ -20,22 +22,8 @@ export function ShoppingTab({ tripId }: Props) {
   const [newItem, setNewItem] = useState('')
   const [matchingFavorites, setMatchingFavorites] = useState<FavoriteItem[]>([])
   const [pendingItem, setPendingItem] = useState<string | null>(null)
-  const [deleteVisibleId, setDeleteVisibleId] = useState<string | null>(null)
-
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const handleTouchStart = useCallback((id: string) => {
-    longPressTimer.current = setTimeout(() => {
-      setDeleteVisibleId(prev => prev === id ? null : id)
-    }, 500)
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-  }, [])
+  const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null)
+  const doubleTap = useDoubleTap()
 
   const unchecked = items.filter(i => !i.checked)
   const checked = items.filter(i => i.checked)
@@ -84,9 +72,14 @@ export function ShoppingTab({ tripId }: Props) {
     setShowAddModal(false)
   }
 
+  function updateItem(updated: ShoppingItem) {
+    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: items.map(i => i.id === updated.id ? updated : i) } })
+    setEditingItem(null)
+  }
+
   function deleteItem(id: string) {
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: items.filter(i => i.id !== id) } })
-    setDeleteVisibleId(null)
+    setEditingItem(null)
   }
 
   function toggleStar(item: ShoppingItem) {
@@ -160,10 +153,7 @@ export function ShoppingTab({ tripId }: Props) {
           <div
             key={item.id}
             className={`checklist-item ${item.checked ? 'checked' : ''}`}
-            onTouchStart={() => handleTouchStart(item.id)}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchEnd}
-            onDoubleClick={() => setDeleteVisibleId(prev => prev === item.id ? null : item.id)}
+            onClick={doubleTap(item.id, () => setEditingItem(item))}
           >
             <input
               type="checkbox"
@@ -184,17 +174,9 @@ export function ShoppingTab({ tripId }: Props) {
                 )
               })()}
             </div>
-            <button className={`star-btn ${item.starred ? 'active' : ''}`} onClick={() => toggleStar(item)}>
+            <button className={`star-btn ${item.starred ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); toggleStar(item) }}>
               <FontAwesomeIcon icon={faStar} className={item.starred ? '' : 'opacity-25'} />
             </button>
-            {deleteVisibleId === item.id && (
-              <button
-                onClick={() => deleteItem(item.id)}
-                className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded"
-              >
-                刪除
-              </button>
-            )}
           </div>
         ))}
         {displayed.length === 0 && (
@@ -203,6 +185,17 @@ export function ShoppingTab({ tripId }: Props) {
           </div>
         )}
       </div>
+
+      {/* Edit item popup */}
+      {editingItem && (
+        <Modal title="編輯項目" onClose={() => setEditingItem(null)}>
+          <EditShoppingForm
+            item={editingItem}
+            onSave={updateItem}
+            onDelete={() => deleteItem(editingItem.id)}
+          />
+        </Modal>
+      )}
 
       {/* Full-screen add modal */}
       {showAddModal && (
@@ -236,6 +229,23 @@ export function ShoppingTab({ tripId }: Props) {
           <button className="btn btn-primary w-full" onClick={addItem}>新增</button>
         </FullScreenModal>
       )}
+    </div>
+  )
+}
+
+function EditShoppingForm({ item, onSave, onDelete }: { item: ShoppingItem; onSave: (i: ShoppingItem) => void; onDelete: () => void }) {
+  const [text, setText] = useState(item.text)
+
+  return (
+    <div>
+      <div className="form-group">
+        <label className="form-label">品名</label>
+        <input className="form-input" value={text} onChange={e => setText(e.target.value)} autoFocus />
+      </div>
+      <button className="btn btn-primary w-full" onClick={() => onSave({ ...item, text })}>儲存</button>
+      <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除
+      </button>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
+import { useDoubleTap } from '../../hooks/useDoubleTap'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { InfoRow } from '../../components/InfoRow'
 import { generateId } from '../../utils/id'
@@ -16,6 +17,7 @@ export function HotelTab({ tripId }: Props) {
   const tripData = getTripData(tripId)
   const hotels = tripData.hotels
   const [editing, setEditing] = useState<Hotel | null>(null)
+  const doubleTap = useDoubleTap()
 
   function save(hotel: Hotel) {
     const exists = hotels.find(h => h.id === hotel.id)
@@ -52,7 +54,7 @@ export function HotelTab({ tripId }: Props) {
         <div key={hotel.id} className="card">
           <h3
             className="font-semibold mb-2 cursor-pointer"
-            onDoubleClick={() => setEditing(hotel)}
+            onClick={doubleTap(hotel.id, () => setEditing(hotel))}
           >
             {hotel.name || '飯店'}
           </h3>

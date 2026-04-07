@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faPen, faTrash, faChevronDown, faChevronUp, faNoteSticky } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
@@ -26,6 +26,7 @@ export function ScheduleTab({ tripId }: Props) {
 
   // Edit day state
   const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null)
+  const dayLastTap = useRef<Record<number, number>>({})
 
   // Schedule notes state
   const [editingNote, setEditingNote] = useState<ScheduleNote | null>(null)
@@ -117,8 +118,16 @@ export function ScheduleTab({ tripId }: Props) {
           <div key={dayIndex} className="card mb-2">
             <div
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => toggleDay(dayIndex)}
-              onDoubleClick={(e) => { e.stopPropagation(); setEditingDayIndex(dayIndex) }}
+              onClick={() => {
+                const now = Date.now()
+                if (now - (dayLastTap.current[dayIndex] || 0) < 300) {
+                  setEditingDayIndex(dayIndex)
+                  dayLastTap.current[dayIndex] = 0
+                } else {
+                  toggleDay(dayIndex)
+                  dayLastTap.current[dayIndex] = now
+                }
+              }}
             >
               <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
               <FontAwesomeIcon
