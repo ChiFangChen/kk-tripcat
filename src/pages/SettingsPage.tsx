@@ -75,7 +75,7 @@ export function SettingsPage() {
             <FontAwesomeIcon icon={faPen} />
           </button>
         </div>
-        <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">
+        <p className="text-xs whitespace-pre-wrap text-slate-400 dark:text-slate-500">
           {template.notes || '(無)'}
         </p>
       </div>
