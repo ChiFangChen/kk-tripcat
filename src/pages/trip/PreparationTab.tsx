@@ -131,24 +131,41 @@ export function PreparationTab({ tripId }: Props) {
         </div>
       )}
 
-      {/* Filter toggle + add button */}
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm text-slate-500">
-          {unchecked.length} 項未完成 / {items.length} 項
-        </span>
-        <div className="flex items-center gap-3">
-          <label className="filter-toggle">
-            <input
-              type="checkbox"
-              checked={showCompleted}
-              onChange={e => setShowCompleted(e.target.checked)}
+      {/* Progress bar + add */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex-1">
+          <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: items.length ? `${(checked.length / items.length) * 100}%` : '0%',
+                background: checked.length === items.length && items.length > 0 ? 'var(--color-success)' : 'var(--color-primary)',
+              }}
             />
-            顯示已完成 ({checked.length})
-          </label>
-          <button className="btn btn-primary btn-sm !p-1.5 !rounded-full w-7 h-7 flex items-center justify-center" onClick={openAddModal}>
-            <FontAwesomeIcon icon={faPlus} className="text-xs" />
-          </button>
+          </div>
         </div>
+        <span className="text-xs text-slate-400 w-8 text-right">
+          {items.length ? Math.round((checked.length / items.length) * 100) : 0}%
+        </span>
+        <button className="btn btn-primary btn-sm !p-1.5 !rounded-full w-7 h-7 flex items-center justify-center" onClick={openAddModal}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
+        </button>
+      </div>
+
+      {/* Filter segmented control */}
+      <div className="flex gap-1 mb-3 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+        <button
+          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
+          onClick={() => setShowCompleted(false)}
+        >
+          未完成 ({unchecked.length})
+        </button>
+        <button
+          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
+          onClick={() => setShowCompleted(true)}
+        >
+          全部 ({items.length})
+        </button>
       </div>
 
       {/* Grouped checklist */}
