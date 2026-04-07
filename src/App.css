@@ -25,6 +25,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+input[type="checkbox"] {
+  accent-color: var(--color-primary);
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
@@ -437,11 +441,6 @@ textarea.form-input {
 .got-ready-fab.expanded {
   gap: 8px;
   padding: 8px 12px 8px 16px;
-}
-
-.got-ready-fab.ready {
-  background: var(--color-success);
-  color: white;
 }
 
 @media (prefers-color-scheme: dark) {
