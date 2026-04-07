@@ -220,6 +220,7 @@ export const seedFlights: FlightInfo[] = [
         arrivalTime: '16:20 PM',
         arrivalAirport: 'CNX 清邁國際機場',
         duration: '4 小時',
+        seat: '22K',
       },
       {
         id: 'leg-return',
@@ -233,6 +234,7 @@ export const seedFlights: FlightInfo[] = [
         arrivalAirport: 'TPE 桃園國際機場',
         arrivalTerminal: 'T1',
         duration: '3 小時 50 分鐘',
+        seat: '8K',
       },
     ],
   },
