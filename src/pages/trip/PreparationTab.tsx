@@ -131,39 +131,63 @@ export function PreparationTab({ tripId }: Props) {
       </div>
 
       {/* Grouped checklist */}
-      {categoryOrder.map(category => (
-        <div key={category} className="mb-4">
-          <h3 className="text-sm font-semibold text-slate-500 mb-1">{category}</h3>
-          <div className="card">
-            {grouped[category].map(item => (
-              <div
-                key={item.id}
-                className={`checklist-item ${item.checked ? 'checked' : ''}`}
-                onTouchStart={() => handleTouchStart(item.id)}
-                onTouchEnd={handleTouchEnd}
-                onTouchCancel={handleTouchEnd}
-                onDoubleClick={() => setDeleteVisibleId(prev => prev === item.id ? null : item.id)}
+      {categoryOrder.map(category => {
+        const catItems = grouped[category]
+        const subOrder: string[] = []
+        const subGrouped: Record<string, ChecklistItem[]> = {}
+        for (const item of catItems) {
+          const sub = item.subcategory || ''
+          if (!(sub in subGrouped)) {
+            subGrouped[sub] = []
+            subOrder.push(sub)
+          }
+          subGrouped[sub].push(item)
+        }
+        const hasSubs = subOrder.some(s => s !== '')
+
+        const renderItem = (item: ChecklistItem) => (
+          <div
+            key={item.id}
+            className={`checklist-item ${item.checked ? 'checked' : ''}`}
+            onTouchStart={() => handleTouchStart(item.id)}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            onDoubleClick={() => setDeleteVisibleId(prev => prev === item.id ? null : item.id)}
+          >
+            <input
+              type="checkbox"
+              checked={item.checked}
+              onChange={() => toggleCheck(item.id)}
+              className="w-5 h-5 flex-shrink-0"
+            />
+            <span className="flex-1 text-sm">{item.text}</span>
+            {deleteVisibleId === item.id && (
+              <button
+                onClick={() => deleteItem(item.id)}
+                className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded"
               >
-                <input
-                  type="checkbox"
-                  checked={item.checked}
-                  onChange={() => toggleCheck(item.id)}
-                  className="w-5 h-5 flex-shrink-0"
-                />
-                <span className="flex-1 text-sm">{item.text}</span>
-                {deleteVisibleId === item.id && (
-                  <button
-                    onClick={() => deleteItem(item.id)}
-                    className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded"
-                  >
-                    刪除
-                  </button>
-                )}
-              </div>
-            ))}
+                刪除
+              </button>
+            )}
           </div>
-        </div>
-      ))}
+        )
+
+        return (
+          <div key={category} className="mb-4">
+            <h3 className="text-sm font-semibold text-slate-500 mb-1">{category}</h3>
+            <div className="card">
+              {subOrder.map(sub => (
+                <div key={sub || '_none'}>
+                  {hasSubs && sub && (
+                    <p className="text-xs font-medium text-slate-400 mt-2 mb-0.5 first:mt-0 px-1">{sub}</p>
+                  )}
+                  {subGrouped[sub].map(renderItem)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
 
       {displayed.length === 0 && (
         <div className="empty-state">

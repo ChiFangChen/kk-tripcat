@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faThumbtack, faCat } from '@fortawesome/free-solid-svg-icons'
+import { faThumbtack, faCat, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { generateId } from '../utils/id'
 import type { Trip, TripType, ChecklistItem } from '../types'
@@ -19,6 +19,7 @@ export function TripsPage({ onSelectTrip }: Props) {
 
   // Template selection state
   const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>({})
+  const [selectedSubcategories, setSelectedSubcategories] = useState<Record<string, boolean>>({})
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({})
 
   // Trip info form
@@ -37,16 +38,20 @@ export function TripsPage({ onSelectTrip }: Props) {
   )
 
   function startCreate() {
-    // Init all categories and items as selected
     const cats: Record<string, boolean> = {}
+    const subcats: Record<string, boolean> = {}
     const items: Record<string, boolean> = {}
     for (const cat of state.template.categories) {
       cats[cat.name] = true
       for (const item of cat.items) {
         items[item.id] = true
+        if (item.subcategory) {
+          subcats[`${cat.name}:${item.subcategory}`] = true
+        }
       }
     }
     setSelectedCategories(cats)
+    setSelectedSubcategories(subcats)
     setSelectedItems(items)
     setStep('template')
   }
@@ -54,14 +59,39 @@ export function TripsPage({ onSelectTrip }: Props) {
   function toggleCategory(catName: string) {
     const newVal = !selectedCategories[catName]
     setSelectedCategories(prev => ({ ...prev, [catName]: newVal }))
-    // Toggle all items in this category
     const cat = state.template.categories.find(c => c.name === catName)
     if (cat) {
-      const updates: Record<string, boolean> = {}
+      const itemUpdates: Record<string, boolean> = {}
+      const subUpdates: Record<string, boolean> = {}
       for (const item of cat.items) {
-        updates[item.id] = newVal
+        itemUpdates[item.id] = newVal
+        if (item.subcategory) {
+          subUpdates[`${catName}:${item.subcategory}`] = newVal
+        }
       }
-      setSelectedItems(prev => ({ ...prev, ...updates }))
+      setSelectedItems(prev => ({ ...prev, ...itemUpdates }))
+      setSelectedSubcategories(prev => ({ ...prev, ...subUpdates }))
+    }
+  }
+
+  function toggleSubcategory(catName: string, subName: string) {
+    const key = `${catName}:${subName}`
+    const newVal = !selectedSubcategories[key]
+    setSelectedSubcategories(prev => ({ ...prev, [key]: newVal }))
+    const cat = state.template.categories.find(c => c.name === catName)
+    if (cat) {
+      const itemUpdates: Record<string, boolean> = {}
+      for (const item of cat.items) {
+        if (item.subcategory === subName) {
+          itemUpdates[item.id] = newVal
+        }
+      }
+      setSelectedItems(prev => ({ ...prev, ...itemUpdates }))
+      // Update parent category
+      const anyChecked = cat.items.some(item =>
+        item.subcategory === subName ? newVal : selectedItems[item.id]
+      )
+      setSelectedCategories(prev => ({ ...prev, [catName]: anyChecked }))
     }
   }
 
@@ -69,17 +99,19 @@ export function TripsPage({ onSelectTrip }: Props) {
     const newVal = !selectedItems[itemId]
     setSelectedItems(prev => ({ ...prev, [itemId]: newVal }))
 
-    // Update category: if all items unchecked, uncheck category; if any checked, check category
     const cat = state.template.categories.find(c => c.name === catName)
     if (cat) {
-      const allUnchecked = cat.items.every(item =>
-        item.id === itemId ? !newVal : !selectedItems[item.id]
-      )
-      if (allUnchecked) {
-        setSelectedCategories(prev => ({ ...prev, [catName]: false }))
-      } else {
-        setSelectedCategories(prev => ({ ...prev, [catName]: true }))
+      const item = cat.items.find(i => i.id === itemId)
+      // Update subcategory state
+      if (item?.subcategory) {
+        const subKey = `${catName}:${item.subcategory}`
+        const subItems = cat.items.filter(i => i.subcategory === item.subcategory)
+        const anySubChecked = subItems.some(i => i.id === itemId ? newVal : selectedItems[i.id])
+        setSelectedSubcategories(prev => ({ ...prev, [subKey]: anySubChecked }))
       }
+      // Update category state
+      const anyChecked = cat.items.some(i => i.id === itemId ? newVal : selectedItems[i.id])
+      setSelectedCategories(prev => ({ ...prev, [catName]: anyChecked }))
     }
   }
 
@@ -88,6 +120,24 @@ export function TripsPage({ onSelectTrip }: Props) {
     if (!cat) return false
     const checkedCount = cat.items.filter(item => selectedItems[item.id]).length
     return checkedCount > 0 && checkedCount < cat.items.length
+  }
+
+  function isSubcategoryPartial(catName: string, subName: string) {
+    const cat = state.template.categories.find(c => c.name === catName)
+    if (!cat) return false
+    const subItems = cat.items.filter(i => i.subcategory === subName)
+    const checkedCount = subItems.filter(i => selectedItems[i.id]).length
+    return checkedCount > 0 && checkedCount < subItems.length
+  }
+
+  function getSubcategories(cat: typeof state.template.categories[0]) {
+    const subs: string[] = []
+    for (const item of cat.items) {
+      if (item.subcategory && !subs.includes(item.subcategory)) {
+        subs.push(item.subcategory)
+      }
+    }
+    return subs
   }
 
   function goToInfo() {
@@ -121,6 +171,7 @@ export function TripsPage({ onSelectTrip }: Props) {
             text: item.text,
             checked: false,
             category: cat.name,
+            subcategory: item.subcategory,
           })
         }
       }
@@ -157,7 +208,7 @@ export function TripsPage({ onSelectTrip }: Props) {
     return (
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
-          <button className="text-sky-500 text-sm" onClick={() => setStep('list')}>← 取消</button>
+          <button className="text-sky-600 p-2" onClick={() => setStep('list')}><FontAwesomeIcon icon={faChevronLeft} /></button>
           <h1 className="text-lg font-bold">選擇準備項目</h1>
           <button className="btn btn-primary btn-sm" onClick={goToInfo}>下一步 →</button>
         </div>
@@ -186,17 +237,55 @@ export function TripsPage({ onSelectTrip }: Props) {
             </label>
             {selectedCategories[cat.name] && (
               <div className="ml-4 mt-1">
-                {cat.items.map(item => (
-                  <label key={item.id} className="flex items-center gap-3 py-1.5 cursor-pointer text-sm">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems[item.id] || false}
-                      onChange={() => toggleItem(item.id, cat.name)}
-                      className="w-4 h-4 flex-shrink-0"
-                    />
-                    {item.text}
-                  </label>
-                ))}
+                {(() => {
+                  const subs = getSubcategories(cat)
+                  const noSubItems = cat.items.filter(i => !i.subcategory)
+                  return (
+                    <>
+                      {noSubItems.map(item => (
+                        <label key={item.id} className="flex items-center gap-3 py-1.5 cursor-pointer text-sm">
+                          <input
+                            type="checkbox"
+                            checked={selectedItems[item.id] || false}
+                            onChange={() => toggleItem(item.id, cat.name)}
+                            className="w-4 h-4 flex-shrink-0"
+                          />
+                          {item.text}
+                        </label>
+                      ))}
+                      {subs.map(sub => (
+                        <div key={sub} className="mt-1">
+                          <label className="flex items-center gap-3 py-1.5 cursor-pointer text-sm font-medium text-slate-600 dark:text-slate-300">
+                            <input
+                              type="checkbox"
+                              checked={selectedSubcategories[`${cat.name}:${sub}`] || false}
+                              ref={(el) => { if (el) el.indeterminate = isSubcategoryPartial(cat.name, sub) }}
+                              onChange={() => toggleSubcategory(cat.name, sub)}
+                              className="w-4 h-4 flex-shrink-0"
+                            />
+                            {sub}
+                            <span className="text-slate-400 font-normal ml-auto text-xs">
+                              {cat.items.filter(i => i.subcategory === sub && selectedItems[i.id]).length}/{cat.items.filter(i => i.subcategory === sub).length}
+                            </span>
+                          </label>
+                          <div className="ml-6">
+                            {cat.items.filter(i => i.subcategory === sub).map(item => (
+                              <label key={item.id} className="flex items-center gap-3 py-1.5 cursor-pointer text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedItems[item.id] || false}
+                                  onChange={() => toggleItem(item.id, cat.name)}
+                                  className="w-4 h-4 flex-shrink-0"
+                                />
+                                {item.text}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )
+                })()}
               </div>
             )}
           </div>
@@ -210,7 +299,7 @@ export function TripsPage({ onSelectTrip }: Props) {
     return (
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
-          <button className="text-sky-500 text-sm" onClick={() => setStep('template')}>← 返回</button>
+          <button className="text-sky-600 p-2" onClick={() => setStep('template')}><FontAwesomeIcon icon={faChevronLeft} /></button>
           <h1 className="text-lg font-bold">旅程資訊</h1>
           <div className="w-12" />
         </div>
