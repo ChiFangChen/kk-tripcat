@@ -243,12 +243,12 @@ export const seedHotels: Hotel[] = [
     booking: {
       platform: 'K BOOKING',
       orderNumber: '6406376028',
-      amount: 'THB 10,944（2026／4／6 刷卡）',
+      amount: 'THB 10,944（2026/04/06 刷卡）',
     },
     address: 'Rachadamnoen Rd Soi 3, Tambon Si Phum, Amphoe Mueang Chiang Mai, Si Phum, 50300 清邁, 泰國',
     phone: '+66 92 665 0404',
-    checkIn: '2026／4／9（四）14:00～23:30',
-    checkOut: '2026／4／14（二）6:00～12:00',
+    checkIn: '2026/04/09（四）14:00～23:30',
+    checkOut: '2026/04/14（二）6:00～12:00',
     roomType: '園景雙床房',
     guests: '2 位成人',
     note: '5 晚',
@@ -258,7 +258,7 @@ export const seedHotels: Hotel[] = [
 export const seedSchedule: ScheduleDay[] = [
   {
     date: '2026-04-09',
-    label: '4／9（四）',
+    label: '2026/04/09（四）',
     activities: [
       { id: 'a-1-1', time: '13:20', name: '台北出發' },
       { id: 'a-1-2', time: '16:20', name: '抵達清邁' },
@@ -274,7 +274,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-10',
-    label: '4／10（五）',
+    label: '2026/04/10（五）',
     activities: [
       {
         id: 'a-2-1',
@@ -291,7 +291,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-11',
-    label: '4／11（六）',
+    label: '2026/04/11（六）',
     activities: [
       { id: 'a-3-0', name: '潑水節（start）' },
       { id: 'a-3-1', name: '[早午餐] No.39 Cafe' },
@@ -308,7 +308,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-12',
-    label: '4／12（日）',
+    label: '2026/04/12（日）',
     activities: [
       { id: 'a-4-0', name: '潑水節（crazy）' },
       { id: 'a-4-1', name: '[早午餐]' },
@@ -319,7 +319,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-13',
-    label: '4／13（一）',
+    label: '2026/04/13（一）',
     activities: [
       { id: 'a-5-0', name: '潑水日（insane）' },
       { id: 'a-5-1', name: '[咖啡] Roast8ry Coffee Flagship Store' },
@@ -328,7 +328,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-14',
-    label: '4／14（二）',
+    label: '2026/04/14（二）',
     activities: [
       { id: 'a-6-1', name: '[早午餐]' },
       { id: 'a-6-2', name: '按摩' },
