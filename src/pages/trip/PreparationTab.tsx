@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCircleCheck, faSuitcaseRolling, faThumbtack, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faCircleCheck, faSuitcaseRolling, faThumbtack, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { FullScreenModal } from '../../components/FullScreenModal'
+import { Modal } from '../../components/Modal'
 import { generateId } from '../../utils/id'
 import type { ChecklistItem } from '../../types'
 
@@ -16,7 +17,7 @@ export function PreparationTab({ tripId }: Props) {
   const trip = state.trips.find(t => t.id === tripId)
   const [showCompleted, setShowCompleted] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
-  const [deleteVisibleId, setDeleteVisibleId] = useState<string | null>(null)
+  const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null)
   const [fabExpanded, setFabExpanded] = useState(false)
   const fabTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -51,22 +52,6 @@ export function PreparationTab({ tripId }: Props) {
     grouped[cat].push(item)
   }
 
-  // Long press handling
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const handleTouchStart = useCallback((id: string) => {
-    longPressTimer.current = setTimeout(() => {
-      setDeleteVisibleId(prev => prev === id ? null : id)
-    }, 500)
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-  }, [])
-
   function toggleCheck(id: string) {
     const updated = items.map(i => i.id === id ? { ...i, checked: !i.checked } : i)
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: updated } })
@@ -94,9 +79,14 @@ export function PreparationTab({ tripId }: Props) {
     setShowAddModal(false)
   }
 
+  function updateItem(updated: ChecklistItem) {
+    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: items.map(i => i.id === updated.id ? updated : i) } })
+    setEditingItem(null)
+  }
+
   function deleteItem(id: string) {
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: items.filter(i => i.id !== id) } })
-    setDeleteVisibleId(null)
+    setEditingItem(null)
   }
 
   function handleFabClick() {
@@ -195,10 +185,7 @@ export function PreparationTab({ tripId }: Props) {
           <div
             key={item.id}
             className={`checklist-item ${item.checked ? 'checked' : ''}`}
-            onTouchStart={() => handleTouchStart(item.id)}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchEnd}
-            onDoubleClick={() => setDeleteVisibleId(prev => prev === item.id ? null : item.id)}
+            onDoubleClick={() => setEditingItem(item)}
           >
             <input
               type="checkbox"
@@ -207,14 +194,6 @@ export function PreparationTab({ tripId }: Props) {
               className="w-5 h-5 flex-shrink-0"
             />
             <span className="flex-1 text-sm">{item.text}</span>
-            {deleteVisibleId === item.id && (
-              <button
-                onClick={() => deleteItem(item.id)}
-                className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded"
-              >
-                刪除
-              </button>
-            )}
           </div>
         )
 
@@ -239,6 +218,17 @@ export function PreparationTab({ tripId }: Props) {
         <div className="empty-state">
           <p>{showCompleted ? '清單是空的' : '全部準備好了！'}</p>
         </div>
+      )}
+
+      {/* Edit item popup */}
+      {editingItem && (
+        <Modal title="編輯項目" onClose={() => setEditingItem(null)}>
+          <EditItemForm
+            item={editingItem}
+            onSave={updateItem}
+            onDelete={() => deleteItem(editingItem.id)}
+          />
+        </Modal>
       )}
 
       {/* Add item full-screen popup */}
@@ -293,6 +283,23 @@ export function PreparationTab({ tripId }: Props) {
           <button className="btn btn-primary w-full" onClick={addItem}>新增</button>
         </FullScreenModal>
       )}
+    </div>
+  )
+}
+
+function EditItemForm({ item, onSave, onDelete }: { item: ChecklistItem; onSave: (i: ChecklistItem) => void; onDelete: () => void }) {
+  const [text, setText] = useState(item.text)
+
+  return (
+    <div>
+      <div className="form-group">
+        <label className="form-label">項目內容</label>
+        <input className="form-input" value={text} onChange={e => setText(e.target.value)} autoFocus />
+      </div>
+      <button className="btn btn-primary w-full" onClick={() => onSave({ ...item, text })}>儲存</button>
+      <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除
+      </button>
     </div>
   )
 }

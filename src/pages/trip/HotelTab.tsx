@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { InfoRow } from '../../components/InfoRow'
@@ -28,6 +28,7 @@ export function HotelTab({ tripId }: Props) {
 
   function remove(id: string) {
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { hotels: hotels.filter(h => h.id !== id) } })
+    setEditing(null)
   }
 
   function newHotel(): Hotel {
@@ -49,17 +50,12 @@ export function HotelTab({ tripId }: Props) {
 
       {hotels.map(hotel => (
         <div key={hotel.id} className="card">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold">{hotel.name || '飯店'}</h3>
-            <div className="flex gap-2">
-              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditing(hotel)}>
-                <FontAwesomeIcon icon={faPen} />
-              </button>
-              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => remove(hotel.id)}>
-                <FontAwesomeIcon icon={faTrash} />
-              </button>
-            </div>
-          </div>
+          <h3
+            className="font-semibold mb-2 cursor-pointer"
+            onDoubleClick={() => setEditing(hotel)}
+          >
+            {hotel.name || '飯店'}
+          </h3>
 
           {hotel.booking?.platform && (
             <InfoRow label="訂房平台" value={
@@ -89,14 +85,14 @@ export function HotelTab({ tripId }: Props) {
 
       {editing && (
         <FullScreenModal title={editing.name ? '編輯飯店' : '新增飯店'} onClose={() => setEditing(null)}>
-          <HotelForm hotel={editing} onSave={save} />
+          <HotelForm hotel={editing} onSave={save} onDelete={editing.name ? () => remove(editing.id) : undefined} />
         </FullScreenModal>
       )}
     </div>
   )
 }
 
-function HotelForm({ hotel, onSave }: { hotel: Hotel; onSave: (h: Hotel) => void }) {
+function HotelForm({ hotel, onSave, onDelete }: { hotel: Hotel; onSave: (h: Hotel) => void; onDelete?: () => void }) {
   const [form, setForm] = useState(hotel)
   const [booking, setBooking] = useState(hotel.booking || {})
 
@@ -120,6 +116,11 @@ function HotelForm({ hotel, onSave }: { hotel: Hotel; onSave: (h: Hotel) => void
       <div className="form-group"><label className="form-label">人數</label><input className="form-input" value={form.guests || ''} onChange={e => setForm({ ...form, guests: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">備註</label><textarea className="form-input" value={form.note || ''} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
       <button className="btn btn-primary w-full" onClick={handleSave}>儲存</button>
+      {onDelete && (
+        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除飯店
+        </button>
+      )}
     </div>
   )
 }
