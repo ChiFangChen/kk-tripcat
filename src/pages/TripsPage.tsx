@@ -187,6 +187,7 @@ export function TripsPage({ onSelectTrip }: Props) {
         flights: [],
         hotels: [],
         schedule: [],
+        scheduleNotes: [],
         transport: [],
         shopping: [],
       },

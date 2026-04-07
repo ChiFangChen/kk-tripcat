@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlus, faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
-import { Modal } from '../../components/Modal'
+import { FullScreenModal } from '../../components/FullScreenModal'
 import { InfoRow } from '../../components/InfoRow'
 import { generateId } from '../../utils/id'
 import type { FlightInfo, FlightLeg } from '../../types'
@@ -67,7 +69,9 @@ export function FlightTab({ tripId }: Props) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">航班資訊</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditingFlight(newFlight())}>+ 航班</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setEditingFlight(newFlight())}>
+          <FontAwesomeIcon icon={faPlus} className="mr-1" />航班
+        </button>
       </div>
 
       {flights.length === 0 && (
@@ -79,8 +83,12 @@ export function FlightTab({ tripId }: Props) {
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold">{flight.airline || '航班'}</h3>
             <div className="flex gap-2">
-              <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingFlight(flight)}>編輯</button>
-              <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteFlight(flight.id)}>刪除</button>
+              <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingFlight(flight)}>
+                <FontAwesomeIcon icon={faPen} />
+              </button>
+              <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteFlight(flight.id)}>
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
             </div>
           </div>
 
@@ -97,8 +105,12 @@ export function FlightTab({ tripId }: Props) {
               <div className="flex justify-between items-center mb-2">
                 <span className="font-medium text-sm">{leg.direction}</span>
                 <div className="flex gap-2">
-                  <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}>編輯</button>
-                  <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteLeg(flight.id, leg.id)}>刪除</button>
+                  <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}>
+                    <FontAwesomeIcon icon={faPen} />
+                  </button>
+                  <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteLeg(flight.id, leg.id)}>
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
                 </div>
               </div>
               <InfoRow label="日期" value={leg.date} />
@@ -113,23 +125,23 @@ export function FlightTab({ tripId }: Props) {
             className="btn btn-secondary btn-sm mt-3"
             onClick={() => { setEditingLeg(newLeg()); setEditingFlightId(flight.id) }}
           >
-            + 航段
+            <FontAwesomeIcon icon={faPlus} className="mr-1" />航段
           </button>
         </div>
       ))}
 
       {/* Flight edit modal */}
       {editingFlight && (
-        <Modal title={editingFlight.airline ? '編輯航班' : '新增航班'} onClose={() => setEditingFlight(null)}>
+        <FullScreenModal title={editingFlight.airline ? '編輯航班' : '新增航班'} onClose={() => setEditingFlight(null)}>
           <FlightForm flight={editingFlight} onSave={saveFlight} />
-        </Modal>
+        </FullScreenModal>
       )}
 
       {/* Leg edit modal */}
       {editingLeg && editingFlightId && (
-        <Modal title="航段" onClose={() => { setEditingLeg(null); setEditingFlightId(null) }}>
+        <FullScreenModal title="航段" onClose={() => { setEditingLeg(null); setEditingFlightId(null) }}>
           <LegForm leg={editingLeg} onSave={(leg) => saveLeg(editingFlightId, leg)} />
-        </Modal>
+        </FullScreenModal>
       )}
     </div>
   )

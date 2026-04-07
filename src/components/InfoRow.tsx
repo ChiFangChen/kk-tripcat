@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react'
+
 interface Props {
   label: string
-  value?: string
+  value?: string | ReactNode
   isLink?: boolean
 }
 
@@ -10,7 +12,7 @@ export function InfoRow({ label, value, isLink }: Props) {
   return (
     <div className="info-row">
       <span className="info-label">{label}</span>
-      {isLink ? (
+      {isLink && typeof value === 'string' ? (
         <a href={value} target="_blank" rel="noopener noreferrer" className="text-sky-500 break-all">
           {value}
         </a>
