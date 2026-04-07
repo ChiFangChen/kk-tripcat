@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faStar, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faStar, faPlus, faTrash, faPen } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { Modal } from '../../components/Modal'
 import { generateId } from '../../utils/id'
 import { formatDate } from '../../utils/date'
+import { ImageUpload } from '../../components/ImageUpload'
 import type { FavoriteItem, Purchase } from '../../types'
 
 export function FavoritesSection() {
@@ -61,11 +62,15 @@ export function FavoritesSection() {
       ) : (
         state.favorites.map(fav => (
           <div key={fav.id} className="card">
+            {fav.imageUrl && <img src={fav.imageUrl} alt="" className="w-full rounded-lg max-h-48 object-cover mb-2" />}
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-semibold"><FontAwesomeIcon icon={faStar} className="text-amber-400 mr-1" />{fav.name}</h3>
               <div className="flex gap-2">
                 <button className="btn-round-add !w-6 !h-6" onClick={() => setAddingPurchaseTo(fav.id)}>
                   <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
+                </button>
+                <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditing(fav)}>
+                  <FontAwesomeIcon icon={faPen} />
                 </button>
                 <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => remove(fav.id)}>
                   <FontAwesomeIcon icon={faTrash} />
@@ -97,12 +102,16 @@ export function FavoritesSection() {
         ))
       )}
 
-      {/* New favorite modal */}
+      {/* New/Edit favorite modal */}
       {editing && (
-        <Modal title="新增喜歡的東西" onClose={() => setEditing(null)}>
+        <Modal title={state.favorites.find(f => f.id === editing.id) ? '編輯喜歡的東西' : '新增喜歡的東西'} onClose={() => setEditing(null)}>
           <FavoriteForm
             favorite={editing}
-            onSave={(fav) => { dispatch({ type: 'ADD_FAVORITE', favorite: fav }); setEditing(null) }}
+            onSave={(fav) => {
+              const exists = state.favorites.find(f => f.id === fav.id)
+              dispatch({ type: exists ? 'UPDATE_FAVORITE' : 'ADD_FAVORITE', favorite: fav })
+              setEditing(null)
+            }}
           />
         </Modal>
       )}
@@ -118,11 +127,20 @@ export function FavoritesSection() {
 }
 
 function FavoriteForm({ favorite, onSave }: { favorite: FavoriteItem; onSave: (f: FavoriteItem) => void }) {
-  const [name, setName] = useState(favorite.name)
+  const [form, setForm] = useState(favorite)
   return (
     <div>
-      <div className="form-group"><label className="form-label">名稱</label><input className="form-input" value={name} onChange={e => setName(e.target.value)} /></div>
-      <button className="btn btn-primary w-full" onClick={() => onSave({ ...favorite, name })}>儲存</button>
+      <div className="form-group"><label className="form-label">名稱</label><input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <ImageUpload
+          imageUrl={form.imageUrl}
+          storagePath="tc-images/favorites"
+          onUploaded={url => setForm({ ...form, imageUrl: url })}
+          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        />
+      </div>
+      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>儲存</button>
     </div>
   )
 }

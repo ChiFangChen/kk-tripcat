@@ -7,6 +7,7 @@ import { FullScreenModal } from '../../components/FullScreenModal'
 import { Modal } from '../../components/Modal'
 import { InfoRow } from '../../components/InfoRow'
 import { generateId } from '../../utils/id'
+import { ImageUpload } from '../../components/ImageUpload'
 import { formatDate, isToday } from '../../utils/date'
 import type { ScheduleDay, ScheduleActivity, ScheduleNote, BookingInfo } from '../../types'
 
@@ -183,6 +184,7 @@ export function ScheduleTab({ tripId }: Props) {
               </div>
             </div>
             <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">{note.content}</p>
+            {note.imageUrl && <img src={note.imageUrl} alt="" className="w-full rounded-lg mt-2 max-h-48 object-cover" />}
           </div>
         ))
       )}
@@ -321,6 +323,15 @@ function NoteForm({ note, onSave }: { note: ScheduleNote; onSave: (n: ScheduleNo
     <div>
       <div className="form-group"><label className="form-label">標題</label><input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="例：備選餐廳" /></div>
       <div className="form-group"><label className="form-label">內容</label><textarea className="form-input" rows={8} value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="自由記錄..." /></div>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <ImageUpload
+          imageUrl={form.imageUrl}
+          storagePath="tc-images/schedule-notes"
+          onUploaded={url => setForm({ ...form, imageUrl: url })}
+          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        />
+      </div>
       <button className="btn btn-primary w-full" onClick={() => onSave(form)}>儲存</button>
     </div>
   )

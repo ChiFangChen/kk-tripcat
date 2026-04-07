@@ -1,5 +1,6 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { getAuth, signInAnonymously } from 'firebase/auth'
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import {
   getFirestore,
   collection,
@@ -162,4 +163,25 @@ export function subscribeToTemplate(
 
 export async function syncTemplate(db: Firestore, userId: string, template: Template): Promise<void> {
   await setDoc(doc(db, 'tcTemplates', userId), template)
+}
+
+// --- Image Storage ---
+
+export async function uploadImage(path: string, file: Blob): Promise<string> {
+  if (!app) throw new Error('Firebase not initialized')
+  const storage = getStorage(app)
+  const storageRef = ref(storage, path)
+  await uploadBytes(storageRef, file)
+  return getDownloadURL(storageRef)
+}
+
+export async function deleteImage(path: string): Promise<void> {
+  if (!app) throw new Error('Firebase not initialized')
+  const storage = getStorage(app)
+  const storageRef = ref(storage, path)
+  try {
+    await deleteObject(storageRef)
+  } catch {
+    // ignore if not found
+  }
 }

@@ -7,6 +7,7 @@ import { Modal } from '../../components/Modal'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { generateId } from '../../utils/id'
 import { formatDate } from '../../utils/date'
+import { ImageUpload } from '../../components/ImageUpload'
 import type { ShoppingItem, FavoriteItem } from '../../types'
 
 interface Props {
@@ -161,6 +162,7 @@ export function ShoppingTab({ tripId }: Props) {
               onChange={() => toggleCheck(item.id)}
               className="w-5 h-5 flex-shrink-0"
             />
+            {item.imageUrl && <img src={item.imageUrl} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />}
             <div className="flex-1">
               <span className="text-sm">{item.text}</span>
               {item.starred && (() => {
@@ -234,15 +236,24 @@ export function ShoppingTab({ tripId }: Props) {
 }
 
 function EditShoppingForm({ item, onSave, onDelete }: { item: ShoppingItem; onSave: (i: ShoppingItem) => void; onDelete: () => void }) {
-  const [text, setText] = useState(item.text)
+  const [form, setForm] = useState(item)
 
   return (
     <div>
       <div className="form-group">
         <label className="form-label">品名</label>
-        <input className="form-input" value={text} onChange={e => setText(e.target.value)} autoFocus />
+        <input className="form-input" value={form.text} onChange={e => setForm({ ...form, text: e.target.value })} autoFocus />
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onSave({ ...item, text })}>儲存</button>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <ImageUpload
+          imageUrl={form.imageUrl}
+          storagePath="tc-images/shopping"
+          onUploaded={url => setForm({ ...form, imageUrl: url })}
+          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        />
+      </div>
+      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>儲存</button>
       <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
         <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除
       </button>
