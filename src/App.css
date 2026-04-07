@@ -546,6 +546,10 @@ textarea.form-input {
 }
 
 /* Auth pages */
+.identity-page .form-group input {
+  background-color: var(--color-card);
+}
+
 .identity-page {
   display: flex;
   flex-direction: column;
