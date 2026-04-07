@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronLeft } from '@fortawesome/free-solid-svg-icons'
+import { faChevronLeft, faUsers, faUser } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
+import { MemberMenu } from '../components/MemberMenu'
+import { UserMenu } from '../components/UserMenu'
 import { PreparationTab } from './trip/PreparationTab'
 import { FlightTab } from './trip/FlightTab'
 import { HotelTab } from './trip/HotelTab'
@@ -29,6 +31,9 @@ export function TripDetailPage({ tripId, onBack }: Props) {
   const { state } = useApp()
   const trip = state.trips.find(t => t.id === tripId)
 
+  const [showMembers, setShowMembers] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+
   const storageKey = `trip-tab-${tripId}`
   const [activeTab, setActiveTab] = useState<TripTabType>(() => {
     return storage.getItem<TripTabType>(storageKey) || 'preparation'
@@ -50,7 +55,14 @@ export function TripDetailPage({ tripId, onBack }: Props) {
       <div className="page-header">
         <button onClick={onBack} className="text-sky-600 p-2"><FontAwesomeIcon icon={faChevronLeft} /></button>
         <h1>{trip.name}</h1>
-        <div className="w-12" />
+        <div className="flex items-center gap-1">
+          <button className="header-icon-btn" onClick={() => setShowMembers(true)}>
+            <FontAwesomeIcon icon={faUsers} />
+          </button>
+          <button className="identity-badge" onClick={() => setShowUserMenu(true)}>
+            <FontAwesomeIcon icon={faUser} />
+          </button>
+        </div>
       </div>
 
       <div className="trip-tabs">
@@ -74,6 +86,9 @@ export function TripDetailPage({ tripId, onBack }: Props) {
         {activeTab === 'transport' && <TransportTab tripId={tripId} />}
         {activeTab === 'shopping' && <ShoppingTab tripId={tripId} />}
       </div>
+
+      {showMembers && <MemberMenu tripId={tripId} onClose={() => setShowMembers(false)} />}
+      {showUserMenu && <UserMenu onClose={() => setShowUserMenu(false)} />}
     </div>
   )
 }
