@@ -100,9 +100,14 @@ export interface ShoppingItem {
 
 export interface Template {
   id: string
-  name: string
-  preparationItems: TemplateItem[]
+  notes: string
+  categories: TemplateCategory[]
   shoppingItems: TemplateItem[]
+}
+
+export interface TemplateCategory {
+  name: string
+  items: TemplateItem[]
 }
 
 export interface TemplateItem {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { generateId } from '../../utils/id'
 import type { ChecklistItem } from '../../types'
@@ -8,26 +8,47 @@ interface Props {
 }
 
 export function PreparationTab({ tripId }: Props) {
-  const { state, dispatch, getTripData, cloneTemplate } = useApp()
+  const { state, dispatch, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const trip = state.trips.find(t => t.id === tripId)
   const [showCompleted, setShowCompleted] = useState(false)
   const [newItem, setNewItem] = useState('')
   const [newCategory, setNewCategory] = useState('')
-  const [showClone, setShowClone] = useState(false)
+  const [deleteVisibleId, setDeleteVisibleId] = useState<string | null>(null)
 
   const items = tripData.checklist
+  const notes = tripData.preparationNotes
   const unchecked = items.filter(i => !i.checked)
   const checked = items.filter(i => i.checked)
   const displayed = showCompleted ? items : unchecked
 
-  // Group by category
-  const grouped = displayed.reduce<Record<string, ChecklistItem[]>>((acc, item) => {
+  // Group by category, preserving order
+  const categoryOrder: string[] = []
+  const grouped: Record<string, ChecklistItem[]> = {}
+  for (const item of displayed) {
     const cat = item.category || '其他'
-    if (!acc[cat]) acc[cat] = []
-    acc[cat].push(item)
-    return acc
-  }, {})
+    if (!grouped[cat]) {
+      grouped[cat] = []
+      categoryOrder.push(cat)
+    }
+    grouped[cat].push(item)
+  }
+
+  // Long press handling
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleTouchStart = useCallback((id: string) => {
+    longPressTimer.current = setTimeout(() => {
+      setDeleteVisibleId(prev => prev === id ? null : id)
+    }, 500)
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }, [])
 
   function toggleCheck(id: string) {
     const updated = items.map(i => i.id === id ? { ...i, checked: !i.checked } : i)
@@ -48,16 +69,12 @@ export function PreparationTab({ tripId }: Props) {
 
   function deleteItem(id: string) {
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: items.filter(i => i.id !== id) } })
+    setDeleteVisibleId(null)
   }
 
   function toggleGotReady() {
     if (!trip) return
     dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, gotReady: !trip.gotReady } })
-  }
-
-  function handleClone(templateId: string) {
-    cloneTemplate(templateId, tripId)
-    setShowClone(false)
   }
 
   return (
@@ -69,21 +86,11 @@ export function PreparationTab({ tripId }: Props) {
         {trip?.gotReady ? '✅ 準備完成！' : '🎒 Got Ready!'}
       </button>
 
-      {/* Clone from template */}
-      {state.templates.length > 0 && (
-        <div className="mb-4">
-          <button className="btn btn-secondary btn-sm" onClick={() => setShowClone(!showClone)}>
-            📋 從模板匯入
-          </button>
-          {showClone && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {state.templates.map(t => (
-                <button key={t.id} className="btn btn-sm btn-primary" onClick={() => handleClone(t.id)}>
-                  {t.name}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Notes block */}
+      {notes && (
+        <div className="card mb-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+          <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">📌 注意事項</p>
+          <p className="text-sm whitespace-pre-wrap">{notes}</p>
         </div>
       )}
 
@@ -121,12 +128,19 @@ export function PreparationTab({ tripId }: Props) {
       </div>
 
       {/* Grouped checklist */}
-      {Object.entries(grouped).map(([category, categoryItems]) => (
+      {categoryOrder.map(category => (
         <div key={category} className="mb-4">
           <h3 className="text-sm font-semibold text-slate-500 mb-1">{category}</h3>
           <div className="card">
-            {categoryItems.map(item => (
-              <div key={item.id} className={`checklist-item ${item.checked ? 'checked' : ''}`}>
+            {grouped[category].map(item => (
+              <div
+                key={item.id}
+                className={`checklist-item ${item.checked ? 'checked' : ''}`}
+                onTouchStart={() => handleTouchStart(item.id)}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchEnd}
+                onDoubleClick={() => setDeleteVisibleId(prev => prev === item.id ? null : item.id)}
+              >
                 <input
                   type="checkbox"
                   checked={item.checked}
@@ -134,7 +148,14 @@ export function PreparationTab({ tripId }: Props) {
                   className="w-5 h-5 flex-shrink-0"
                 />
                 <span className="flex-1 text-sm">{item.text}</span>
-                <button onClick={() => deleteItem(item.id)} className="text-red-400 text-xs">✕</button>
+                {deleteVisibleId === item.id && (
+                  <button
+                    onClick={() => deleteItem(item.id)}
+                    className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded"
+                  >
+                    刪除
+                  </button>
+                )}
               </div>
             ))}
           </div>

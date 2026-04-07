@@ -1,11 +1,11 @@
-import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react'
 import type { Trip, Template, TipNote, FavoriteItem, ChecklistItem, FlightInfo, Hotel, ScheduleDay, TransportItem, ShoppingItem } from '../types'
 import * as storage from '../utils/storage'
-import { generateId } from '../utils/id'
-import { seedTrip, seedChecklist, seedFlights, seedHotels, seedSchedule, seedTransport } from '../data/seed'
+import { seedTrip, seedChecklist, seedFlights, seedHotels, seedSchedule, seedTransport, seedPreparationNotes, defaultTemplate } from '../data/seed'
 
-interface TripData {
+export interface TripData {
   checklist: ChecklistItem[]
+  preparationNotes: string
   flights: FlightInfo[]
   hotels: Hotel[]
   schedule: ScheduleDay[]
@@ -15,7 +15,7 @@ interface TripData {
 
 interface AppState {
   trips: Trip[]
-  templates: Template[]
+  template: Template
   tips: TipNote[]
   favorites: FavoriteItem[]
   tripData: Record<string, TripData>
@@ -29,9 +29,7 @@ type Action =
   | { type: 'UPDATE_TRIP'; trip: Trip }
   | { type: 'DELETE_TRIP'; tripId: string }
   | { type: 'SET_TRIP_DATA'; tripId: string; data: Partial<TripData> }
-  | { type: 'ADD_TEMPLATE'; template: Template }
-  | { type: 'UPDATE_TEMPLATE'; template: Template }
-  | { type: 'DELETE_TEMPLATE'; templateId: string }
+  | { type: 'SET_TEMPLATE'; template: Template }
   | { type: 'ADD_TIP'; tip: TipNote }
   | { type: 'UPDATE_TIP'; tip: TipNote }
   | { type: 'DELETE_TIP'; tipId: string }
@@ -42,20 +40,12 @@ type Action =
 
 const initialTripData: TripData = {
   checklist: [],
+  preparationNotes: '',
   flights: [],
   hotels: [],
   schedule: [],
   transport: [],
   shopping: [],
-}
-
-const initialState: AppState = {
-  trips: [],
-  templates: [],
-  tips: [],
-  favorites: [],
-  tripData: {},
-  userId: null,
 }
 
 function reducer(state: AppState, action: Action): AppState {
@@ -81,12 +71,8 @@ function reducer(state: AppState, action: Action): AppState {
           [action.tripId]: { ...(state.tripData[action.tripId] || initialTripData), ...action.data },
         },
       }
-    case 'ADD_TEMPLATE':
-      return { ...state, templates: [...state.templates, action.template] }
-    case 'UPDATE_TEMPLATE':
-      return { ...state, templates: state.templates.map(t => t.id === action.template.id ? action.template : t) }
-    case 'DELETE_TEMPLATE':
-      return { ...state, templates: state.templates.filter(t => t.id !== action.templateId) }
+    case 'SET_TEMPLATE':
+      return { ...state, template: action.template }
     case 'ADD_TIP':
       return { ...state, tips: [action.tip, ...state.tips] }
     case 'UPDATE_TIP':
@@ -110,85 +96,60 @@ interface AppContextType {
   state: AppState
   dispatch: React.Dispatch<Action>
   getTripData: (tripId: string) => TripData
-  cloneTemplate: (templateId: string, tripId: string) => void
 }
 
 const AppContext = createContext<AppContextType | null>(null)
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState)
+function loadInitialState(): AppState {
+  const seeded = storage.getItem<boolean>('seeded-v2')
+  let trips = storage.getItem<Trip[]>('trips') || []
+  const template = storage.getItem<Template>('template') || defaultTemplate
+  const tips = storage.getItem<TipNote[]>('tips') || []
+  const favorites = storage.getItem<FavoriteItem[]>('favorites') || []
+  let tripData = storage.getItem<Record<string, TripData>>('tripData') || {}
 
-  // Load from localStorage on mount, seed if first time
-  useEffect(() => {
-    const seeded = storage.getItem<boolean>('seeded')
-    let trips = storage.getItem<Trip[]>('trips') || []
-    const templates = storage.getItem<Template[]>('templates') || []
-    const tips = storage.getItem<TipNote[]>('tips') || []
-    const favorites = storage.getItem<FavoriteItem[]>('favorites') || []
-    let tripData = storage.getItem<Record<string, TripData>>('tripData') || {}
-
-    if (!seeded) {
-      trips = [seedTrip, ...trips]
-      tripData = {
-        ...tripData,
-        [seedTrip.id]: {
-          checklist: seedChecklist,
-          flights: seedFlights,
-          hotels: seedHotels,
-          schedule: seedSchedule,
-          transport: seedTransport,
-          shopping: [],
-        },
-      }
-      storage.setItem('seeded', true)
+  if (!seeded) {
+    trips = [seedTrip, ...trips.filter(t => t.id !== seedTrip.id)]
+    tripData = {
+      ...tripData,
+      [seedTrip.id]: {
+        checklist: seedChecklist,
+        preparationNotes: seedPreparationNotes,
+        flights: seedFlights,
+        hotels: seedHotels,
+        schedule: seedSchedule,
+        transport: seedTransport,
+        shopping: [],
+      },
     }
+    storage.setItem('seeded-v2', true)
+  }
 
-    dispatch({ type: 'LOAD_STATE', state: { trips, templates, tips, favorites, tripData } })
-  }, [])
+  return { trips, template, tips, favorites, tripData, userId: null }
+}
 
-  // Save to localStorage on state change
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, null, loadInitialState)
+  const skipFirstSave = useRef(true)
+
   useEffect(() => {
+    if (skipFirstSave.current) {
+      skipFirstSave.current = false
+      return
+    }
     storage.setItem('trips', state.trips)
-    storage.setItem('templates', state.templates)
+    storage.setItem('template', state.template)
     storage.setItem('tips', state.tips)
     storage.setItem('favorites', state.favorites)
     storage.setItem('tripData', state.tripData)
-  }, [state.trips, state.templates, state.tips, state.favorites, state.tripData])
+  }, [state.trips, state.template, state.tips, state.favorites, state.tripData])
 
   function getTripData(tripId: string): TripData {
     return state.tripData[tripId] || initialTripData
   }
 
-  function cloneTemplate(templateId: string, tripId: string) {
-    const template = state.templates.find(t => t.id === templateId)
-    if (!template) return
-
-    const existing = getTripData(tripId)
-    const newChecklist: ChecklistItem[] = template.preparationItems.map(item => ({
-      id: generateId(),
-      text: item.text,
-      checked: false,
-      category: item.category,
-    }))
-    const newShopping: ShoppingItem[] = template.shoppingItems.map(item => ({
-      id: generateId(),
-      text: item.text,
-      checked: false,
-      starred: false,
-    }))
-
-    dispatch({
-      type: 'SET_TRIP_DATA',
-      tripId,
-      data: {
-        checklist: [...existing.checklist, ...newChecklist],
-        shopping: [...existing.shopping, ...newShopping],
-      },
-    })
-  }
-
   return (
-    <AppContext.Provider value={{ state, dispatch, getTripData, cloneTemplate }}>
+    <AppContext.Provider value={{ state, dispatch, getTripData }}>
       {children}
     </AppContext.Provider>
   )

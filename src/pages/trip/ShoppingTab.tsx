@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { generateId } from '../../utils/id'
 import type { ShoppingItem, FavoriteItem } from '../../types'
@@ -15,6 +15,22 @@ export function ShoppingTab({ tripId }: Props) {
   const [newItem, setNewItem] = useState('')
   const [matchingFavorites, setMatchingFavorites] = useState<FavoriteItem[]>([])
   const [pendingItem, setPendingItem] = useState<string | null>(null)
+  const [deleteVisibleId, setDeleteVisibleId] = useState<string | null>(null)
+
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleTouchStart = useCallback((id: string) => {
+    longPressTimer.current = setTimeout(() => {
+      setDeleteVisibleId(prev => prev === id ? null : id)
+    }, 500)
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }, [])
 
   const unchecked = items.filter(i => !i.checked)
   const checked = items.filter(i => i.checked)
@@ -29,7 +45,6 @@ export function ShoppingTab({ tripId }: Props) {
     if (!newItem.trim()) return
     const text = newItem.trim()
 
-    // Check for matching favorites
     const matches = state.favorites.filter(f =>
       f.name.toLowerCase().includes(text.toLowerCase()) || text.toLowerCase().includes(f.name.toLowerCase())
     )
@@ -43,7 +58,6 @@ export function ShoppingTab({ tripId }: Props) {
   }
 
   function createItem(text: string, favoriteId?: string) {
-    const existingFav = favoriteId ? state.favorites.find(f => f.id === favoriteId) : null
     const item: ShoppingItem = {
       id: generateId(),
       text,
@@ -55,30 +69,26 @@ export function ShoppingTab({ tripId }: Props) {
     setNewItem('')
     setMatchingFavorites([])
     setPendingItem(null)
-    void existingFav
   }
 
   function deleteItem(id: string) {
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: items.filter(i => i.id !== id) } })
+    setDeleteVisibleId(null)
   }
 
   function toggleStar(item: ShoppingItem) {
     if (item.starred && item.favoriteId) {
-      // Check if favorite has purchases
       const fav = state.favorites.find(f => f.id === item.favoriteId)
       if (fav && fav.purchases.length > 0) {
         alert('此商品已有購買紀錄，請到筆記 > 喜歡的東西中刪除')
         return
       }
-      // Remove star and unlink
       const updated = items.map(i => i.id === item.id ? { ...i, starred: false, favoriteId: undefined } : i)
       dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: updated } })
-      // Also remove the favorite if it has no purchases
       if (fav) {
         dispatch({ type: 'DELETE_FAVORITE', favoriteId: fav.id })
       }
     } else {
-      // Add to favorites
       const newFav: FavoriteItem = { id: generateId(), name: item.text, purchases: [] }
       dispatch({ type: 'ADD_FAVORITE', favorite: newFav })
       const updated = items.map(i => i.id === item.id ? { ...i, starred: true, favoriteId: newFav.id } : i)
@@ -116,7 +126,6 @@ export function ShoppingTab({ tripId }: Props) {
         <button className="btn btn-primary btn-sm" onClick={addItem}>+</button>
       </div>
 
-      {/* Matching favorites popup */}
       {matchingFavorites.length > 0 && pendingItem && (
         <div className="card mb-4 border-amber-300">
           <p className="text-sm mb-2">找到相似的「喜歡的東西」，要連結嗎？</p>
@@ -133,7 +142,14 @@ export function ShoppingTab({ tripId }: Props) {
 
       <div className="card">
         {displayed.map(item => (
-          <div key={item.id} className={`checklist-item ${item.checked ? 'checked' : ''}`}>
+          <div
+            key={item.id}
+            className={`checklist-item ${item.checked ? 'checked' : ''}`}
+            onTouchStart={() => handleTouchStart(item.id)}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            onDoubleClick={() => setDeleteVisibleId(prev => prev === item.id ? null : item.id)}
+          >
             <input
               type="checkbox"
               checked={item.checked}
@@ -156,7 +172,14 @@ export function ShoppingTab({ tripId }: Props) {
             <button className={`star-btn ${item.starred ? 'active' : ''}`} onClick={() => toggleStar(item)}>
               {item.starred ? '★' : '☆'}
             </button>
-            <button onClick={() => deleteItem(item.id)} className="text-red-400 text-xs">✕</button>
+            {deleteVisibleId === item.id && (
+              <button
+                onClick={() => deleteItem(item.id)}
+                className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded"
+              >
+                刪除
+              </button>
+            )}
           </div>
         ))}
         {displayed.length === 0 && (
