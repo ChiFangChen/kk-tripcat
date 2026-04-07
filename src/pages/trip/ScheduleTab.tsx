@@ -24,6 +24,9 @@ export function ScheduleTab({ tripId }: Props) {
   const [newDay, setNewDay] = useState({ date: '', label: '' })
   const [collapsedDays, setCollapsedDays] = useState<Record<number, boolean>>({})
 
+  // Edit day state
+  const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null)
+
   // Schedule notes state
   const [editingNote, setEditingNote] = useState<ScheduleNote | null>(null)
   const [showAddNote, setShowAddNote] = useState(false)
@@ -36,9 +39,16 @@ export function ScheduleTab({ tripId }: Props) {
     setShowAddDay(false)
   }
 
+  function updateDay(index: number, date: string, label: string) {
+    const updated = schedule.map((day, i) => i === index ? { ...day, date, label } : day)
+    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { schedule: updated } })
+    setEditingDayIndex(null)
+  }
+
   function deleteDay(index: number) {
     const updated = schedule.filter((_, i) => i !== index)
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { schedule: updated } })
+    setEditingDayIndex(null)
   }
 
   function addActivity(dayIndex: number) {
@@ -105,22 +115,16 @@ export function ScheduleTab({ tripId }: Props) {
       ) : (
         schedule.map((day, dayIndex) => (
           <div key={dayIndex} className="card mb-2">
-            <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleDay(dayIndex)}>
-              <div className="flex items-center gap-2">
-                <FontAwesomeIcon
-                  icon={collapsedDays[dayIndex] ? faChevronDown : faChevronUp}
-                  className="text-xs text-slate-400"
-                />
-                <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={(e) => { e.stopPropagation(); deleteDay(dayIndex) }}
-                >
-                  <FontAwesomeIcon icon={faTrash} className="text-[10px]" />
-                </button>
-              </div>
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => toggleDay(dayIndex)}
+              onDoubleClick={(e) => { e.stopPropagation(); setEditingDayIndex(dayIndex) }}
+            >
+              <FontAwesomeIcon
+                icon={collapsedDays[dayIndex] ? faChevronDown : faChevronUp}
+                className="text-xs text-slate-400"
+              />
+              <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
             </div>
 
             {!collapsedDays[dayIndex] && (
@@ -185,6 +189,17 @@ export function ScheduleTab({ tripId }: Props) {
           <div className="form-group"><label className="form-label">標籤（如：2026/04/09（四））</label><input className="form-input" value={newDay.label} onChange={e => setNewDay({ ...newDay, label: e.target.value })} /></div>
           <button className="btn btn-primary w-full" onClick={addDay}>新增</button>
         </FullScreenModal>
+      )}
+
+      {/* Edit day modal */}
+      {editingDayIndex !== null && schedule[editingDayIndex] && (
+        <Modal title="編輯天數" onClose={() => setEditingDayIndex(null)}>
+          <DayForm
+            day={schedule[editingDayIndex]}
+            onSave={(date, label) => updateDay(editingDayIndex, date, label)}
+            onDelete={() => deleteDay(editingDayIndex)}
+          />
+        </Modal>
       )}
 
       {/* Activity detail modal */}
@@ -274,6 +289,22 @@ function ActivityForm({ activity, onSave }: { activity: ScheduleActivity; onSave
       <div className="form-group"><label className="form-label">金額</label><input className="form-input" value={booking.amount || ''} onChange={e => setBooking({ ...booking, amount: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">備註</label><textarea className="form-input" value={form.note || ''} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
       <button className="btn btn-primary w-full" onClick={handleSave}>儲存</button>
+    </div>
+  )
+}
+
+function DayForm({ day, onSave, onDelete }: { day: ScheduleDay; onSave: (date: string, label: string) => void; onDelete: () => void }) {
+  const [date, setDate] = useState(day.date)
+  const [label, setLabel] = useState(day.label)
+
+  return (
+    <div>
+      <div className="form-group"><label className="form-label">日期</label><input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+      <div className="form-group"><label className="form-label">標籤</label><input className="form-input" value={label} onChange={e => setLabel(e.target.value)} /></div>
+      <button className="btn btn-primary w-full" onClick={() => onSave(date, label)}>儲存</button>
+      <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除此天
+      </button>
     </div>
   )
 }
