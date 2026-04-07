@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function ShoppingTab({ tripId }: Props) {
-  const { state, dispatch, getTripData } = useApp()
+  const { state, dispatch, setUserTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const items = tripData.shopping
   const [showCompleted, setShowCompleted] = useState(false)
@@ -31,7 +31,7 @@ export function ShoppingTab({ tripId }: Props) {
 
   function toggleCheck(id: string) {
     const updated = items.map(i => i.id === id ? { ...i, checked: !i.checked } : i)
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: updated } })
+    setUserTripData(tripId, { shopping: updated })
   }
 
   function openAdd() {
@@ -65,7 +65,7 @@ export function ShoppingTab({ tripId }: Props) {
       starred: !!favoriteId,
       favoriteId,
     }
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: [...items, item] } })
+    setUserTripData(tripId, { shopping: [...items, item] })
     setNewItem('')
     setMatchingFavorites([])
     setPendingItem(null)
@@ -73,12 +73,12 @@ export function ShoppingTab({ tripId }: Props) {
   }
 
   function updateItem(updated: ShoppingItem) {
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: items.map(i => i.id === updated.id ? updated : i) } })
+    setUserTripData(tripId, { shopping: items.map(i => i.id === updated.id ? updated : i) })
     setEditingItem(null)
   }
 
   function deleteItem(id: string) {
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: items.filter(i => i.id !== id) } })
+    setUserTripData(tripId, { shopping: items.filter(i => i.id !== id) })
     setEditingItem(null)
   }
 
@@ -90,7 +90,7 @@ export function ShoppingTab({ tripId }: Props) {
         return
       }
       const updated = items.map(i => i.id === item.id ? { ...i, starred: false, favoriteId: undefined } : i)
-      dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: updated } })
+      setUserTripData(tripId, { shopping: updated })
       if (fav) {
         dispatch({ type: 'DELETE_FAVORITE', favoriteId: fav.id })
       }
@@ -98,7 +98,7 @@ export function ShoppingTab({ tripId }: Props) {
       const newFav: FavoriteItem = { id: generateId(), name: item.text, purchases: [] }
       dispatch({ type: 'ADD_FAVORITE', favorite: newFav })
       const updated = items.map(i => i.id === item.id ? { ...i, starred: true, favoriteId: newFav.id } : i)
-      dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: updated } })
+      setUserTripData(tripId, { shopping: updated })
     }
   }
 

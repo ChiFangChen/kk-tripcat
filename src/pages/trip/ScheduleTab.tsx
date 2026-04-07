@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function ScheduleTab({ tripId }: Props) {
-  const { dispatch, getTripData } = useApp()
+  const { setSharedTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const schedule = tripData.schedule
   const scheduleNotes = tripData.scheduleNotes || []
@@ -36,20 +36,20 @@ export function ScheduleTab({ tripId }: Props) {
   function addDay() {
     if (!newDay.date) return
     const day: ScheduleDay = { date: newDay.date, label: newDay.label || newDay.date, activities: [] }
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { schedule: [...schedule, day] } })
+    setSharedTripData(tripId, { schedule: [...schedule, day] })
     setNewDay({ date: '', label: '' })
     setShowAddDay(false)
   }
 
   function updateDay(index: number, date: string, label: string) {
     const updated = schedule.map((day, i) => i === index ? { ...day, date, label } : day)
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { schedule: updated } })
+    setSharedTripData(tripId, { schedule: updated })
     setEditingDayIndex(null)
   }
 
   function deleteDay(index: number) {
     const updated = schedule.filter((_, i) => i !== index)
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { schedule: updated } })
+    setSharedTripData(tripId, { schedule: updated })
     setEditingDayIndex(null)
   }
 
@@ -69,7 +69,7 @@ export function ScheduleTab({ tripId }: Props) {
         : [...day.activities, activity]
       return { ...day, activities }
     })
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { schedule: updated } })
+    setSharedTripData(tripId, { schedule: updated })
     setEditingActivity(null)
   }
 
@@ -78,7 +78,7 @@ export function ScheduleTab({ tripId }: Props) {
       if (i !== dayIndex) return day
       return { ...day, activities: day.activities.filter(a => a.id !== activityId) }
     })
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { schedule: updated } })
+    setSharedTripData(tripId, { schedule: updated })
     setSelectedActivity(null)
   }
 
@@ -92,13 +92,13 @@ export function ScheduleTab({ tripId }: Props) {
     const updated = exists
       ? scheduleNotes.map(n => n.id === note.id ? note : n)
       : [...scheduleNotes, note]
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { scheduleNotes: updated } })
+    setSharedTripData(tripId, { scheduleNotes: updated })
     setEditingNote(null)
     setShowAddNote(false)
   }
 
   function deleteNote(id: string) {
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { scheduleNotes: scheduleNotes.filter(n => n.id !== id) } })
+    setSharedTripData(tripId, { scheduleNotes: scheduleNotes.filter(n => n.id !== id) })
     setEditingNote(null)
   }
 

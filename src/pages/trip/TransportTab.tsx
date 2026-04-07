@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function TransportTab({ tripId }: Props) {
-  const { dispatch, getTripData } = useApp()
+  const { setSharedTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const items = tripData.transport
   const [showAddModal, setShowAddModal] = useState(false)
@@ -47,18 +47,18 @@ export function TransportTab({ tripId }: Props) {
   function addItem() {
     if (!newTitle.trim()) return
     const item: TransportItem = { id: generateId(), title: newTitle.trim(), content: '', isOpen: true }
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { transport: [...items, item] } })
+    setSharedTripData(tripId, { transport: [...items, item] })
     setNewTitle('')
     setShowAddModal(false)
   }
 
   function deleteItem(id: string) {
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { transport: items.filter(i => i.id !== id) } })
+    setSharedTripData(tripId, { transport: items.filter(i => i.id !== id) })
   }
 
   function saveContent(id: string) {
     const updated = items.map(i => i.id === id ? { ...i, content: editContent } : i)
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { transport: updated } })
+    setSharedTripData(tripId, { transport: updated })
     setEditingId(null)
   }
 

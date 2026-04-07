@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function HotelTab({ tripId }: Props) {
-  const { dispatch, getTripData } = useApp()
+  const { setSharedTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const hotels = tripData.hotels
   const [editing, setEditing] = useState<Hotel | null>(null)
@@ -24,12 +24,12 @@ export function HotelTab({ tripId }: Props) {
     const updated = exists
       ? hotels.map(h => h.id === hotel.id ? hotel : h)
       : [...hotels, hotel]
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { hotels: updated } })
+    setSharedTripData(tripId, { hotels: updated })
     setEditing(null)
   }
 
   function remove(id: string) {
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { hotels: hotels.filter(h => h.id !== id) } })
+    setSharedTripData(tripId, { hotels: hotels.filter(h => h.id !== id) })
     setEditing(null)
   }
 

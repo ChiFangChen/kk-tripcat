@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function FlightTab({ tripId }: Props) {
-  const { dispatch, getTripData } = useApp()
+  const { setSharedTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const flights = tripData.flights
   const [editingFlight, setEditingFlight] = useState<FlightInfo | null>(null)
@@ -26,12 +26,12 @@ export function FlightTab({ tripId }: Props) {
     const updated = exists
       ? flights.map(f => f.id === flight.id ? flight : f)
       : [...flights, flight]
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { flights: updated } })
+    setSharedTripData(tripId, { flights: updated })
     setEditingFlight(null)
   }
 
   function deleteFlight(id: string) {
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { flights: flights.filter(f => f.id !== id) } })
+    setSharedTripData(tripId, { flights: flights.filter(f => f.id !== id) })
     setEditingFlight(null)
   }
 
@@ -44,7 +44,7 @@ export function FlightTab({ tripId }: Props) {
         : [...f.legs, leg]
       return { ...f, legs }
     })
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { flights: updated } })
+    setSharedTripData(tripId, { flights: updated })
     setEditingLeg(null)
     setEditingFlightId(null)
   }
@@ -54,7 +54,7 @@ export function FlightTab({ tripId }: Props) {
       if (f.id !== flightId) return f
       return { ...f, legs: f.legs.filter(l => l.id !== legId) }
     })
-    dispatch({ type: 'SET_TRIP_DATA', tripId, data: { flights: updated } })
+    setSharedTripData(tripId, { flights: updated })
     setEditingLeg(null)
     setEditingFlightId(null)
   }
