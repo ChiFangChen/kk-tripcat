@@ -297,10 +297,9 @@ export function PreparationTab({ tripId }: Props) {
               </div>
             )}
           </div>
-          {/* Subcategory picker — only if selected category has subcategories */}
+          {/* Subcategory picker */}
           {!creatingCategory && (() => {
             const subs = getSubcategories(selectedCategory)
-            if (subs.length === 0 && !creatingSubcategory) return null
             return (
               <div className="form-group">
                 <label className="form-label">次分類</label>
