@@ -155,8 +155,8 @@ function PurchaseForm({ onSave }: { onSave: (p: Purchase) => void }) {
 
   return (
     <div>
-      <div className="form-group"><label className="form-label">金額</label><input className="form-input" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="1200" /></div>
-      <div className="form-group"><label className="form-label">幣別</label><input className="form-input" value={form.currency || ''} onChange={e => setForm({ ...form, currency: e.target.value })} placeholder="THB ／ JPY ／ TWD" /></div>
+      <div className="form-group"><label className="form-label">金額</label><input className="form-input" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">幣別</label><input className="form-input" value={form.currency || ''} onChange={e => setForm({ ...form, currency: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">日期</label><input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">備註</label><input className="form-input" value={form.note || ''} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
       <button className="btn btn-primary w-full" onClick={() => onSave({ ...form, id: generateId() } as Purchase)}>儲存</button>

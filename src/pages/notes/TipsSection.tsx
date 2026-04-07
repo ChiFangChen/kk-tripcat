@@ -111,7 +111,7 @@ function TipForm({ tip, onSave, onDelete }: { tip: TipNote; onSave: (t: TipNote)
     <div>
       <div className="form-group"><label className="form-label">標題</label><input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">內容</label><textarea className="form-input" rows={6} value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">標籤（逗號分隔）</label><input className="form-input" value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder="清邁, 按摩, 泰國" /></div>
+      <div className="form-group"><label className="form-label">標籤（逗號分隔）</label><input className="form-input" value={tagsInput} onChange={e => setTagsInput(e.target.value)} /></div>
       <div className="flex gap-2">
         <button className="btn btn-primary flex-1" onClick={handleSave}>儲存</button>
         {tip.title && <button className="btn btn-secondary" onClick={onDelete}>刪除</button>}

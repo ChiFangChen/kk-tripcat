@@ -288,7 +288,6 @@ export function PreparationTab({ tripId }: Props) {
                   className="form-input flex-1"
                   value={newCategoryName}
                   onChange={e => setNewCategoryName(e.target.value)}
-                  placeholder="輸入新分類名稱"
                   autoFocus
                 />
                 <button className="btn btn-sm btn-secondary" onClick={() => setCreatingCategory(false)}>
@@ -333,7 +332,6 @@ export function PreparationTab({ tripId }: Props) {
                       className="form-input flex-1"
                       value={newSubName}
                       onChange={e => setNewSubName(e.target.value)}
-                      placeholder="輸入新次分類名稱"
                       autoFocus
                     />
                     <button className="btn btn-sm btn-secondary" onClick={() => setCreatingSubcategory(false)}>
@@ -351,7 +349,6 @@ export function PreparationTab({ tripId }: Props) {
               className="form-input"
               value={newItem}
               onChange={e => setNewItem(e.target.value)}
-              placeholder="例：護照"
               onKeyDown={e => e.key === 'Enter' && addItem()}
               autoFocus={!creatingCategory}
             />

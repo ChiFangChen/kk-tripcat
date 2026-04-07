@@ -119,7 +119,6 @@ export function TransportTab({ tripId }: Props) {
               className="form-input"
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
-              placeholder="例：機場到飯店"
               onKeyDown={e => e.key === 'Enter' && addItem()}
               autoFocus
             />
