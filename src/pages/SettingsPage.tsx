@@ -180,7 +180,7 @@ export function SettingsPage() {
               </button>
             </div>
           </div>
-          <div className="text-sm text-slate-500">
+          <div className="text-sm">
             {(() => {
               const subs: string[] = []
               const grouped: Record<string, typeof cat.items> = {}
