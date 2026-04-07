@@ -14,6 +14,7 @@ import {
   syncUser,
   syncSharedTripData,
   syncUserTripData,
+  syncTemplate,
 } from '../utils/firebase'
 import { defaultTemplate } from '../data/seed'
 import type { Firestore } from 'firebase/firestore'
@@ -162,6 +163,7 @@ interface AppContextType {
   logout: () => void
   register: (username: string, password: string, displayName: string) => Promise<User>
   updateUser: (user: User) => void
+  setTemplate: (template: Template) => void
   getTripData: (tripId: string) => TripData
   setSharedTripData: (tripId: string, data: Partial<SharedTripData>) => void
   setUserTripData: (tripId: string, data: Partial<UserTripData>) => void
@@ -344,6 +346,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (dbRef.current) syncUser(dbRef.current, user)
   }, [state.auth.currentUser])
 
+  function setTemplate(template: Template) {
+    dispatch({ type: 'SET_TEMPLATE', template })
+    if (dbRef.current && state.auth.currentUser) {
+      syncTemplate(dbRef.current, state.auth.currentUser.id, template)
+    }
+  }
+
   function getTripData(tripId: string): TripData {
     const shared = state.sharedTripData[tripId] || emptyShared
     const user = state.userTripData[tripId] || emptyUser
@@ -395,6 +404,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       logout,
       register,
       updateUser,
+      setTemplate,
       getTripData,
       setSharedTripData,
       setUserTripData,

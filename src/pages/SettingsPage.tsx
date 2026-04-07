@@ -8,7 +8,7 @@ import { generateId } from '../utils/id'
 import type { TemplateCategory, TemplateItem } from '../types'
 
 export function SettingsPage() {
-  const { state, dispatch } = useApp()
+  const { state, setTemplate } = useApp()
   const template = state.template
   const [editingNotes, setEditingNotes] = useState(false)
   const [notesText, setNotesText] = useState(template.notes)
@@ -30,14 +30,14 @@ export function SettingsPage() {
   const [renamingSub, setRenamingSub] = useState<{ old: string; new: string } | null>(null)
 
   function saveNotes() {
-    dispatch({ type: 'SET_TEMPLATE', template: { ...template, notes: notesText } })
+    setTemplate({ ...template, notes: notesText })
     setEditingNotes(false)
   }
 
   function addCategory() {
     if (!newCatName.trim()) return
     const cat: TemplateCategory = { name: newCatName.trim(), items: [] }
-    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: [...template.categories, cat] } })
+    setTemplate({ ...template, categories: [...template.categories, cat] })
     setNewCatName('')
     setAddingCategory(false)
   }
@@ -49,12 +49,12 @@ export function SettingsPage() {
         ? { ...c, name: editCatNewName.trim(), items: c.items.map(i => ({ ...i, category: editCatNewName.trim() })) }
         : c
     )
-    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+    setTemplate({ ...template, categories: updated })
     setEditingCatName(editCatNewName.trim())
   }
 
   function deleteCategory(name: string) {
-    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: template.categories.filter(c => c.name !== name) } })
+    setTemplate({ ...template, categories: template.categories.filter(c => c.name !== name) })
   }
 
   // Subcategory management
@@ -79,7 +79,7 @@ export function SettingsPage() {
         ),
       }
     })
-    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+    setTemplate({ ...template, categories: updated })
     setRenamingSub(null)
   }
 
@@ -93,7 +93,7 @@ export function SettingsPage() {
         ),
       }
     })
-    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+    setTemplate({ ...template, categories: updated })
   }
 
   // Add item with subcategory
@@ -120,7 +120,7 @@ export function SettingsPage() {
     const updated = template.categories.map(c =>
       c.name === catName ? { ...c, items: [...c.items, item] } : c
     )
-    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+    setTemplate({ ...template, categories: updated })
     setNewItemText('')
     setAddingItemTo(null)
   }
@@ -129,7 +129,7 @@ export function SettingsPage() {
     const updated = template.categories.map(c =>
       c.name === catName ? { ...c, items: c.items.filter(i => i.id !== itemId) } : c
     )
-    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+    setTemplate({ ...template, categories: updated })
   }
 
   // Open edit category
@@ -269,7 +269,7 @@ export function SettingsPage() {
                       const updated = template.categories.map(c =>
                         c.name === editingCatName ? { ...c, items: [...c.items, item] } : c
                       )
-                      dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+                      setTemplate({ ...template, categories: updated })
                       setAddSubName('')
                       setAddingSubTo(false)
                     }
@@ -286,7 +286,7 @@ export function SettingsPage() {
                   const updated = template.categories.map(c =>
                     c.name === editingCatName ? { ...c, items: [...c.items, item] } : c
                   )
-                  dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+                  setTemplate({ ...template, categories: updated })
                   setAddSubName('')
                   setAddingSubTo(false)
                 }}>新增</button>
