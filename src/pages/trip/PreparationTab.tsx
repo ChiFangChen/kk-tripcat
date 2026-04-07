@@ -127,7 +127,7 @@ export function PreparationTab({ tripId }: Props) {
       {notes && (
         <div className="card mb-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
           <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</p>
-          <p className="text-sm whitespace-pre-wrap">{notes}</p>
+          <p className="text-xs whitespace-pre-wrap text-slate-400 dark:text-slate-500">{notes}</p>
         </div>
       )}
 
