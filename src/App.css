@@ -393,6 +393,7 @@ textarea.form-input {
 /* Info row - for displaying field:value pairs, hide when empty */
 .info-row {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 6px 0;
   font-size: 14px;
@@ -413,33 +414,41 @@ textarea.form-input {
 /* Got Ready floating button */
 .got-ready-fab {
   position: fixed;
-  right: 16px;
+  right: 0;
   top: 130px;
   z-index: 35;
   display: flex;
   align-items: center;
   gap: 0;
-  padding: 12px;
-  border-radius: 999px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 999px 0 0 999px;
   border: none;
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: var(--color-primary);
-  color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #a8d8b9;
+  color: #3d6b4f;
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   white-space: nowrap;
 }
 
 .got-ready-fab.expanded {
   gap: 8px;
-  padding: 12px 20px;
+  padding: 8px 12px 8px 16px;
 }
 
 .got-ready-fab.ready {
   background: var(--color-success);
+  color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+  .got-ready-fab {
+    background: #3d6b4f;
+    color: #a8d8b9;
+  }
 }
 
 /* Full screen modal */

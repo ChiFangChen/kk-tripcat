@@ -70,7 +70,7 @@ export function FlightTab({ tripId }: Props) {
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">航班資訊</h2>
         <button className="btn btn-primary btn-sm" onClick={() => setEditingFlight(newFlight())}>
-          <FontAwesomeIcon icon={faPlus} className="mr-1" />航班
+          <FontAwesomeIcon icon={faPlus} />
         </button>
       </div>
 
@@ -83,10 +83,10 @@ export function FlightTab({ tripId }: Props) {
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold">{flight.airline || '航班'}</h3>
             <div className="flex gap-2">
-              <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingFlight(flight)}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditingFlight(flight)}>
                 <FontAwesomeIcon icon={faPen} />
               </button>
-              <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteFlight(flight.id)}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteFlight(flight.id)}>
                 <FontAwesomeIcon icon={faTrash} />
               </button>
             </div>
@@ -105,10 +105,10 @@ export function FlightTab({ tripId }: Props) {
               <div className="flex justify-between items-center mb-2">
                 <span className="font-medium text-sm">{leg.direction}</span>
                 <div className="flex gap-2">
-                  <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}>
+                  <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}>
                     <FontAwesomeIcon icon={faPen} />
                   </button>
-                  <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteLeg(flight.id, leg.id)}>
+                  <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteLeg(flight.id, leg.id)}>
                     <FontAwesomeIcon icon={faTrash} />
                   </button>
                 </div>
@@ -125,7 +125,7 @@ export function FlightTab({ tripId }: Props) {
             className="btn btn-secondary btn-sm mt-3"
             onClick={() => { setEditingLeg(newLeg()); setEditingFlightId(flight.id) }}
           >
-            <FontAwesomeIcon icon={faPlus} className="mr-1" />航段
+            <FontAwesomeIcon icon={faPlus} />
           </button>
         </div>
       ))}

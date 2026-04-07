@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faThumbtack, faCat, faChevronLeft } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { generateId } from '../utils/id'
+import { formatDate } from '../utils/date'
 import type { Trip, TripType, ChecklistItem } from '../types'
 
 interface Props {
@@ -199,10 +200,6 @@ export function TripsPage({ onSelectTrip }: Props) {
     onSelectTrip(tripId)
   }
 
-  function formatDate(dateStr: string) {
-    const d = new Date(dateStr)
-    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}`
-  }
 
   // === TEMPLATE SELECTION STEP ===
   if (step === 'template') {

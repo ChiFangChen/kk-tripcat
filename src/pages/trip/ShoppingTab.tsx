@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faStar, faLink, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { generateId } from '../../utils/id'
+import { formatDate } from '../../utils/date'
 import type { ShoppingItem, FavoriteItem } from '../../types'
 
 interface Props {
@@ -168,7 +169,7 @@ export function ShoppingTab({ tripId }: Props) {
                 const latest = fav.purchases[0]
                 return (
                   <p className="text-xs text-slate-400">
-                    上次：{latest.amount}{latest.currency ? ` ${latest.currency}` : ''} ({latest.date})
+                    上次：{latest.amount}{latest.currency ? ` ${latest.currency}` : ''} ({formatDate(latest.date)})
                   </p>
                 )
               })()}
