@@ -6,6 +6,7 @@ import { FullScreenModal } from '../../components/FullScreenModal'
 import { Modal } from '../../components/Modal'
 import { InfoRow } from '../../components/InfoRow'
 import { generateId } from '../../utils/id'
+import { formatDate } from '../../utils/date'
 import type { ScheduleDay, ScheduleActivity, ScheduleNote, BookingInfo } from '../../types'
 
 interface Props {
@@ -110,8 +111,7 @@ export function ScheduleTab({ tripId }: Props) {
                   icon={collapsedDays[dayIndex] ? faChevronDown : faChevronUp}
                   className="text-xs text-slate-400"
                 />
-                <h3 className="font-semibold text-sm">{day.label}</h3>
-                <span className="text-xs text-slate-400">{day.date}</span>
+                <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -182,7 +182,7 @@ export function ScheduleTab({ tripId }: Props) {
       {showAddDay && (
         <FullScreenModal title="新增天數" onClose={() => setShowAddDay(false)}>
           <div className="form-group"><label className="form-label">日期</label><input className="form-input" type="date" value={newDay.date} onChange={e => setNewDay({ ...newDay, date: e.target.value })} /></div>
-          <div className="form-group"><label className="form-label">標籤（如：4/9 四）</label><input className="form-input" value={newDay.label} onChange={e => setNewDay({ ...newDay, label: e.target.value })} /></div>
+          <div className="form-group"><label className="form-label">標籤（如：2026/04/09（四））</label><input className="form-input" value={newDay.label} onChange={e => setNewDay({ ...newDay, label: e.target.value })} /></div>
           <button className="btn btn-primary w-full" onClick={addDay}>新增</button>
         </FullScreenModal>
       )}
