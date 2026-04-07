@@ -26,6 +26,7 @@ export interface BookingInfo {
   orderNumber?: string
   amount?: string
   note?: string
+  assignee?: string
 }
 
 export interface FlightInfo {
@@ -141,6 +142,12 @@ export interface Purchase {
   tripId?: string
   tripName?: string
   note?: string
+}
+
+export interface ScheduleNote {
+  id: string
+  title: string
+  content: string
 }
 
 export type TabType = 'trips' | 'notes' | 'settings'

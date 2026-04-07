@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faStar, faLink } from '@fortawesome/free-solid-svg-icons'
+import { faStar, faLink, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { generateId } from '../../utils/id'
 import type { ShoppingItem, FavoriteItem } from '../../types'
@@ -125,7 +125,9 @@ export function ShoppingTab({ tripId }: Props) {
           onChange={e => setNewItem(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addItem()}
         />
-        <button className="btn btn-primary btn-sm" onClick={addItem}>+</button>
+        <button className="btn btn-primary btn-sm !p-1.5 !rounded-full w-8 h-8 flex items-center justify-center" onClick={addItem}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
+        </button>
       </div>
 
       {matchingFavorites.length > 0 && pendingItem && (

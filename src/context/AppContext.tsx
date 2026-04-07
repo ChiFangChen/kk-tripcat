@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useRef, type ReactNode } from 'react'
-import type { Trip, Template, TipNote, FavoriteItem, ChecklistItem, FlightInfo, Hotel, ScheduleDay, TransportItem, ShoppingItem } from '../types'
+import type { Trip, Template, TipNote, FavoriteItem, ChecklistItem, FlightInfo, Hotel, ScheduleDay, ScheduleNote, TransportItem, ShoppingItem } from '../types'
 import * as storage from '../utils/storage'
-import { seedTrip, seedChecklist, seedFlights, seedHotels, seedSchedule, seedTransport, seedPreparationNotes, defaultTemplate } from '../data/seed'
+import { seedTrip, seedChecklist, seedFlights, seedHotels, seedSchedule, seedScheduleNotes, seedTransport, seedPreparationNotes, defaultTemplate } from '../data/seed'
 
 export interface TripData {
   checklist: ChecklistItem[]
@@ -9,6 +9,7 @@ export interface TripData {
   flights: FlightInfo[]
   hotels: Hotel[]
   schedule: ScheduleDay[]
+  scheduleNotes: ScheduleNote[]
   transport: TransportItem[]
   shopping: ShoppingItem[]
 }
@@ -44,6 +45,7 @@ const initialTripData: TripData = {
   flights: [],
   hotels: [],
   schedule: [],
+  scheduleNotes: [],
   transport: [],
   shopping: [],
 }
@@ -118,6 +120,7 @@ function loadInitialState(): AppState {
         flights: seedFlights,
         hotels: seedHotels,
         schedule: seedSchedule,
+        scheduleNotes: seedScheduleNotes,
         transport: seedTransport,
         shopping: [],
       },

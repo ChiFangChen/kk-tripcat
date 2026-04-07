@@ -1,4 +1,4 @@
-import type { Trip, ChecklistItem, FlightInfo, Hotel, ScheduleDay, TransportItem, Template, TemplateCategory } from '../types'
+import type { Trip, ChecklistItem, FlightInfo, Hotel, ScheduleDay, ScheduleNote, TransportItem, Template, TemplateCategory } from '../types'
 
 // === DEFAULT TEMPLATE ===
 
@@ -341,3 +341,5 @@ export const seedSchedule: ScheduleDay[] = [
 ]
 
 export const seedTransport: TransportItem[] = []
+
+export const seedScheduleNotes: ScheduleNote[] = []

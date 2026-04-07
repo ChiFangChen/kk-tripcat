@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faThumbtack } from '@fortawesome/free-solid-svg-icons'
+import { faThumbtack, faPlus, faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { Modal } from '../components/Modal'
 import { generateId } from '../utils/id'
@@ -71,7 +71,9 @@ export function SettingsPage() {
       <div className="card mb-4">
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-semibold text-sm"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</h3>
-          <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setNotesText(template.notes); setEditingNotes(true) }}>編輯</button>
+          <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setNotesText(template.notes); setEditingNotes(true) }}>
+            <FontAwesomeIcon icon={faPen} />
+          </button>
         </div>
         <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">
           {template.notes || '(無)'}
@@ -81,7 +83,7 @@ export function SettingsPage() {
       {/* Categories */}
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-semibold">準備事項分類</h3>
-        <button className="btn btn-primary btn-sm" onClick={() => setAddingCategory(true)}>+ 分類</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setAddingCategory(true)}><FontAwesomeIcon icon={faPlus} className="mr-1" />分類</button>
       </div>
 
       {template.categories.map(cat => (
@@ -89,16 +91,24 @@ export function SettingsPage() {
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-semibold text-sm">{cat.name} ({cat.items.length})</h4>
             <div className="flex gap-2">
-              <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>重命名</button>
-              <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>+ 項目</button>
-              <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteCategory(cat.name)}>刪除</button>
+              <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>
+                <FontAwesomeIcon icon={faPen} />
+              </button>
+              <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>
+                <FontAwesomeIcon icon={faPlus} />
+              </button>
+              <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteCategory(cat.name)}>
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
             </div>
           </div>
           <div className="text-sm text-slate-500">
             {cat.items.map(item => (
               <div key={item.id} className="flex justify-between items-center py-0.5">
                 <span>{item.text}</span>
-                <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteItem(cat.name, item.id)}>✕</button>
+                <button className="text-red-500 text-xs p-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteItem(cat.name, item.id)}>
+                  <FontAwesomeIcon icon={faTrash} className="text-[10px]" />
+                </button>
               </div>
             ))}
           </div>

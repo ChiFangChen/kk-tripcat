@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlus, faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
-import { Modal } from '../../components/Modal'
+import { FullScreenModal } from '../../components/FullScreenModal'
 import { InfoRow } from '../../components/InfoRow'
 import { generateId } from '../../utils/id'
 import type { Hotel } from '../../types'
@@ -36,7 +38,9 @@ export function HotelTab({ tripId }: Props) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">飯店資訊</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditing(newHotel())}>+ 飯店</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setEditing(newHotel())}>
+          <FontAwesomeIcon icon={faPlus} className="mr-1" />飯店
+        </button>
       </div>
 
       {hotels.length === 0 && (
@@ -48,12 +52,24 @@ export function HotelTab({ tripId }: Props) {
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold">{hotel.name || '飯店'}</h3>
             <div className="flex gap-2">
-              <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditing(hotel)}>編輯</button>
-              <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => remove(hotel.id)}>刪除</button>
+              <button className="text-sky-600 text-xs p-1.5 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditing(hotel)}>
+                <FontAwesomeIcon icon={faPen} />
+              </button>
+              <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => remove(hotel.id)}>
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
             </div>
           </div>
 
-          {hotel.booking?.platform && <InfoRow label="訂房平台" value={`${hotel.booking.platform}${hotel.booking.orderNumber ? ` ${hotel.booking.orderNumber}` : ''}`} />}
+          {hotel.booking?.platform && (
+            <InfoRow label="訂房平台" value={
+              <>
+                {hotel.booking.platform}
+                {hotel.booking.orderNumber && ` ${hotel.booking.orderNumber}`}
+                {hotel.booking.assignee && <span className="tag ml-2">{hotel.booking.assignee}</span>}
+              </>
+            } />
+          )}
           <InfoRow label="價格" value={hotel.booking?.amount} />
           <InfoRow label="地址" value={hotel.address} />
           {hotel.googleMapUrl && (
@@ -73,9 +89,9 @@ export function HotelTab({ tripId }: Props) {
       ))}
 
       {editing && (
-        <Modal title={editing.name ? '編輯飯店' : '新增飯店'} onClose={() => setEditing(null)}>
+        <FullScreenModal title={editing.name ? '編輯飯店' : '新增飯店'} onClose={() => setEditing(null)}>
           <HotelForm hotel={editing} onSave={save} />
-        </Modal>
+        </FullScreenModal>
       )}
     </div>
   )
@@ -94,6 +110,7 @@ function HotelForm({ hotel, onSave }: { hotel: Hotel; onSave: (h: Hotel) => void
       <div className="form-group"><label className="form-label">飯店名稱</label><input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">訂房平台</label><input className="form-input" value={booking.platform || ''} onChange={e => setBooking({ ...booking, platform: e.target.value })} placeholder="Booking.com / Klook" /></div>
       <div className="form-group"><label className="form-label">訂單編號</label><input className="form-input" value={booking.orderNumber || ''} onChange={e => setBooking({ ...booking, orderNumber: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">負責人</label><input className="form-input" value={booking.assignee || ''} onChange={e => setBooking({ ...booking, assignee: e.target.value })} placeholder="誰負責訂的" /></div>
       <div className="form-group"><label className="form-label">價格</label><input className="form-input" value={booking.amount || ''} onChange={e => setBooking({ ...booking, amount: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">地址</label><input className="form-input" value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">Google Map 連結</label><input className="form-input" value={form.googleMapUrl || ''} onChange={e => setForm({ ...form, googleMapUrl: e.target.value })} /></div>

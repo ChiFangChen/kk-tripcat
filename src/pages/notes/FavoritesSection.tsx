@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faStar } from '@fortawesome/free-solid-svg-icons'
+import { faStar, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { Modal } from '../../components/Modal'
 import { generateId } from '../../utils/id'
@@ -52,7 +52,7 @@ export function FavoritesSection() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">喜歡的東西</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditing(newFavorite())}>+ 新增</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setEditing(newFavorite())}><FontAwesomeIcon icon={faPlus} className="mr-1" />新增</button>
       </div>
 
       {state.favorites.length === 0 ? (
@@ -63,8 +63,12 @@ export function FavoritesSection() {
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-semibold"><FontAwesomeIcon icon={faStar} className="text-amber-400 mr-1" />{fav.name}</h3>
               <div className="flex gap-2">
-                <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setAddingPurchaseTo(fav.id)}>+ 紀錄</button>
-                <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => remove(fav.id)}>刪除</button>
+                <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setAddingPurchaseTo(fav.id)}>
+                  <FontAwesomeIcon icon={faPlus} className="mr-1" />紀錄
+                </button>
+                <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => remove(fav.id)}>
+                  <FontAwesomeIcon icon={faTrash} />
+                </button>
               </div>
             </div>
 
@@ -79,7 +83,9 @@ export function FavoritesSection() {
                       {p.tripName && <span className="text-slate-400 ml-1">({p.tripName})</span>}
                       {p.note && <span className="text-slate-400 ml-1">- {p.note}</span>}
                     </div>
-                    <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deletePurchase(fav.id, p.id)}>✕</button>
+                    <button className="text-red-500 text-xs p-1.5 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deletePurchase(fav.id, p.id)}>
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
                   </div>
                 ))}
               </div>

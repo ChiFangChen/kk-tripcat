@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCircleCheck, faSuitcaseRolling, faThumbtack } from '@fortawesome/free-solid-svg-icons'
+import { faCircleCheck, faSuitcaseRolling, faThumbtack, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
+import { FullScreenModal } from '../../components/FullScreenModal'
 import { generateId } from '../../utils/id'
 import type { ChecklistItem } from '../../types'
 
@@ -14,15 +15,29 @@ export function PreparationTab({ tripId }: Props) {
   const tripData = getTripData(tripId)
   const trip = state.trips.find(t => t.id === tripId)
   const [showCompleted, setShowCompleted] = useState(false)
-  const [newItem, setNewItem] = useState('')
-  const [newCategory, setNewCategory] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
   const [deleteVisibleId, setDeleteVisibleId] = useState<string | null>(null)
+  const [fabExpanded, setFabExpanded] = useState(false)
+  const fabTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Add form state
+  const [newItem, setNewItem] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [creatingCategory, setCreatingCategory] = useState(false)
 
   const items = tripData.checklist
   const notes = tripData.preparationNotes
   const unchecked = items.filter(i => !i.checked)
   const checked = items.filter(i => i.checked)
   const displayed = showCompleted ? items : unchecked
+
+  // Get existing categories
+  const existingCategories: string[] = []
+  for (const item of items) {
+    const cat = item.category || '其他'
+    if (!existingCategories.includes(cat)) existingCategories.push(cat)
+  }
 
   // Group by category, preserving order
   const categoryOrder: string[] = []
@@ -57,16 +72,26 @@ export function PreparationTab({ tripId }: Props) {
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: updated } })
   }
 
+  function openAddModal() {
+    setNewItem('')
+    setSelectedCategory(existingCategories[0] || '其他')
+    setNewCategoryName('')
+    setCreatingCategory(false)
+    setShowAddModal(true)
+  }
+
   function addItem() {
     if (!newItem.trim()) return
+    const category = creatingCategory ? newCategoryName.trim() || '其他' : selectedCategory || '其他'
     const item: ChecklistItem = {
       id: generateId(),
       text: newItem.trim(),
       checked: false,
-      category: newCategory || '其他',
+      category,
     }
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { checklist: [...items, item] } })
     setNewItem('')
+    setShowAddModal(false)
   }
 
   function deleteItem(id: string) {
@@ -74,19 +99,28 @@ export function PreparationTab({ tripId }: Props) {
     setDeleteVisibleId(null)
   }
 
-  function toggleGotReady() {
-    if (!trip) return
-    dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, gotReady: !trip.gotReady } })
+  function handleFabClick() {
+    if (!fabExpanded) {
+      setFabExpanded(true)
+      if (fabTimer.current) clearTimeout(fabTimer.current)
+      fabTimer.current = setTimeout(() => setFabExpanded(false), 3000)
+    } else {
+      if (!trip) return
+      dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, gotReady: !trip.gotReady } })
+      setFabExpanded(false)
+      if (fabTimer.current) clearTimeout(fabTimer.current)
+    }
   }
 
   return (
     <div>
+      {/* Got Ready FAB */}
       <button
-        className={`got-ready-btn ${trip?.gotReady ? 'ready' : ''}`}
-        onClick={toggleGotReady}
+        className={`got-ready-fab ${fabExpanded ? 'expanded' : ''} ${trip?.gotReady ? 'ready' : ''}`}
+        onClick={handleFabClick}
       >
-        <FontAwesomeIcon icon={trip?.gotReady ? faCircleCheck : faSuitcaseRolling} className="mr-2" />
-        {trip?.gotReady ? '準備完成！' : 'Got Ready!'}
+        <FontAwesomeIcon icon={trip?.gotReady ? faCircleCheck : faSuitcaseRolling} />
+        {fabExpanded && <span>{trip?.gotReady ? '取消準備' : 'Got Ready!'}</span>}
       </button>
 
       {/* Notes block */}
@@ -97,37 +131,24 @@ export function PreparationTab({ tripId }: Props) {
         </div>
       )}
 
-      {/* Filter toggle */}
+      {/* Filter toggle + add button */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm text-slate-500">
           {unchecked.length} 項未完成 / {items.length} 項
         </span>
-        <label className="filter-toggle">
-          <input
-            type="checkbox"
-            checked={showCompleted}
-            onChange={e => setShowCompleted(e.target.checked)}
-          />
-          顯示已完成 ({checked.length})
-        </label>
-      </div>
-
-      {/* Add new item */}
-      <div className="flex gap-2 mb-4">
-        <input
-          className="form-input flex-1"
-          placeholder="新增項目..."
-          value={newItem}
-          onChange={e => setNewItem(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addItem()}
-        />
-        <input
-          className="form-input w-20"
-          placeholder="分類"
-          value={newCategory}
-          onChange={e => setNewCategory(e.target.value)}
-        />
-        <button className="btn btn-primary btn-sm" onClick={addItem}>+</button>
+        <div className="flex items-center gap-3">
+          <label className="filter-toggle">
+            <input
+              type="checkbox"
+              checked={showCompleted}
+              onChange={e => setShowCompleted(e.target.checked)}
+            />
+            顯示已完成 ({checked.length})
+          </label>
+          <button className="btn btn-primary btn-sm !p-1.5 !rounded-full w-7 h-7 flex items-center justify-center" onClick={openAddModal}>
+            <FontAwesomeIcon icon={faPlus} className="text-xs" />
+          </button>
+        </div>
       </div>
 
       {/* Grouped checklist */}
@@ -191,8 +212,61 @@ export function PreparationTab({ tripId }: Props) {
 
       {displayed.length === 0 && (
         <div className="empty-state">
-          <p>{showCompleted ? '清單是空的' : '全部準備好了！🎉'}</p>
+          <p>{showCompleted ? '清單是空的' : '全部準備好了！'}</p>
         </div>
+      )}
+
+      {/* Add item full-screen popup */}
+      {showAddModal && (
+        <FullScreenModal title="新增準備項目" onClose={() => setShowAddModal(false)}>
+          <div className="form-group">
+            <label className="form-label">分類</label>
+            {!creatingCategory ? (
+              <div className="flex gap-2 flex-wrap">
+                {existingCategories.map(cat => (
+                  <button
+                    key={cat}
+                    className={`btn btn-sm ${selectedCategory === cat ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setSelectedCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setCreatingCategory(true)}
+                >
+                  <FontAwesomeIcon icon={faPlus} className="mr-1" />新分類
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  className="form-input flex-1"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  placeholder="輸入新分類名稱"
+                  autoFocus
+                />
+                <button className="btn btn-sm btn-secondary" onClick={() => setCreatingCategory(false)}>
+                  取消
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="form-group">
+            <label className="form-label">項目內容</label>
+            <input
+              className="form-input"
+              value={newItem}
+              onChange={e => setNewItem(e.target.value)}
+              placeholder="例：護照"
+              onKeyDown={e => e.key === 'Enter' && addItem()}
+              autoFocus={!creatingCategory}
+            />
+          </div>
+          <button className="btn btn-primary w-full" onClick={addItem}>新增</button>
+        </FullScreenModal>
       )}
     </div>
   )
