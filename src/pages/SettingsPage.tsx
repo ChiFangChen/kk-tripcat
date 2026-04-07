@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faThumbtack, faPlus, faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
+import { FullScreenModal } from '../components/FullScreenModal'
 import { Modal } from '../components/Modal'
 import { generateId } from '../utils/id'
 import type { TemplateCategory, TemplateItem } from '../types'
@@ -13,9 +14,20 @@ export function SettingsPage() {
   const [notesText, setNotesText] = useState(template.notes)
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCatName, setNewCatName] = useState('')
+
+  // Add item state
   const [addingItemTo, setAddingItemTo] = useState<string | null>(null)
   const [newItemText, setNewItemText] = useState('')
-  const [editingCategory, setEditingCategory] = useState<{ oldName: string; newName: string } | null>(null)
+  const [newItemSubcategory, setNewItemSubcategory] = useState('')
+  const [creatingNewSub, setCreatingNewSub] = useState(false)
+  const [newSubName, setNewSubName] = useState('')
+
+  // Edit category state (rename + manage subcategories)
+  const [editingCatName, setEditingCatName] = useState<string | null>(null)
+  const [editCatNewName, setEditCatNewName] = useState('')
+  const [addingSubTo, setAddingSubTo] = useState(false)
+  const [addSubName, setAddSubName] = useState('')
+  const [renamingSub, setRenamingSub] = useState<{ old: string; new: string } | null>(null)
 
   function saveNotes() {
     dispatch({ type: 'SET_TEMPLATE', template: { ...template, notes: notesText } })
@@ -30,24 +42,81 @@ export function SettingsPage() {
     setAddingCategory(false)
   }
 
-  function renameCategory() {
-    if (!editingCategory || !editingCategory.newName.trim()) return
+  function saveRenameCategory() {
+    if (!editingCatName || !editCatNewName.trim()) return
     const updated = template.categories.map(c =>
-      c.name === editingCategory.oldName
-        ? { ...c, name: editingCategory.newName.trim(), items: c.items.map(i => ({ ...i, category: editingCategory.newName.trim() })) }
+      c.name === editingCatName
+        ? { ...c, name: editCatNewName.trim(), items: c.items.map(i => ({ ...i, category: editCatNewName.trim() })) }
         : c
     )
     dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
-    setEditingCategory(null)
+    setEditingCatName(editCatNewName.trim())
   }
 
   function deleteCategory(name: string) {
     dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: template.categories.filter(c => c.name !== name) } })
   }
 
+  // Subcategory management
+  function getSubcategories(catName: string): string[] {
+    const cat = template.categories.find(c => c.name === catName)
+    if (!cat) return []
+    const subs: string[] = []
+    for (const item of cat.items) {
+      if (item.subcategory && !subs.includes(item.subcategory)) subs.push(item.subcategory)
+    }
+    return subs
+  }
+
+  function renameSubcategory(catName: string) {
+    if (!renamingSub || !renamingSub.new.trim()) return
+    const updated = template.categories.map(c => {
+      if (c.name !== catName) return c
+      return {
+        ...c,
+        items: c.items.map(i =>
+          i.subcategory === renamingSub.old ? { ...i, subcategory: renamingSub.new.trim() } : i
+        ),
+      }
+    })
+    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+    setRenamingSub(null)
+  }
+
+  function deleteSubcategory(catName: string, subName: string) {
+    const updated = template.categories.map(c => {
+      if (c.name !== catName) return c
+      return {
+        ...c,
+        items: c.items.map(i =>
+          i.subcategory === subName ? { ...i, subcategory: undefined } : i
+        ),
+      }
+    })
+    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+  }
+
+  // Add item with subcategory
+  function openAddItem(catName: string) {
+    const subs = getSubcategories(catName)
+    setAddingItemTo(catName)
+    setNewItemText('')
+    setNewItemSubcategory(subs.length > 0 ? subs[0] : '')
+    setCreatingNewSub(false)
+    setNewSubName('')
+  }
+
   function addItem(catName: string) {
     if (!newItemText.trim()) return
-    const item: TemplateItem = { id: generateId(), text: newItemText.trim(), category: catName }
+    const subcategory = creatingNewSub
+      ? (newSubName.trim() || undefined)
+      : (newItemSubcategory || undefined)
+    const item: TemplateItem = {
+      id: generateId(),
+      text: newItemText.trim(),
+      category: catName,
+      subcategory,
+    }
     const updated = template.categories.map(c =>
       c.name === catName ? { ...c, items: [...c.items, item] } : c
     )
@@ -61,6 +130,15 @@ export function SettingsPage() {
       c.name === catName ? { ...c, items: c.items.filter(i => i.id !== itemId) } : c
     )
     dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+  }
+
+  // Open edit category
+  function openEditCategory(catName: string) {
+    setEditingCatName(catName)
+    setEditCatNewName(catName)
+    setAddingSubTo(false)
+    setAddSubName('')
+    setRenamingSub(null)
   }
 
   return (
@@ -91,10 +169,10 @@ export function SettingsPage() {
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-semibold text-sm">{cat.name} ({cat.items.length})</h4>
             <div className="flex gap-2">
-              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => openAddItem(cat.name)}>
                 <FontAwesomeIcon icon={faPlus} />
               </button>
-              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>
+              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => openEditCategory(cat.name)}>
                 <FontAwesomeIcon icon={faPen} />
               </button>
               <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteCategory(cat.name)}>
@@ -143,25 +221,177 @@ export function SettingsPage() {
       {/* Add category modal */}
       {addingCategory && (
         <Modal title="新增分類" onClose={() => setAddingCategory(false)}>
-          <input className="form-input" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="分類名稱" onKeyDown={e => e.key === 'Enter' && addCategory()} />
+          <input className="form-input" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="分類名稱" onKeyDown={e => e.key === 'Enter' && addCategory()} autoFocus />
           <button className="btn btn-primary w-full mt-3" onClick={addCategory}>新增</button>
         </Modal>
       )}
 
-      {/* Rename category modal */}
-      {editingCategory && (
-        <Modal title="重命名分類" onClose={() => setEditingCategory(null)}>
-          <input className="form-input" value={editingCategory.newName} onChange={e => setEditingCategory({ ...editingCategory, newName: e.target.value })} onKeyDown={e => e.key === 'Enter' && renameCategory()} />
-          <button className="btn btn-primary w-full mt-3" onClick={renameCategory}>儲存</button>
-        </Modal>
+      {/* Edit category full-screen modal (rename + subcategory management) */}
+      {editingCatName && (
+        <FullScreenModal title={`編輯「${editingCatName}」`} onClose={() => setEditingCatName(null)}>
+          {/* Rename */}
+          <div className="form-group">
+            <label className="form-label">分類名稱</label>
+            <div className="flex gap-2">
+              <input className="form-input flex-1" value={editCatNewName} onChange={e => setEditCatNewName(e.target.value)} />
+              {editCatNewName !== editingCatName && (
+                <button className="btn btn-primary btn-sm" onClick={saveRenameCategory}>儲存</button>
+              )}
+            </div>
+          </div>
+
+          {/* Subcategories */}
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <label className="form-label !mb-0">次項目分類</label>
+              <button className="btn-round-add !w-6 !h-6" onClick={() => { setAddingSubTo(true); setAddSubName('') }}>
+                <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
+              </button>
+            </div>
+
+            {addingSubTo && (
+              <div className="flex gap-2 mb-2">
+                <input
+                  className="form-input flex-1"
+                  value={addSubName}
+                  onChange={e => setAddSubName(e.target.value)}
+                  placeholder="新次項目名稱"
+                  autoFocus
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && addSubName.trim()) {
+                      // Create a placeholder item with this subcategory so it appears
+                      const item: TemplateItem = {
+                        id: generateId(),
+                        text: addSubName.trim(),
+                        category: editingCatName,
+                        subcategory: addSubName.trim(),
+                      }
+                      const updated = template.categories.map(c =>
+                        c.name === editingCatName ? { ...c, items: [...c.items, item] } : c
+                      )
+                      dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+                      setAddSubName('')
+                      setAddingSubTo(false)
+                    }
+                  }}
+                />
+                <button className="btn btn-primary btn-sm" onClick={() => {
+                  if (!addSubName.trim()) return
+                  const item: TemplateItem = {
+                    id: generateId(),
+                    text: addSubName.trim(),
+                    category: editingCatName,
+                    subcategory: addSubName.trim(),
+                  }
+                  const updated = template.categories.map(c =>
+                    c.name === editingCatName ? { ...c, items: [...c.items, item] } : c
+                  )
+                  dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+                  setAddSubName('')
+                  setAddingSubTo(false)
+                }}>新增</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setAddingSubTo(false)}>取消</button>
+              </div>
+            )}
+
+            {getSubcategories(editingCatName).length === 0 && !addingSubTo ? (
+              <p className="text-xs text-slate-400">尚無次項目分類</p>
+            ) : (
+              getSubcategories(editingCatName).map(sub => (
+                <div key={sub} className="flex justify-between items-center py-1.5 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                  {renamingSub?.old === sub ? (
+                    <div className="flex gap-2 flex-1 mr-2">
+                      <input
+                        className="form-input flex-1 !py-1"
+                        value={renamingSub.new}
+                        onChange={e => setRenamingSub({ ...renamingSub, new: e.target.value })}
+                        onKeyDown={e => e.key === 'Enter' && renameSubcategory(editingCatName)}
+                        autoFocus
+                      />
+                      <button className="btn btn-primary btn-sm" onClick={() => renameSubcategory(editingCatName)}>儲存</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setRenamingSub(null)}>取消</button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-sm">{sub}</span>
+                      <div className="flex gap-2">
+                        <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setRenamingSub({ old: sub, new: sub })}>
+                          <FontAwesomeIcon icon={faPen} />
+                        </button>
+                        <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteSubcategory(editingCatName, sub)}>
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </FullScreenModal>
       )}
 
-      {/* Add item modal */}
+      {/* Add item full-screen modal */}
       {addingItemTo && (
-        <Modal title={`新增項目到「${addingItemTo}」`} onClose={() => setAddingItemTo(null)}>
-          <input className="form-input" value={newItemText} onChange={e => setNewItemText(e.target.value)} placeholder="項目名稱" onKeyDown={e => e.key === 'Enter' && addItem(addingItemTo)} />
-          <button className="btn btn-primary w-full mt-3" onClick={() => addItem(addingItemTo)}>新增</button>
-        </Modal>
+        <FullScreenModal title={`新增項目到「${addingItemTo}」`} onClose={() => setAddingItemTo(null)}>
+          {(() => {
+            const subs = getSubcategories(addingItemTo)
+            return (
+              <>
+                {subs.length > 0 && (
+                  <div className="form-group">
+                    <label className="form-label">次項目分類</label>
+                    {!creatingNewSub ? (
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          className={`btn btn-sm ${!newItemSubcategory ? 'btn-primary' : 'btn-secondary'}`}
+                          onClick={() => setNewItemSubcategory('')}
+                        >
+                          無
+                        </button>
+                        {subs.map(sub => (
+                          <button
+                            key={sub}
+                            className={`btn btn-sm ${newItemSubcategory === sub ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setNewItemSubcategory(sub)}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                        <button className="btn btn-sm btn-secondary" onClick={() => setCreatingNewSub(true)}>
+                          <FontAwesomeIcon icon={faPlus} className="mr-1" />新次項目
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          className="form-input flex-1"
+                          value={newSubName}
+                          onChange={e => setNewSubName(e.target.value)}
+                          placeholder="新次項目名稱"
+                          autoFocus
+                        />
+                        <button className="btn btn-sm btn-secondary" onClick={() => setCreatingNewSub(false)}>取消</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="form-group">
+                  <label className="form-label">項目名稱</label>
+                  <input
+                    className="form-input"
+                    value={newItemText}
+                    onChange={e => setNewItemText(e.target.value)}
+                    placeholder="例：護照"
+                    onKeyDown={e => e.key === 'Enter' && addItem(addingItemTo)}
+                    autoFocus={subs.length === 0}
+                  />
+                </div>
+                <button className="btn btn-primary w-full" onClick={() => addItem(addingItemTo)}>新增</button>
+              </>
+            )
+          })()}
+        </FullScreenModal>
       )}
     </div>
   )
