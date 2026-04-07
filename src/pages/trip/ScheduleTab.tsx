@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faPen, faTrash, faChevronDown, faChevronUp, faNoteSticky } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
+import { useDoubleTap } from '../../hooks/useDoubleTap'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { Modal } from '../../components/Modal'
 import { InfoRow } from '../../components/InfoRow'
@@ -26,7 +27,7 @@ export function ScheduleTab({ tripId }: Props) {
 
   // Edit day state
   const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null)
-  const dayLastTap = useRef<Record<number, number>>({})
+  const doubleTap = useDoubleTap()
 
   // Schedule notes state
   const [editingNote, setEditingNote] = useState<ScheduleNote | null>(null)
@@ -116,23 +117,17 @@ export function ScheduleTab({ tripId }: Props) {
       ) : (
         schedule.map((day, dayIndex) => (
           <div key={dayIndex} className="card mb-2">
-            <div
-              className="flex items-center justify-between cursor-pointer"
-              onClick={() => {
-                const now = Date.now()
-                if (now - (dayLastTap.current[dayIndex] || 0) < 300) {
-                  setEditingDayIndex(dayIndex)
-                  dayLastTap.current[dayIndex] = 0
-                } else {
-                  toggleDay(dayIndex)
-                  dayLastTap.current[dayIndex] = now
-                }
-              }}
-            >
-              <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
+            <div className="flex items-center justify-between">
+              <h3
+                className="font-semibold text-sm cursor-pointer"
+                onClick={doubleTap(`day-${dayIndex}`, () => setEditingDayIndex(dayIndex))}
+              >
+                {day.label || formatDate(day.date)}
+              </h3>
               <FontAwesomeIcon
                 icon={collapsedDays[dayIndex] ? faChevronDown : faChevronUp}
-                className="text-xs text-slate-400"
+                className="text-xs text-slate-400 cursor-pointer p-1"
+                onClick={() => toggleDay(dayIndex)}
               />
             </div>
 
