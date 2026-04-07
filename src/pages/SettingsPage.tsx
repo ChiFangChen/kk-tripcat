@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faThumbtack } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { Modal } from '../components/Modal'
 import { generateId } from '../utils/id'
@@ -68,7 +70,7 @@ export function SettingsPage() {
       {/* Notes */}
       <div className="card mb-4">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold text-sm">📌 注意事項</h3>
+          <h3 className="font-semibold text-sm"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</h3>
           <button className="text-sky-500 text-xs" onClick={() => { setNotesText(template.notes); setEditingNotes(true) }}>編輯</button>
         </div>
         <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">

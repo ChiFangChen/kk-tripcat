@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faStar, faLink } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { generateId } from '../../utils/id'
 import type { ShoppingItem, FavoriteItem } from '../../types'
@@ -131,7 +133,7 @@ export function ShoppingTab({ tripId }: Props) {
           <p className="text-sm mb-2">找到相似的「喜歡的東西」，要連結嗎？</p>
           {matchingFavorites.map(fav => (
             <button key={fav.id} className="btn btn-sm btn-primary mr-2 mb-1" onClick={() => createItem(pendingItem, fav.id)}>
-              🔗 {fav.name}
+              <FontAwesomeIcon icon={faLink} className="mr-1" />{fav.name}
             </button>
           ))}
           <button className="btn btn-sm btn-secondary mb-1" onClick={() => createItem(pendingItem)}>
@@ -170,7 +172,7 @@ export function ShoppingTab({ tripId }: Props) {
               })()}
             </div>
             <button className={`star-btn ${item.starred ? 'active' : ''}`} onClick={() => toggleStar(item)}>
-              {item.starred ? '★' : '☆'}
+              <FontAwesomeIcon icon={faStar} className={item.starred ? '' : 'opacity-25'} />
             </button>
             {deleteVisibleId === item.id && (
               <button

@@ -1,3 +1,5 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlane, faNoteSticky, faGear } from '@fortawesome/free-solid-svg-icons'
 import type { TabType } from '../types'
 
 interface Props {
@@ -5,13 +7,13 @@ interface Props {
   onTabChange: (tab: TabType) => void
 }
 
-export function BottomTabBar({ activeTab, onTabChange }: Props) {
-  const tabs: { key: TabType; label: string; icon: string }[] = [
-    { key: 'trips', label: '旅程', icon: '✈️' },
-    { key: 'notes', label: '筆記', icon: '📝' },
-    { key: 'settings', label: '設置', icon: '⚙️' },
-  ]
+const tabs: { key: TabType; label: string; icon: typeof faPlane }[] = [
+  { key: 'trips', label: '旅程', icon: faPlane },
+  { key: 'notes', label: '筆記', icon: faNoteSticky },
+  { key: 'settings', label: '設置', icon: faGear },
+]
 
+export function BottomTabBar({ activeTab, onTabChange }: Props) {
   return (
     <div className="tab-bar">
       {tabs.map(tab => (
@@ -20,7 +22,7 @@ export function BottomTabBar({ activeTab, onTabChange }: Props) {
           className={`tab-bar-item ${activeTab === tab.key ? 'active' : ''}`}
           onClick={() => onTabChange(tab.key)}
         >
-          <span className="text-xl">{tab.icon}</span>
+          <FontAwesomeIcon icon={tab.icon} className="text-lg" />
           <span>{tab.label}</span>
         </button>
       ))}
