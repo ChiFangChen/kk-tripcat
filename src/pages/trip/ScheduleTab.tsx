@@ -94,8 +94,8 @@ export function ScheduleTab({ tripId }: Props) {
       {/* Schedule days */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">行程表</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowAddDay(true)}>
-          <FontAwesomeIcon icon={faPlus} />
+        <button className="btn-round-add" onClick={() => setShowAddDay(true)}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 
@@ -138,11 +138,8 @@ export function ScheduleTab({ tripId }: Props) {
                     </div>
                   </div>
                 ))}
-                <button
-                  className="text-slate-500 dark:text-slate-400 text-xs mt-2 px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() => addActivity(dayIndex)}
-                >
-                  <FontAwesomeIcon icon={faPlus} />
+                <button className="btn-round-add mt-2" onClick={() => addActivity(dayIndex)}>
+                  <FontAwesomeIcon icon={faPlus} className="text-xs" />
                 </button>
               </div>
             )}
@@ -155,8 +152,8 @@ export function ScheduleTab({ tripId }: Props) {
         <h2 className="font-semibold">
           <FontAwesomeIcon icon={faNoteSticky} className="mr-2 text-amber-400" />行程筆記
         </h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowAddNote(true)}>
-          <FontAwesomeIcon icon={faPlus} />
+        <button className="btn-round-add" onClick={() => setShowAddNote(true)}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 

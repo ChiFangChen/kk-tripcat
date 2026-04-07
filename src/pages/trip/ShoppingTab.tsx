@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faStar, faLink, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
+import { FullScreenModal } from '../../components/FullScreenModal'
 import { generateId } from '../../utils/id'
 import { formatDate } from '../../utils/date'
 import type { ShoppingItem, FavoriteItem } from '../../types'
@@ -15,6 +16,7 @@ export function ShoppingTab({ tripId }: Props) {
   const tripData = getTripData(tripId)
   const items = tripData.shopping
   const [showCompleted, setShowCompleted] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const [newItem, setNewItem] = useState('')
   const [matchingFavorites, setMatchingFavorites] = useState<FavoriteItem[]>([])
   const [pendingItem, setPendingItem] = useState<string | null>(null)
@@ -42,6 +44,13 @@ export function ShoppingTab({ tripId }: Props) {
   function toggleCheck(id: string) {
     const updated = items.map(i => i.id === id ? { ...i, checked: !i.checked } : i)
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { shopping: updated } })
+  }
+
+  function openAdd() {
+    setNewItem('')
+    setMatchingFavorites([])
+    setPendingItem(null)
+    setShowAddModal(true)
   }
 
   function addItem() {
@@ -72,6 +81,7 @@ export function ShoppingTab({ tripId }: Props) {
     setNewItem('')
     setMatchingFavorites([])
     setPendingItem(null)
+    setShowAddModal(false)
   }
 
   function deleteItem(id: string) {
@@ -108,42 +118,42 @@ export function ShoppingTab({ tripId }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm text-slate-500">
-          {unchecked.length} 項未買 / {items.length} 項
+      {/* Progress bar + add */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex-1">
+          <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: items.length ? `${(checked.length / items.length) * 100}%` : '0%',
+                background: checked.length === items.length && items.length > 0 ? 'var(--color-success)' : 'var(--color-primary)',
+              }}
+            />
+          </div>
+        </div>
+        <span className="text-xs text-slate-400 w-8 text-right">
+          {items.length ? Math.round((checked.length / items.length) * 100) : 0}%
         </span>
-        <label className="filter-toggle">
-          <input type="checkbox" checked={showCompleted} onChange={e => setShowCompleted(e.target.checked)} />
-          顯示已買 ({checked.length})
-        </label>
-      </div>
-
-      <div className="flex gap-2 mb-4">
-        <input
-          className="form-input flex-1"
-          placeholder="新增購物項目..."
-          value={newItem}
-          onChange={e => setNewItem(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addItem()}
-        />
-        <button className="btn btn-primary btn-sm !p-1.5 !rounded-full w-8 h-8 flex items-center justify-center" onClick={addItem}>
+        <button className="btn-round-add" onClick={openAdd}>
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 
-      {matchingFavorites.length > 0 && pendingItem && (
-        <div className="card mb-4 border-amber-300">
-          <p className="text-sm mb-2">找到相似的「喜歡的東西」，要連結嗎？</p>
-          {matchingFavorites.map(fav => (
-            <button key={fav.id} className="btn btn-sm btn-primary mr-2 mb-1" onClick={() => createItem(pendingItem, fav.id)}>
-              <FontAwesomeIcon icon={faLink} className="mr-1" />{fav.name}
-            </button>
-          ))}
-          <button className="btn btn-sm btn-secondary mb-1" onClick={() => createItem(pendingItem)}>
-            不連結，直接新增
-          </button>
-        </div>
-      )}
+      {/* Filter segmented control */}
+      <div className="flex gap-1 mb-3 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+        <button
+          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
+          onClick={() => setShowCompleted(false)}
+        >
+          未買 ({unchecked.length})
+        </button>
+        <button
+          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
+          onClick={() => setShowCompleted(true)}
+        >
+          全部 ({items.length})
+        </button>
+      </div>
 
       <div className="card">
         {displayed.map(item => (
@@ -189,10 +199,43 @@ export function ShoppingTab({ tripId }: Props) {
         ))}
         {displayed.length === 0 && (
           <div className="py-4 text-center text-sm text-slate-400">
-            {showCompleted ? '購物清單是空的' : '全部買好了！🎉'}
+            {showCompleted ? '購物清單是空的' : '全部買好了！'}
           </div>
         )}
       </div>
+
+      {/* Full-screen add modal */}
+      {showAddModal && (
+        <FullScreenModal title="新增購物項目" onClose={() => setShowAddModal(false)}>
+          <div className="form-group">
+            <label className="form-label">品名</label>
+            <input
+              className="form-input"
+              value={newItem}
+              onChange={e => setNewItem(e.target.value)}
+              placeholder="例：防曬乳"
+              onKeyDown={e => e.key === 'Enter' && addItem()}
+              autoFocus
+            />
+          </div>
+
+          {matchingFavorites.length > 0 && pendingItem && (
+            <div className="card mb-4 border-amber-300">
+              <p className="text-sm mb-2">找到相似的「喜歡的東西」，要連結嗎？</p>
+              {matchingFavorites.map(fav => (
+                <button key={fav.id} className="btn btn-sm btn-primary mr-2 mb-1" onClick={() => createItem(pendingItem, fav.id)}>
+                  <FontAwesomeIcon icon={faLink} className="mr-1" />{fav.name}
+                </button>
+              ))}
+              <button className="btn btn-sm btn-secondary mb-1" onClick={() => createItem(pendingItem)}>
+                不連結，直接新增
+              </button>
+            </div>
+          )}
+
+          <button className="btn btn-primary w-full" onClick={addItem}>新增</button>
+        </FullScreenModal>
+      )}
     </div>
   )
 }

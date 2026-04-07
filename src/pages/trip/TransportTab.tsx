@@ -66,8 +66,8 @@ export function TransportTab({ tripId }: Props) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">交通資訊</h2>
-        <button className="btn btn-primary btn-sm" onClick={openAdd}>
-          <FontAwesomeIcon icon={faPlus} />
+        <button className="btn-round-add" onClick={openAdd}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 

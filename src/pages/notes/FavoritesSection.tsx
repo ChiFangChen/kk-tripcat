@@ -53,7 +53,7 @@ export function FavoritesSection() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">喜歡的東西</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setEditing(newFavorite())}><FontAwesomeIcon icon={faPlus} /></button>
+        <button className="btn-round-add" onClick={() => setEditing(newFavorite())}><FontAwesomeIcon icon={faPlus} className="text-xs" /></button>
       </div>
 
       {state.favorites.length === 0 ? (
@@ -64,8 +64,8 @@ export function FavoritesSection() {
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-semibold"><FontAwesomeIcon icon={faStar} className="text-amber-400 mr-1" />{fav.name}</h3>
               <div className="flex gap-2">
-                <button className="text-slate-500 dark:text-slate-400 text-xs px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setAddingPurchaseTo(fav.id)}>
-                  <FontAwesomeIcon icon={faPlus} />
+                <button className="btn-round-add !w-6 !h-6" onClick={() => setAddingPurchaseTo(fav.id)}>
+                  <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
                 </button>
                 <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => remove(fav.id)}>
                   <FontAwesomeIcon icon={faTrash} />

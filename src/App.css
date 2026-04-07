@@ -3,7 +3,7 @@
   --color-primary-dark: #5BA8C8;
   --color-bg: #f8fafc;
   --color-card: #ffffff;
-  --color-text: #1e293b;
+  --color-text: #334155;
   --color-text-secondary: #64748b;
   --color-border: #e2e8f0;
   --color-success: #22c55e;
@@ -325,6 +325,25 @@ body {
 .btn-sm {
   padding: 4px 12px;
   font-size: 12px;
+}
+
+.btn-round-add {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.btn-round-add:active {
+  background: var(--color-primary-dark);
 }
 
 /* Modal */
