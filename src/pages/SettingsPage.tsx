@@ -2,136 +2,138 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { Modal } from '../components/Modal'
 import { generateId } from '../utils/id'
-import type { Template, TemplateItem } from '../types'
+import type { TemplateCategory, TemplateItem } from '../types'
 
 export function SettingsPage() {
   const { state, dispatch } = useApp()
-  const [editing, setEditing] = useState<Template | null>(null)
+  const template = state.template
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesText, setNotesText] = useState(template.notes)
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [addingItemTo, setAddingItemTo] = useState<string | null>(null)
+  const [newItemText, setNewItemText] = useState('')
+  const [editingCategory, setEditingCategory] = useState<{ oldName: string; newName: string } | null>(null)
 
-  function save(template: Template) {
-    const exists = state.templates.find(t => t.id === template.id)
-    if (exists) {
-      dispatch({ type: 'UPDATE_TEMPLATE', template })
-    } else {
-      dispatch({ type: 'ADD_TEMPLATE', template })
-    }
-    setEditing(null)
+  function saveNotes() {
+    dispatch({ type: 'SET_TEMPLATE', template: { ...template, notes: notesText } })
+    setEditingNotes(false)
   }
 
-  function remove(id: string) {
-    dispatch({ type: 'DELETE_TEMPLATE', templateId: id })
+  function addCategory() {
+    if (!newCatName.trim()) return
+    const cat: TemplateCategory = { name: newCatName.trim(), items: [] }
+    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: [...template.categories, cat] } })
+    setNewCatName('')
+    setAddingCategory(false)
   }
 
-  function newTemplate(): Template {
-    return { id: generateId(), name: '', preparationItems: [], shoppingItems: [] }
+  function renameCategory() {
+    if (!editingCategory || !editingCategory.newName.trim()) return
+    const updated = template.categories.map(c =>
+      c.name === editingCategory.oldName
+        ? { ...c, name: editingCategory.newName.trim(), items: c.items.map(i => ({ ...i, category: editingCategory.newName.trim() })) }
+        : c
+    )
+    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+    setEditingCategory(null)
+  }
+
+  function deleteCategory(name: string) {
+    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: template.categories.filter(c => c.name !== name) } })
+  }
+
+  function addItem(catName: string) {
+    if (!newItemText.trim()) return
+    const item: TemplateItem = { id: generateId(), text: newItemText.trim(), category: catName }
+    const updated = template.categories.map(c =>
+      c.name === catName ? { ...c, items: [...c.items, item] } : c
+    )
+    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
+    setNewItemText('')
+    setAddingItemTo(null)
+  }
+
+  function deleteItem(catName: string, itemId: string) {
+    const updated = template.categories.map(c =>
+      c.name === catName ? { ...c, items: c.items.filter(i => i.id !== itemId) } : c
+    )
+    dispatch({ type: 'SET_TEMPLATE', template: { ...template, categories: updated } })
   }
 
   return (
     <div className="page-container">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">模板庫</h2>
-        <button className="btn btn-primary" onClick={() => setEditing(newTemplate())}>+ 新模板</button>
+      <h2 className="text-xl font-bold mb-4">模板設定</h2>
+
+      {/* Notes */}
+      <div className="card mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-semibold text-sm">📌 注意事項</h3>
+          <button className="text-sky-500 text-xs" onClick={() => { setNotesText(template.notes); setEditingNotes(true) }}>編輯</button>
+        </div>
+        <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">
+          {template.notes || '(無)'}
+        </p>
       </div>
 
-      {state.templates.length === 0 ? (
-        <div className="empty-state">
-          <p className="text-4xl mb-2">📋</p>
-          <p>建立模板，快速準備每次旅程</p>
-        </div>
-      ) : (
-        state.templates.map(template => (
-          <div key={template.id} className="card">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold">{template.name}</h3>
-              <div className="flex gap-2">
-                <button className="text-sky-500 text-xs" onClick={() => setEditing(template)}>編輯</button>
-                <button className="text-red-400 text-xs" onClick={() => remove(template.id)}>刪除</button>
-              </div>
-            </div>
-            <p className="text-sm text-slate-500">
-              準備事項 {template.preparationItems.length} 項 / 購物清單 {template.shoppingItems.length} 項
-            </p>
-          </div>
-        ))
-      )}
+      {/* Categories */}
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-semibold">準備事項分類</h3>
+        <button className="btn btn-primary btn-sm" onClick={() => setAddingCategory(true)}>+ 分類</button>
+      </div>
 
-      {editing && (
-        <Modal title={editing.name ? '編輯模板' : '新模板'} onClose={() => setEditing(null)}>
-          <TemplateForm template={editing} onSave={save} />
+      {template.categories.map(cat => (
+        <div key={cat.name} className="card mb-2">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="font-semibold text-sm">{cat.name} ({cat.items.length})</h4>
+            <div className="flex gap-2">
+              <button className="text-sky-500 text-xs" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>重命名</button>
+              <button className="text-sky-500 text-xs" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>+ 項目</button>
+              <button className="text-red-400 text-xs" onClick={() => deleteCategory(cat.name)}>刪除</button>
+            </div>
+          </div>
+          <div className="text-sm text-slate-500">
+            {cat.items.map(item => (
+              <div key={item.id} className="flex justify-between items-center py-0.5">
+                <span>{item.text}</span>
+                <button className="text-red-400 text-xs" onClick={() => deleteItem(cat.name, item.id)}>✕</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Edit notes modal */}
+      {editingNotes && (
+        <Modal title="編輯注意事項" onClose={() => setEditingNotes(false)}>
+          <textarea className="form-input" rows={5} value={notesText} onChange={e => setNotesText(e.target.value)} />
+          <button className="btn btn-primary w-full mt-3" onClick={saveNotes}>儲存</button>
         </Modal>
       )}
-    </div>
-  )
-}
 
-function TemplateForm({ template, onSave }: { template: Template; onSave: (t: Template) => void }) {
-  const [name, setName] = useState(template.name)
-  const [prepItems, setPrepItems] = useState(template.preparationItems)
-  const [shopItems, setShopItems] = useState(template.shoppingItems)
-  const [newPrep, setNewPrep] = useState('')
-  const [newPrepCat, setNewPrepCat] = useState('')
-  const [newShop, setNewShop] = useState('')
-  const [newShopCat, setNewShopCat] = useState('')
+      {/* Add category modal */}
+      {addingCategory && (
+        <Modal title="新增分類" onClose={() => setAddingCategory(false)}>
+          <input className="form-input" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="分類名稱" onKeyDown={e => e.key === 'Enter' && addCategory()} />
+          <button className="btn btn-primary w-full mt-3" onClick={addCategory}>新增</button>
+        </Modal>
+      )}
 
-  function addPrep() {
-    if (!newPrep.trim()) return
-    const item: TemplateItem = { id: generateId(), text: newPrep.trim(), category: newPrepCat || '其他' }
-    setPrepItems([...prepItems, item])
-    setNewPrep('')
-  }
+      {/* Rename category modal */}
+      {editingCategory && (
+        <Modal title="重命名分類" onClose={() => setEditingCategory(null)}>
+          <input className="form-input" value={editingCategory.newName} onChange={e => setEditingCategory({ ...editingCategory, newName: e.target.value })} onKeyDown={e => e.key === 'Enter' && renameCategory()} />
+          <button className="btn btn-primary w-full mt-3" onClick={renameCategory}>儲存</button>
+        </Modal>
+      )}
 
-  function addShop() {
-    if (!newShop.trim()) return
-    const item: TemplateItem = { id: generateId(), text: newShop.trim(), category: newShopCat || '其他' }
-    setShopItems([...shopItems, item])
-    setNewShop('')
-  }
-
-  function handleSave() {
-    if (!name.trim()) return
-    onSave({ ...template, name: name.trim(), preparationItems: prepItems, shoppingItems: shopItems })
-  }
-
-  return (
-    <div>
-      <div className="form-group">
-        <label className="form-label">模板名稱</label>
-        <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="例：日本旅行" />
-      </div>
-
-      <h3 className="font-semibold text-sm mb-2">準備事項</h3>
-      <div className="mb-3">
-        {prepItems.map((item, i) => (
-          <div key={item.id} className="flex items-center gap-2 text-sm py-1">
-            <span className="text-slate-400 text-xs">[{item.category}]</span>
-            <span className="flex-1">{item.text}</span>
-            <button className="text-red-400 text-xs" onClick={() => setPrepItems(prepItems.filter((_, idx) => idx !== i))}>✕</button>
-          </div>
-        ))}
-        <div className="flex gap-2 mt-1">
-          <input className="form-input flex-1" placeholder="項目" value={newPrep} onChange={e => setNewPrep(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPrep()} />
-          <input className="form-input w-20" placeholder="分類" value={newPrepCat} onChange={e => setNewPrepCat(e.target.value)} />
-          <button className="btn btn-sm btn-primary" onClick={addPrep}>+</button>
-        </div>
-      </div>
-
-      <h3 className="font-semibold text-sm mb-2">購物清單</h3>
-      <div className="mb-3">
-        {shopItems.map((item, i) => (
-          <div key={item.id} className="flex items-center gap-2 text-sm py-1">
-            <span className="text-slate-400 text-xs">[{item.category}]</span>
-            <span className="flex-1">{item.text}</span>
-            <button className="text-red-400 text-xs" onClick={() => setShopItems(shopItems.filter((_, idx) => idx !== i))}>✕</button>
-          </div>
-        ))}
-        <div className="flex gap-2 mt-1">
-          <input className="form-input flex-1" placeholder="項目" value={newShop} onChange={e => setNewShop(e.target.value)} onKeyDown={e => e.key === 'Enter' && addShop()} />
-          <input className="form-input w-20" placeholder="分類" value={newShopCat} onChange={e => setNewShopCat(e.target.value)} />
-          <button className="btn btn-sm btn-primary" onClick={addShop}>+</button>
-        </div>
-      </div>
-
-      <button className="btn btn-primary w-full" onClick={handleSave}>儲存模板</button>
+      {/* Add item modal */}
+      {addingItemTo && (
+        <Modal title={`新增項目到「${addingItemTo}」`} onClose={() => setAddingItemTo(null)}>
+          <input className="form-input" value={newItemText} onChange={e => setNewItemText(e.target.value)} placeholder="項目名稱" onKeyDown={e => e.key === 'Enter' && addItem(addingItemTo)} />
+          <button className="btn btn-primary w-full mt-3" onClick={() => addItem(addingItemTo)}>新增</button>
+        </Modal>
+      )}
     </div>
   )
 }
