@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCircleCheck, faSuitcaseRolling, faThumbtack } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { generateId } from '../../utils/id'
 import type { ChecklistItem } from '../../types'
@@ -83,13 +85,14 @@ export function PreparationTab({ tripId }: Props) {
         className={`got-ready-btn ${trip?.gotReady ? 'ready' : ''}`}
         onClick={toggleGotReady}
       >
-        {trip?.gotReady ? '✅ 準備完成！' : '🎒 Got Ready!'}
+        <FontAwesomeIcon icon={trip?.gotReady ? faCircleCheck : faSuitcaseRolling} className="mr-2" />
+        {trip?.gotReady ? '準備完成！' : 'Got Ready!'}
       </button>
 
       {/* Notes block */}
       {notes && (
         <div className="card mb-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-          <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">📌 注意事項</p>
+          <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</p>
           <p className="text-sm whitespace-pre-wrap">{notes}</p>
         </div>
       )}

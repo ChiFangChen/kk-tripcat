@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faStar } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { Modal } from '../../components/Modal'
 import { generateId } from '../../utils/id'
@@ -59,7 +61,7 @@ export function FavoritesSection() {
         state.favorites.map(fav => (
           <div key={fav.id} className="card">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold">★ {fav.name}</h3>
+              <h3 className="font-semibold"><FontAwesomeIcon icon={faStar} className="text-amber-400 mr-1" />{fav.name}</h3>
               <div className="flex gap-2">
                 <button className="text-sky-500 text-xs" onClick={() => setAddingPurchaseTo(fav.id)}>+ 紀錄</button>
                 <button className="text-red-400 text-xs" onClick={() => remove(fav.id)}>刪除</button>

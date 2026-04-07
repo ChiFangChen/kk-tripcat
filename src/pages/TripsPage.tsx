@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faThumbtack, faCat } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { generateId } from '../utils/id'
 import type { Trip, TripType, ChecklistItem } from '../types'
@@ -162,7 +164,7 @@ export function TripsPage({ onSelectTrip }: Props) {
 
         {state.template.notes && (
           <div className="card mb-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">📌 注意事項</p>
+            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</p>
             <p className="text-sm whitespace-pre-wrap">{state.template.notes}</p>
           </div>
         )}
@@ -268,7 +270,7 @@ export function TripsPage({ onSelectTrip }: Props) {
 
       {sortedTrips.length === 0 ? (
         <div className="empty-state">
-          <p className="text-4xl mb-2">🐱</p>
+          <p className="text-4xl mb-2"><FontAwesomeIcon icon={faCat} /></p>
           <p>還沒有旅程，開始規劃吧！</p>
         </div>
       ) : (
