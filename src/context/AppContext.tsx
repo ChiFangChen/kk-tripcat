@@ -12,13 +12,8 @@ import {
   subscribeToUserTripData,
   subscribeToTemplate,
   syncUser,
-  syncTrip,
-  deleteTripFromFirestore,
   syncSharedTripData,
-  deleteSharedTripData,
   syncUserTripData,
-  deleteUserTripData,
-  syncTemplate,
 } from '../utils/firebase'
 import { defaultTemplate } from '../data/seed'
 import type { Firestore } from 'firebase/firestore'
