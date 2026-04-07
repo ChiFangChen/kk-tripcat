@@ -128,10 +128,10 @@ export function ScheduleTab({ tripId }: Props) {
                 {day.activities.map(activity => (
                   <div
                     key={activity.id}
-                    className="flex items-start gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
+                    className="flex items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
                     onClick={() => setSelectedActivity({ activity, dayIndex })}
                   >
-                    <span className="text-xs text-slate-400 font-mono w-11 flex-shrink-0 pt-0.5">{activity.time || ''}</span>
+                    <span className="text-xs text-slate-400 font-mono w-11 flex-shrink-0">{activity.time || ''}</span>
                     <div className="flex-1">
                       <span className="text-sm font-medium">{activity.name}</span>
                       {activity.note && <p className="text-xs text-slate-400 mt-0.5">{activity.note}</p>}

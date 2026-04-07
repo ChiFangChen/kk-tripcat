@@ -112,11 +112,19 @@ export function PreparationTab({ tripId }: Props) {
     }
   }
 
+  function closeFab() {
+    setFabExpanded(false)
+    if (fabTimer.current) clearTimeout(fabTimer.current)
+  }
+
   return (
     <div>
+      {/* Backdrop to close FAB */}
+      {fabExpanded && <div className="fixed inset-0 z-30" onClick={closeFab} />}
+
       {/* Got Ready FAB */}
       <button
-        className={`got-ready-fab ${fabExpanded ? 'expanded' : ''} ${trip?.gotReady ? 'ready' : ''}`}
+        className={`got-ready-fab ${fabExpanded ? 'expanded' : ''}`}
         onClick={handleFabClick}
       >
         <FontAwesomeIcon icon={trip?.gotReady ? faCircleCheck : faSuitcaseRolling} />
