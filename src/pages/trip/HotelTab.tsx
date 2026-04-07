@@ -108,15 +108,15 @@ function HotelForm({ hotel, onSave }: { hotel: Hotel; onSave: (h: Hotel) => void
   return (
     <div>
       <div className="form-group"><label className="form-label">飯店名稱</label><input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">訂房平台</label><input className="form-input" value={booking.platform || ''} onChange={e => setBooking({ ...booking, platform: e.target.value })} placeholder="Booking.com / Klook" /></div>
+      <div className="form-group"><label className="form-label">訂房平台</label><input className="form-input" value={booking.platform || ''} onChange={e => setBooking({ ...booking, platform: e.target.value })} placeholder="Booking.com ／ Klook" /></div>
       <div className="form-group"><label className="form-label">訂單編號</label><input className="form-input" value={booking.orderNumber || ''} onChange={e => setBooking({ ...booking, orderNumber: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">負責人</label><input className="form-input" value={booking.assignee || ''} onChange={e => setBooking({ ...booking, assignee: e.target.value })} placeholder="誰負責訂的" /></div>
       <div className="form-group"><label className="form-label">價格</label><input className="form-input" value={booking.amount || ''} onChange={e => setBooking({ ...booking, amount: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">地址</label><input className="form-input" value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">Google Map 連結</label><input className="form-input" value={form.googleMapUrl || ''} onChange={e => setForm({ ...form, googleMapUrl: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">電話</label><input className="form-input" value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">入住時間</label><input className="form-input" value={form.checkIn || ''} onChange={e => setForm({ ...form, checkIn: e.target.value })} placeholder="2026/4/9 (四) 14:00~23:30" /></div>
-      <div className="form-group"><label className="form-label">退房時間</label><input className="form-input" value={form.checkOut || ''} onChange={e => setForm({ ...form, checkOut: e.target.value })} placeholder="2026/4/14 (二) 6:00~12:00" /></div>
+      <div className="form-group"><label className="form-label">入住時間</label><input className="form-input" value={form.checkIn || ''} onChange={e => setForm({ ...form, checkIn: e.target.value })} placeholder="2026／4／9 (四) 14:00~23:30" /></div>
+      <div className="form-group"><label className="form-label">退房時間</label><input className="form-input" value={form.checkOut || ''} onChange={e => setForm({ ...form, checkOut: e.target.value })} placeholder="2026／4／14 (二) 6:00~12:00" /></div>
       <div className="form-group"><label className="form-label">房型</label><input className="form-input" value={form.roomType || ''} onChange={e => setForm({ ...form, roomType: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">人數</label><input className="form-input" value={form.guests || ''} onChange={e => setForm({ ...form, guests: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">備註</label><textarea className="form-input" value={form.note || ''} onChange={e => setForm({ ...form, note: e.target.value })} /></div>

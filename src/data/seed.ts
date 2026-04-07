@@ -2,7 +2,7 @@ import type { Trip, ChecklistItem, FlightInfo, Hotel, ScheduleDay, ScheduleNote,
 
 // === DEFAULT TEMPLATE ===
 
-const templateNotes = `*有些東西只能托運（武器/刀具/棍棒/液體>100ml/噴罐/長長的東西/蜂鳴器）
+const templateNotes = `*有些東西只能托運（武器／刀具／棍棒／液體>100ml／噴罐／長長的東西／蜂鳴器）
 *有些東西只能手提（電池）`
 
 const templateCategories: TemplateCategory[] = [
@@ -12,8 +12,8 @@ const templateCategories: TemplateCategory[] = [
       { id: 'tp-1', text: '護照', category: '旅遊' },
       { id: 'tp-2', text: '機票', category: '旅遊' },
       { id: 'tp-3', text: 'sim', category: '旅遊' },
-      { id: 'tp-4', text: '證件（身分證/健保卡）', category: '旅遊' },
-      { id: 'tp-5', text: '台幣/信用卡（flygo）', category: '旅遊' },
+      { id: 'tp-4', text: '證件（身分證／健保卡）', category: '旅遊' },
+      { id: 'tp-5', text: '台幣／信用卡（flygo）', category: '旅遊' },
       { id: 'tp-6', text: '各種票卷', category: '旅遊' },
       { id: 'tp-7', text: '筆', category: '旅遊' },
       { id: 'tp-8', text: '耳機', category: '旅遊' },
@@ -64,9 +64,8 @@ const templateCategories: TemplateCategory[] = [
   {
     name: '美容',
     items: [
-      // 化妝品
-      { id: 'tp-37', text: '化妝品', category: '美容', subcategory: '化妝品' },
-      { id: 'tp-19', text: '飾品（耳環/手環/項鍊）', category: '美容', subcategory: '化妝品' },
+      { id: 'tp-37', text: '化妝品', category: '美容' },
+      { id: 'tp-19', text: '飾品（耳環／手環／項鍊）', category: '美容' },
       // 頭髮
       { id: 'tp-38', text: '髮夾', category: '美容', subcategory: '頭髮' },
       { id: 'tp-39', text: '髮圈', category: '美容', subcategory: '頭髮' },
@@ -148,7 +147,7 @@ const templateCategories: TemplateCategory[] = [
       { id: 'tp-89', text: '行動電源', category: '手機相關' },
       { id: 'tp-90', text: '充電線', category: '手機相關' },
       { id: 'tp-91', text: '充電線 type a 轉接頭（有些插座孔）', category: '手機相關' },
-      { id: 'tp-92', text: '腳架/自拍棒', category: '手機相關' },
+      { id: 'tp-92', text: '腳架／自拍棒', category: '手機相關' },
     ],
   },
   {
@@ -206,8 +205,8 @@ export const seedFlights: FlightInfo[] = [
     memberPlan: '星宇航空 - COSMILE',
     memberNumber: '132027394',
     ticketPrice: '$15288',
-    checkedBaggage: '1 件免費 —— 23公斤（50磅）/總尺寸（長+寬+高）158公分（62英吋）',
-    carryOn: '手提行李：1 件免費 —— 總重量7公斤（15磅）/ 總尺寸（長+寬+高）115公分（45英吋）\n個人物品：1 件免費 —— 總尺寸（長+寬+高）80公分（32英吋）',
+    checkedBaggage: '1 件免費 —— 23公斤（50磅）／總尺寸（長+寬+高）158公分（62英吋）',
+    carryOn: '手提行李：1 件免費 —— 總重量7公斤（15磅）／總尺寸（長+寬+高）115公分（45英吋）\n個人物品：1 件免費 —— 總尺寸（長+寬+高）80公分（32英吋）',
     legs: [
       {
         id: 'leg-go',
@@ -244,12 +243,12 @@ export const seedHotels: Hotel[] = [
     booking: {
       platform: 'K BOOKING',
       orderNumber: '6406376028',
-      amount: 'THB 10,944（2026/4/6 刷卡）',
+      amount: 'THB 10,944（2026／4／6 刷卡）',
     },
     address: 'Rachadamnoen Rd Soi 3, Tambon Si Phum, Amphoe Mueang Chiang Mai, Si Phum, 50300 清邁, 泰國',
     phone: '+66 92 665 0404',
-    checkIn: '2026/4/9（四）14:00～23:30',
-    checkOut: '2026/4/14（二）6:00～12:00',
+    checkIn: '2026／4／9（四）14:00～23:30',
+    checkOut: '2026／4／14（二）6:00～12:00',
     roomType: '園景雙床房',
     guests: '2 位成人',
     note: '5 晚',
@@ -259,7 +258,7 @@ export const seedHotels: Hotel[] = [
 export const seedSchedule: ScheduleDay[] = [
   {
     date: '2026-04-09',
-    label: '4/9（四）',
+    label: '4／9（四）',
     activities: [
       { id: 'a-1-1', time: '13:20', name: '台北出發' },
       { id: 'a-1-2', time: '16:20', name: '抵達清邁' },
@@ -275,7 +274,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-10',
-    label: '4/10（五）',
+    label: '4／10（五）',
     activities: [
       {
         id: 'a-2-1',
@@ -292,7 +291,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-11',
-    label: '4/11（六）',
+    label: '4／11（六）',
     activities: [
       { id: 'a-3-0', name: '潑水節（start）' },
       { id: 'a-3-1', name: '[早午餐] No.39 Cafe' },
@@ -309,7 +308,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-12',
-    label: '4/12（日）',
+    label: '4／12（日）',
     activities: [
       { id: 'a-4-0', name: '潑水節（crazy）' },
       { id: 'a-4-1', name: '[早午餐]' },
@@ -320,7 +319,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-13',
-    label: '4/13（一）',
+    label: '4／13（一）',
     activities: [
       { id: 'a-5-0', name: '潑水日（insane）' },
       { id: 'a-5-1', name: '[咖啡] Roast8ry Coffee Flagship Store' },
@@ -329,7 +328,7 @@ export const seedSchedule: ScheduleDay[] = [
   },
   {
     date: '2026-04-14',
-    label: '4/14（二）',
+    label: '4／14（二）',
     activities: [
       { id: 'a-6-1', name: '[早午餐]' },
       { id: 'a-6-2', name: '按摩' },
