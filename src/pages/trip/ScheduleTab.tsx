@@ -115,23 +115,16 @@ export function ScheduleTab({ tripId }: Props) {
       ) : (
         schedule.map((day, dayIndex) => (
           <div key={dayIndex} className="card mb-2">
-            <div className="flex items-center justify-between">
-              <div
-                className="flex items-center gap-2 cursor-pointer"
-                onClick={() => toggleDay(dayIndex)}
-              >
-                <FontAwesomeIcon
-                  icon={collapsedDays[dayIndex] ? faChevronDown : faChevronUp}
-                  className="text-xs text-slate-400"
-                />
-                <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
-              </div>
-              <button
-                className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                onClick={() => setEditingDayIndex(dayIndex)}
-              >
-                <FontAwesomeIcon icon={faPen} />
-              </button>
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => toggleDay(dayIndex)}
+              onDoubleClick={(e) => { e.stopPropagation(); setEditingDayIndex(dayIndex) }}
+            >
+              <FontAwesomeIcon
+                icon={collapsedDays[dayIndex] ? faChevronDown : faChevronUp}
+                className="text-xs text-slate-400"
+              />
+              <h3 className="font-semibold text-sm">{day.label || formatDate(day.date)}</h3>
             </div>
 
             {!collapsedDays[dayIndex] && (

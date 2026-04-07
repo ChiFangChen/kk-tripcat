@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { InfoRow } from '../../components/InfoRow'
@@ -30,6 +30,7 @@ export function FlightTab({ tripId }: Props) {
 
   function deleteFlight(id: string) {
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { flights: flights.filter(f => f.id !== id) } })
+    setEditingFlight(null)
   }
 
   function saveLeg(flightId: string, leg: FlightLeg) {
@@ -52,6 +53,8 @@ export function FlightTab({ tripId }: Props) {
       return { ...f, legs: f.legs.filter(l => l.id !== legId) }
     })
     dispatch({ type: 'SET_TRIP_DATA', tripId, data: { flights: updated } })
+    setEditingLeg(null)
+    setEditingFlightId(null)
   }
 
   function newFlight(): FlightInfo {
@@ -80,17 +83,12 @@ export function FlightTab({ tripId }: Props) {
 
       {flights.map(flight => (
         <div key={flight.id} className="card">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold">{flight.airline || '航班'}</h3>
-            <div className="flex gap-2">
-              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditingFlight(flight)}>
-                <FontAwesomeIcon icon={faPen} />
-              </button>
-              <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteFlight(flight.id)}>
-                <FontAwesomeIcon icon={faTrash} />
-              </button>
-            </div>
-          </div>
+          <h3
+            className="font-semibold mb-2 cursor-pointer"
+            onDoubleClick={() => setEditingFlight(flight)}
+          >
+            {flight.airline || '航班'}
+          </h3>
 
           <InfoRow label="訂位代號" value={flight.bookingCode} />
           <InfoRow label="機票號碼" value={flight.ticketNumber} />
@@ -102,32 +100,29 @@ export function FlightTab({ tripId }: Props) {
 
           {flight.legs.map(leg => (
             <div key={leg.id} className="mt-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-medium text-sm">{leg.direction}</span>
-                <div className="flex gap-2">
-                  <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}>
-                    <FontAwesomeIcon icon={faPen} />
-                  </button>
-                  <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deleteLeg(flight.id, leg.id)}>
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                </div>
+              <span
+                className="font-medium text-sm cursor-pointer"
+                onDoubleClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}
+              >
+                {leg.direction}
+              </span>
+              <div className="mt-2">
+                <InfoRow label="日期" value={leg.date} />
+                <InfoRow label="航班" value={`${leg.flightNumber}${leg.aircraft ? ` (${leg.aircraft})` : ''}`} />
+                <InfoRow label="起飛" value={
+                  <div className="flex items-center gap-2">
+                    <span>{leg.departureTime} / {leg.departureAirport}</span>
+                    {leg.departureTerminal && <span className="tag">{leg.departureTerminal}</span>}
+                  </div>
+                } />
+                <InfoRow label="抵達" value={
+                  <div className="flex items-center gap-2">
+                    <span>{leg.arrivalTime} / {leg.arrivalAirport}</span>
+                    {leg.arrivalTerminal && <span className="tag">{leg.arrivalTerminal}</span>}
+                  </div>
+                } />
+                <InfoRow label="飛行時間" value={leg.duration} />
               </div>
-              <InfoRow label="日期" value={leg.date} />
-              <InfoRow label="航班" value={`${leg.flightNumber}${leg.aircraft ? ` (${leg.aircraft})` : ''}`} />
-              <InfoRow label="起飛" value={
-                <div className="flex items-center gap-2">
-                  <span>{leg.departureTime} / {leg.departureAirport}</span>
-                  {leg.departureTerminal && <span className="tag">{leg.departureTerminal}</span>}
-                </div>
-              } />
-              <InfoRow label="抵達" value={
-                <div className="flex items-center gap-2">
-                  <span>{leg.arrivalTime} / {leg.arrivalAirport}</span>
-                  {leg.arrivalTerminal && <span className="tag">{leg.arrivalTerminal}</span>}
-                </div>
-              } />
-              <InfoRow label="飛行時間" value={leg.duration} />
             </div>
           ))}
 
@@ -143,21 +138,29 @@ export function FlightTab({ tripId }: Props) {
       {/* Flight edit modal */}
       {editingFlight && (
         <FullScreenModal title={editingFlight.airline ? '編輯航班' : '新增航班'} onClose={() => setEditingFlight(null)}>
-          <FlightForm flight={editingFlight} onSave={saveFlight} />
+          <FlightForm
+            flight={editingFlight}
+            onSave={saveFlight}
+            onDelete={editingFlight.airline ? () => deleteFlight(editingFlight.id) : undefined}
+          />
         </FullScreenModal>
       )}
 
       {/* Leg edit modal */}
       {editingLeg && editingFlightId && (
         <FullScreenModal title="航段" onClose={() => { setEditingLeg(null); setEditingFlightId(null) }}>
-          <LegForm leg={editingLeg} onSave={(leg) => saveLeg(editingFlightId, leg)} />
+          <LegForm
+            leg={editingLeg}
+            onSave={(leg) => saveLeg(editingFlightId, leg)}
+            onDelete={editingLeg.direction ? () => deleteLeg(editingFlightId, editingLeg.id) : undefined}
+          />
         </FullScreenModal>
       )}
     </div>
   )
 }
 
-function FlightForm({ flight, onSave }: { flight: FlightInfo; onSave: (f: FlightInfo) => void }) {
+function FlightForm({ flight, onSave, onDelete }: { flight: FlightInfo; onSave: (f: FlightInfo) => void; onDelete?: () => void }) {
   const [form, setForm] = useState(flight)
   return (
     <div>
@@ -170,11 +173,16 @@ function FlightForm({ flight, onSave }: { flight: FlightInfo; onSave: (f: Flight
       <div className="form-group"><label className="form-label">託運行李</label><input className="form-input" value={form.checkedBaggage || ''} onChange={e => setForm({ ...form, checkedBaggage: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">隨身行李</label><input className="form-input" value={form.carryOn || ''} onChange={e => setForm({ ...form, carryOn: e.target.value })} /></div>
       <button className="btn btn-primary w-full" onClick={() => onSave(form)}>儲存</button>
+      {onDelete && (
+        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除航班
+        </button>
+      )}
     </div>
   )
 }
 
-function LegForm({ leg, onSave }: { leg: FlightLeg; onSave: (l: FlightLeg) => void }) {
+function LegForm({ leg, onSave, onDelete }: { leg: FlightLeg; onSave: (l: FlightLeg) => void; onDelete?: () => void }) {
   const [form, setForm] = useState(leg)
   return (
     <div>
@@ -190,6 +198,11 @@ function LegForm({ leg, onSave }: { leg: FlightLeg; onSave: (l: FlightLeg) => vo
       <div className="form-group"><label className="form-label">抵達航廈</label><input className="form-input" value={form.arrivalTerminal || ''} onChange={e => setForm({ ...form, arrivalTerminal: e.target.value })} placeholder="T1" /></div>
       <div className="form-group"><label className="form-label">飛行時間</label><input className="form-input" value={form.duration || ''} onChange={e => setForm({ ...form, duration: e.target.value })} /></div>
       <button className="btn btn-primary w-full" onClick={() => onSave(form)}>儲存</button>
+      {onDelete && (
+        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除航段
+        </button>
+      )}
     </div>
   )
 }
