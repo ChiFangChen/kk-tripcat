@@ -112,15 +112,21 @@ export function FlightTab({ tripId }: Props) {
                 <InfoRow label="日期" value={leg.date} />
                 <InfoRow label="航班" value={`${leg.flightNumber}${leg.aircraft ? ` (${leg.aircraft})` : ''}`} />
                 <InfoRow label="起飛" value={
-                  <div className="flex items-center gap-2">
-                    <span>{leg.departureTime} / {leg.departureAirport}</span>
-                    {leg.departureTerminal && <span className="tag">{leg.departureTerminal}</span>}
+                  <div>
+                    <div>{leg.departureTime}</div>
+                    <div className="flex items-center gap-1">
+                      <span>{leg.departureAirport}</span>
+                      {leg.departureTerminal && <span className="tag">{leg.departureTerminal}</span>}
+                    </div>
                   </div>
                 } />
                 <InfoRow label="抵達" value={
-                  <div className="flex items-center gap-2">
-                    <span>{leg.arrivalTime} / {leg.arrivalAirport}</span>
-                    {leg.arrivalTerminal && <span className="tag">{leg.arrivalTerminal}</span>}
+                  <div>
+                    <div>{leg.arrivalTime}</div>
+                    <div className="flex items-center gap-1">
+                      <span>{leg.arrivalAirport}</span>
+                      {leg.arrivalTerminal && <span className="tag">{leg.arrivalTerminal}</span>}
+                    </div>
                   </div>
                 } />
                 <InfoRow label="飛行時間" value={leg.duration} />
