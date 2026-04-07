@@ -48,8 +48,8 @@ export function HotelTab({ tripId }: Props) {
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold">{hotel.name || '飯店'}</h3>
             <div className="flex gap-2">
-              <button className="text-sky-500 text-xs" onClick={() => setEditing(hotel)}>編輯</button>
-              <button className="text-red-400 text-xs" onClick={() => remove(hotel.id)}>刪除</button>
+              <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditing(hotel)}>編輯</button>
+              <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => remove(hotel.id)}>刪除</button>
             </div>
           </div>
 

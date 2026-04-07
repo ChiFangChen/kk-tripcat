@@ -79,8 +79,8 @@ export function FlightTab({ tripId }: Props) {
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-semibold">{flight.airline || '航班'}</h3>
             <div className="flex gap-2">
-              <button className="text-sky-500 text-xs" onClick={() => setEditingFlight(flight)}>編輯</button>
-              <button className="text-red-400 text-xs" onClick={() => deleteFlight(flight.id)}>刪除</button>
+              <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingFlight(flight)}>編輯</button>
+              <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteFlight(flight.id)}>刪除</button>
             </div>
           </div>
 
@@ -97,8 +97,8 @@ export function FlightTab({ tripId }: Props) {
               <div className="flex justify-between items-center mb-2">
                 <span className="font-medium text-sm">{leg.direction}</span>
                 <div className="flex gap-2">
-                  <button className="text-sky-500 text-xs" onClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}>編輯</button>
-                  <button className="text-red-400 text-xs" onClick={() => deleteLeg(flight.id, leg.id)}>刪除</button>
+                  <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setEditingLeg(leg); setEditingFlightId(flight.id) }}>編輯</button>
+                  <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteLeg(flight.id, leg.id)}>刪除</button>
                 </div>
               </div>
               <InfoRow label="日期" value={leg.date} />

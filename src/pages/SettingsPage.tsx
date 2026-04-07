@@ -71,7 +71,7 @@ export function SettingsPage() {
       <div className="card mb-4">
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-semibold text-sm"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</h3>
-          <button className="text-sky-500 text-xs" onClick={() => { setNotesText(template.notes); setEditingNotes(true) }}>編輯</button>
+          <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setNotesText(template.notes); setEditingNotes(true) }}>編輯</button>
         </div>
         <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">
           {template.notes || '(無)'}
@@ -89,16 +89,16 @@ export function SettingsPage() {
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-semibold text-sm">{cat.name} ({cat.items.length})</h4>
             <div className="flex gap-2">
-              <button className="text-sky-500 text-xs" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>重命名</button>
-              <button className="text-sky-500 text-xs" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>+ 項目</button>
-              <button className="text-red-400 text-xs" onClick={() => deleteCategory(cat.name)}>刪除</button>
+              <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => setEditingCategory({ oldName: cat.name, newName: cat.name })}>重命名</button>
+              <button className="text-sky-600 text-xs px-2 py-1 bg-sky-50 dark:bg-sky-900/30 rounded" onClick={() => { setAddingItemTo(cat.name); setNewItemText('') }}>+ 項目</button>
+              <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteCategory(cat.name)}>刪除</button>
             </div>
           </div>
           <div className="text-sm text-slate-500">
             {cat.items.map(item => (
               <div key={item.id} className="flex justify-between items-center py-0.5">
                 <span>{item.text}</span>
-                <button className="text-red-400 text-xs" onClick={() => deleteItem(cat.name, item.id)}>✕</button>
+                <button className="text-red-500 text-xs px-2 py-1 bg-red-50 dark:bg-red-900/30 rounded" onClick={() => deleteItem(cat.name, item.id)}>✕</button>
               </div>
             ))}
           </div>
