@@ -119,6 +119,7 @@ export interface ShoppingItem {
   checked: boolean
   starred: boolean
   favoriteId?: string
+  imageUrl?: string
 }
 
 export interface Template {
@@ -153,6 +154,7 @@ export interface FavoriteItem {
   id: string
   name: string
   purchases: Purchase[]
+  imageUrl?: string
 }
 
 export interface Purchase {
@@ -169,6 +171,7 @@ export interface ScheduleNote {
   id: string
   title: string
   content: string
+  imageUrl?: string
 }
 
 export type TabType = 'trips' | 'notes' | 'settings'
