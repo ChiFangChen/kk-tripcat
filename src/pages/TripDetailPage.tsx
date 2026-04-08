@@ -53,6 +53,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     && state.auth.currentUser
     && trip?.members.includes(state.auth.currentUser.id)
     && !tripData.setupComplete
+    && tripData.checklist.length === 0
   const [showSetup, setShowSetup] = useState(false)
 
   useEffect(() => {
