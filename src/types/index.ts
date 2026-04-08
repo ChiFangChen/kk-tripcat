@@ -100,6 +100,7 @@ export interface ScheduleActivity {
   id: string
   time?: string
   name: string
+  place?: string
   address?: string
   googleMapUrl?: string
   booking?: BookingInfo

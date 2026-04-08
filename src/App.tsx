@@ -18,7 +18,7 @@ import type { TabType, ChecklistItem, Template } from './types'
 import './App.css'
 
 function AppContent() {
-  const { state, dispatch, loading, setTemplate, setUserTripData } = useApp()
+  const { state, dispatch, loading, setTemplate, setUserTripData, viewTripId } = useApp()
   const [authPage, setAuthPage] = useState<'login' | 'register'>('login')
   const [activeTab, setActiveTab] = useState<TabType>('trips')
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
@@ -32,12 +32,6 @@ function AppContent() {
   })
   const [joinStep, setJoinStep] = useState<'confirm' | 'template'>('confirm')
 
-  // View trip via URL: ?view=<tripId>
-  const [viewTripId] = useState<string | null>(() => {
-    const params = new URLSearchParams(window.location.search)
-    return params.get('view')
-  })
-
   // Clear query params from URL
   useEffect(() => {
     if (joinTripId || viewTripId) {
@@ -50,6 +44,21 @@ function AppContent() {
 
   const joinTrip = state.trips.find(t => t.id === joinTripId)
 
+  function handleJoinWithTemplate(checklist: ChecklistItem[], notes: string, updatedTemplate: Template | null) {
+    if (!joinTrip || !state.auth.currentUser) return
+    dispatch({ type: 'UPDATE_TRIP', trip: { ...joinTrip, members: [...joinTrip.members, state.auth.currentUser.id] } })
+    setUserTripData(joinTrip.id, {
+      checklist,
+      shopping: [],
+      preparationNotes: notes,
+      setupComplete: true,
+    })
+    if (updatedTemplate) setTemplate(updatedTemplate)
+    setJoinTripId(null)
+    setJoinStep('confirm')
+    setSelectedTripId(joinTrip.id)
+  }
+
   function handleJoinConfirm() {
     if (!joinTrip || !state.auth.currentUser) return
     if (joinTrip.members.includes(state.auth.currentUser.id)) {
@@ -58,23 +67,6 @@ function AppContent() {
       return
     }
     setJoinStep('template')
-  }
-
-  function handleJoinWithTemplate(checklist: ChecklistItem[], notes: string, updatedTemplate: Template | null) {
-    if (!joinTrip || !state.auth.currentUser) return
-    // Add user to trip members
-    dispatch({ type: 'UPDATE_TRIP', trip: { ...joinTrip, members: [...joinTrip.members, state.auth.currentUser.id] } })
-    // Set user's personal trip data
-    setUserTripData(joinTrip.id, {
-      checklist,
-      shopping: [],
-      preparationNotes: notes,
-    })
-    // Update template if requested
-    if (updatedTemplate) setTemplate(updatedTemplate)
-    setJoinTripId(null)
-    setJoinStep('confirm')
-    setSelectedTripId(joinTrip.id)
   }
 
   // Viewer mode: no login needed, read-only
@@ -86,8 +78,7 @@ function AppContent() {
   if (loading) {
     return (
       <div className="identity-page">
-        <div className="login-logo">🐱</div>
-        <p className="text-slate-400 mt-4">載入中...</p>
+        <div className="login-logo loading-spinner">🐱</div>
       </div>
     )
   }
@@ -175,7 +166,7 @@ function AppContent() {
           onClick={() => setShowUserMenu(true)}
           style={{ backgroundColor: state.auth.currentUser.color, color: 'white' }}
         >
-          {state.auth.currentUser.displayName.charAt(0)}
+          {state.auth.currentUser.displayName}
         </button>
       </div>
 

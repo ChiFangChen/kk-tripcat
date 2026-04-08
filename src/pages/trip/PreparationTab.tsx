@@ -20,6 +20,8 @@ export function PreparationTab({ tripId }: Props) {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null)
   const [fabExpanded, setFabExpanded] = useState(false)
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [notesText, setNotesText] = useState('')
   const doubleTap = useDoubleTap()
   const fabTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -135,6 +137,16 @@ export function PreparationTab({ tripId }: Props) {
     if (fabTimer.current) clearTimeout(fabTimer.current)
   }
 
+  function openEditNotes() {
+    setNotesText(notes)
+    setEditingNotes(true)
+  }
+
+  function saveNotes() {
+    setUserTripData(tripId, { preparationNotes: notesText })
+    setEditingNotes(false)
+  }
+
   return (
     <div>
       {/* Backdrop to close FAB */}
@@ -149,15 +161,18 @@ export function PreparationTab({ tripId }: Props) {
         {fabExpanded && <span>{trip?.gotReady ? '取消準備' : 'Got Ready!'}</span>}
       </button>
 
-      {/* Notes block */}
+      {/* Notes block - double tap title to edit */}
       {notes && (
-        <div className="card mb-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+        <div
+          className="card mb-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
+          onClick={doubleTap('prep-notes', openEditNotes)}
+        >
           <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</p>
           <p className="text-xs whitespace-pre-wrap text-slate-400 dark:text-slate-500">{notes}</p>
         </div>
       )}
 
-      {/* Progress bar + add */}
+      {/* Progress bar - full width */}
       <div className="flex items-center gap-3 mb-2">
         <div className="flex-1">
           <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -173,24 +188,26 @@ export function PreparationTab({ tripId }: Props) {
         <span className="text-xs text-slate-400 w-8 text-right">
           {items.length ? Math.round((checked.length / items.length) * 100) : 0}%
         </span>
-        <button className="btn-round-add" onClick={openAddModal}>
-          <FontAwesomeIcon icon={faPlus} className="text-xs" />
-        </button>
       </div>
 
-      {/* Filter segmented control */}
-      <div className="flex gap-1 mb-3 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
-        <button
-          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
-          onClick={() => setShowCompleted(false)}
-        >
-          未完成 ({unchecked.length})
-        </button>
-        <button
-          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
-          onClick={() => setShowCompleted(true)}
-        >
-          全部 ({items.length})
+      {/* Filter segmented control + add button */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex gap-1 flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+          <button
+            className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
+            onClick={() => setShowCompleted(false)}
+          >
+            未完成 ({unchecked.length})
+          </button>
+          <button
+            className={`flex-1 text-xs py-1.5 rounded-md transition-all ${showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
+            onClick={() => setShowCompleted(true)}
+          >
+            全部 ({items.length})
+          </button>
+        </div>
+        <button className="btn-round-add" onClick={openAddModal}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 
@@ -248,14 +265,24 @@ export function PreparationTab({ tripId }: Props) {
         </div>
       )}
 
-      {/* Edit item popup */}
+      {/* Edit item popup with category/subcategory */}
       {editingItem && (
         <Modal title="編輯項目" onClose={() => setEditingItem(null)}>
           <EditItemForm
             item={editingItem}
+            existingCategories={existingCategories}
+            getSubcategories={getSubcategories}
             onSave={updateItem}
             onDelete={() => deleteItem(editingItem.id)}
           />
+        </Modal>
+      )}
+
+      {/* Edit notes modal */}
+      {editingNotes && (
+        <Modal title="編輯注意事項" onClose={() => setEditingNotes(false)}>
+          <textarea className="form-input" rows={5} value={notesText} onChange={e => setNotesText(e.target.value)} autoFocus />
+          <button className="btn btn-primary w-full mt-3" onClick={saveNotes}>儲存</button>
         </Modal>
       )}
 
@@ -360,8 +387,18 @@ export function PreparationTab({ tripId }: Props) {
   )
 }
 
-function EditItemForm({ item, onSave, onDelete }: { item: ChecklistItem; onSave: (i: ChecklistItem) => void; onDelete: () => void }) {
+function EditItemForm({ item, existingCategories, getSubcategories, onSave, onDelete }: {
+  item: ChecklistItem
+  existingCategories: string[]
+  getSubcategories: (cat: string) => string[]
+  onSave: (i: ChecklistItem) => void
+  onDelete: () => void
+}) {
   const [text, setText] = useState(item.text)
+  const [category, setCategory] = useState(item.category || '其他')
+  const [subcategory, setSubcategory] = useState<string | undefined>(item.subcategory)
+
+  const subs = getSubcategories(category)
 
   return (
     <div>
@@ -369,7 +406,43 @@ function EditItemForm({ item, onSave, onDelete }: { item: ChecklistItem; onSave:
         <label className="form-label">項目內容</label>
         <input className="form-input" value={text} onChange={e => setText(e.target.value)} autoFocus />
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onSave({ ...item, text })}>儲存</button>
+      <div className="form-group">
+        <label className="form-label">分類</label>
+        <div className="flex gap-2 flex-wrap">
+          {existingCategories.map(cat => (
+            <button
+              key={cat}
+              className={`btn btn-sm ${category === cat ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => { setCategory(cat); setSubcategory(undefined) }}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+      {subs.length > 0 && (
+        <div className="form-group">
+          <label className="form-label">次分類</label>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              className={`btn btn-sm ${!subcategory ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setSubcategory(undefined)}
+            >
+              無
+            </button>
+            {subs.map(sub => (
+              <button
+                key={sub}
+                className={`btn btn-sm ${subcategory === sub ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setSubcategory(sub)}
+              >
+                {sub}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <button className="btn btn-primary w-full" onClick={() => onSave({ ...item, text, category, subcategory })}>儲存</button>
       <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
         <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除
       </button>

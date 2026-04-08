@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, useRef, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useReducer, useEffect, useRef, useState, useCallback, useMemo, type ReactNode } from 'react'
 import type { User, Trip, Template, TipNote, FavoriteItem, ChecklistItem, FlightInfo, Hotel, ScheduleDay, ScheduleNote, TransportItem, ShoppingItem } from '../types'
 import { USER_COLORS } from '../types'
 import * as storage from '../utils/storage'
@@ -11,10 +11,14 @@ import {
   subscribeToSharedTripData,
   subscribeToUserTripData,
   subscribeToTemplate,
+  subscribeToTips,
+  subscribeToFavorites,
   syncUser,
   syncSharedTripData,
   syncUserTripData,
   syncTemplate,
+  syncTips,
+  syncFavorites,
 } from '../utils/firebase'
 import { defaultTemplate } from '../data/seed'
 import type { Firestore } from 'firebase/firestore'
@@ -33,6 +37,7 @@ export interface UserTripData {
   checklist: ChecklistItem[]
   shopping: ShoppingItem[]
   preparationNotes: string
+  setupComplete?: boolean
 }
 
 // Combined for backward compat
@@ -64,6 +69,7 @@ type Action =
   | { type: 'SET_USER_TRIP_DATA'; tripId: string; data: UserTripData }
   | { type: 'UPDATE_USER_TRIP_DATA'; tripId: string; data: Partial<UserTripData> }
   | { type: 'SET_TEMPLATE'; template: Template }
+  | { type: 'SET_TIPS'; tips: TipNote[] }
   | { type: 'ADD_TIP'; tip: TipNote }
   | { type: 'UPDATE_TIP'; tip: TipNote }
   | { type: 'DELETE_TIP'; tipId: string }
@@ -136,6 +142,8 @@ function reducer(state: AppState, action: Action): AppState {
       }
     case 'SET_TEMPLATE':
       return { ...state, template: action.template }
+    case 'SET_TIPS':
+      return { ...state, tips: action.tips }
     case 'ADD_TIP':
       return { ...state, tips: [action.tip, ...state.tips] }
     case 'UPDATE_TIP':
@@ -159,6 +167,7 @@ interface AppContextType {
   state: AppState
   dispatch: React.Dispatch<Action>
   loading: boolean
+  viewTripId: string | null
   login: (user: User) => void
   logout: () => void
   register: (username: string, password: string, displayName: string) => Promise<User>
@@ -211,10 +220,17 @@ function loadInitialState(): AppState {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, null, loadInitialState)
   const [loading, setLoading] = useState(isFirebaseConfigured())
+  const [dbReady, setDbReady] = useState(false)
   const dbRef = useRef<Firestore | null>(null)
   const firebaseListeningRef = useRef(false)
   const tripSubsRef = useRef<Record<string, () => void>>({})
   const skipFirstSave = useRef(true)
+
+  // Parse viewTripId from URL once
+  const viewTripId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('view')
+  }, [])
 
   // Initialize Firebase
   useEffect(() => {
@@ -222,6 +238,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let cleanups: (() => void)[] = []
       initFirebase().then((db) => {
         dbRef.current = db
+        setDbReady(!!db)
         if (db) {
           firebaseListeningRef.current = true
           let usersLoaded = false
@@ -251,14 +268,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Subscribe to template when user logs in
+  // Subscribe to template, tips, favorites when user logs in
   useEffect(() => {
     if (!state.auth.currentUser || !dbRef.current) return
-    const unsub = subscribeToTemplate(dbRef.current, state.auth.currentUser.id, (template) => {
-      if (template) dispatch({ type: 'SET_TEMPLATE', template })
+    const db = dbRef.current
+    const userId = state.auth.currentUser.id
+    const unsub1 = subscribeToTemplate(db, userId, (template) => {
+      if (template) {
+        dispatch({ type: 'SET_TEMPLATE', template })
+      } else {
+        dispatch({ type: 'SET_TEMPLATE', template: defaultTemplate })
+      }
     })
-    return unsub
+    const unsub2 = subscribeToTips(db, userId, (tips) => {
+      dispatch({ type: 'SET_TIPS', tips })
+    })
+    const unsub3 = subscribeToFavorites(db, userId, (favorites) => {
+      dispatch({ type: 'SET_FAVORITES', favorites })
+    })
+    return () => { unsub1(); unsub2(); unsub3() }
   }, [state.auth.currentUser?.id])
+
+  // Subscribe to shared trip data for view-only link
+  useEffect(() => {
+    if (!viewTripId || !dbReady || !dbRef.current) return
+    return subscribeToSharedTripData(dbRef.current, viewTripId, (data) => {
+      dispatch({ type: 'SET_SHARED_TRIP_DATA', tripId: viewTripId, data })
+    })
+  }, [viewTripId, dbReady])
 
   // Subscribe to trip data for trips user is a member of
   useEffect(() => {
@@ -295,7 +332,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [state.trips, state.auth.currentUser?.id])
 
-  // Save to localStorage
+  // Save to localStorage & sync tips/favorites to Firebase
+  const prevTipsRef = useRef(state.tips)
+  const prevFavoritesRef = useRef(state.favorites)
   useEffect(() => {
     if (skipFirstSave.current) {
       skipFirstSave.current = false
@@ -308,7 +347,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     storage.setItem('favorites', state.favorites)
     storage.setItem('sharedTripData', state.sharedTripData)
     storage.setItem('userTripData', state.userTripData)
-  }, [state.users, state.trips, state.template, state.tips, state.favorites, state.sharedTripData, state.userTripData])
+
+    // Sync tips/favorites to Firebase when they change
+    if (dbRef.current && state.auth.currentUser) {
+      if (state.tips !== prevTipsRef.current) {
+        syncTips(dbRef.current, state.auth.currentUser.id, state.tips)
+      }
+      if (state.favorites !== prevFavoritesRef.current) {
+        syncFavorites(dbRef.current, state.auth.currentUser.id, state.favorites)
+      }
+    }
+    prevTipsRef.current = state.tips
+    prevFavoritesRef.current = state.favorites
+  }, [state.users, state.trips, state.template, state.tips, state.favorites, state.sharedTripData, state.userTripData, state.auth.currentUser])
 
   const login = useCallback((user: User) => {
     dispatch({ type: 'LOGIN', user })
@@ -400,6 +451,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       state,
       dispatch,
       loading,
+      viewTripId,
       login,
       logout,
       register,

@@ -13,7 +13,7 @@ import {
   where,
   type Firestore,
 } from 'firebase/firestore'
-import type { User, Trip, Template } from '../types'
+import type { User, Trip, Template, TipNote, FavoriteItem } from '../types'
 import type { SharedTripData, UserTripData } from '../context/AppContext'
 
 const firebaseConfig = {
@@ -163,6 +163,46 @@ export function subscribeToTemplate(
 
 export async function syncTemplate(db: Firestore, userId: string, template: Template): Promise<void> {
   await setDoc(doc(db, 'tcTemplates', userId), template)
+}
+
+// --- Tips per user ---
+
+export function subscribeToTips(
+  db: Firestore,
+  userId: string,
+  callback: (tips: TipNote[]) => void
+): () => void {
+  return onSnapshot(doc(db, 'tcTips', userId), (snapshot) => {
+    if (snapshot.exists()) {
+      callback((snapshot.data() as { tips: TipNote[] }).tips || [])
+    } else {
+      callback([])
+    }
+  })
+}
+
+export async function syncTips(db: Firestore, userId: string, tips: TipNote[]): Promise<void> {
+  await setDoc(doc(db, 'tcTips', userId), { tips })
+}
+
+// --- Favorites per user ---
+
+export function subscribeToFavorites(
+  db: Firestore,
+  userId: string,
+  callback: (favorites: FavoriteItem[]) => void
+): () => void {
+  return onSnapshot(doc(db, 'tcFavorites', userId), (snapshot) => {
+    if (snapshot.exists()) {
+      callback((snapshot.data() as { favorites: FavoriteItem[] }).favorites || [])
+    } else {
+      callback([])
+    }
+  })
+}
+
+export async function syncFavorites(db: Firestore, userId: string, favorites: FavoriteItem[]): Promise<void> {
+  await setDoc(doc(db, 'tcFavorites', userId), { favorites })
 }
 
 // --- Image Storage ---

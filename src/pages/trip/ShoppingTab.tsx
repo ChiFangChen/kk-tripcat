@@ -8,7 +8,7 @@ import { FullScreenModal } from '../../components/FullScreenModal'
 import { generateId } from '../../utils/id'
 import { formatDate } from '../../utils/date'
 import { ImageUpload } from '../../components/ImageUpload'
-import type { ShoppingItem, FavoriteItem } from '../../types'
+import type { ShoppingItem, FavoriteItem, Purchase } from '../../types'
 
 interface Props {
   tripId: string
@@ -17,13 +17,18 @@ interface Props {
 export function ShoppingTab({ tripId }: Props) {
   const { state, dispatch, setUserTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
+  const trip = state.trips.find(t => t.id === tripId)
   const items = tripData.shopping
   const [showCompleted, setShowCompleted] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [newItem, setNewItem] = useState('')
+  const [newImageUrl, setNewImageUrl] = useState<string | undefined>(undefined)
   const [matchingFavorites, setMatchingFavorites] = useState<FavoriteItem[]>([])
   const [pendingItem, setPendingItem] = useState<string | null>(null)
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null)
+  const [purchasePrompt, setPurchasePrompt] = useState<ShoppingItem | null>(null)
+  const [purchaseAmount, setPurchaseAmount] = useState('')
+  const [purchaseCurrency, setPurchaseCurrency] = useState('')
   const doubleTap = useDoubleTap()
 
   const unchecked = items.filter(i => !i.checked)
@@ -31,12 +36,46 @@ export function ShoppingTab({ tripId }: Props) {
   const displayed = showCompleted ? items : unchecked
 
   function toggleCheck(id: string) {
-    const updated = items.map(i => i.id === id ? { ...i, checked: !i.checked } : i)
+    const item = items.find(i => i.id === id)
+    if (!item) return
+
+    const newChecked = !item.checked
+    // If checking and item is linked to a favorite, prompt for purchase
+    if (newChecked && item.starred && item.favoriteId) {
+      const updated = items.map(i => i.id === id ? { ...i, checked: true } : i)
+      setUserTripData(tripId, { shopping: updated })
+      setPurchasePrompt(item)
+      setPurchaseAmount('')
+      setPurchaseCurrency('')
+      return
+    }
+
+    const updated = items.map(i => i.id === id ? { ...i, checked: newChecked } : i)
     setUserTripData(tripId, { shopping: updated })
+  }
+
+  function handlePurchaseSubmit() {
+    if (!purchasePrompt?.favoriteId) return
+    const fav = state.favorites.find(f => f.id === purchasePrompt.favoriteId)
+    if (!fav) { setPurchasePrompt(null); return }
+    const purchase: Purchase = {
+      id: generateId(),
+      date: new Date().toISOString().split('T')[0],
+      amount: purchaseAmount,
+      currency: purchaseCurrency || undefined,
+      tripId,
+      tripName: trip?.name,
+    }
+    dispatch({
+      type: 'UPDATE_FAVORITE',
+      favorite: { ...fav, purchases: [purchase, ...fav.purchases] },
+    })
+    setPurchasePrompt(null)
   }
 
   function openAdd() {
     setNewItem('')
+    setNewImageUrl(undefined)
     setMatchingFavorites([])
     setPendingItem(null)
     setShowAddModal(true)
@@ -65,9 +104,11 @@ export function ShoppingTab({ tripId }: Props) {
       checked: false,
       starred: !!favoriteId,
       favoriteId,
+      imageUrl: newImageUrl,
     }
     setUserTripData(tripId, { shopping: [...items, item] })
     setNewItem('')
+    setNewImageUrl(undefined)
     setMatchingFavorites([])
     setPendingItem(null)
     setShowAddModal(false)
@@ -112,7 +153,7 @@ export function ShoppingTab({ tripId }: Props) {
 
   return (
     <div>
-      {/* Progress bar + add */}
+      {/* Progress bar - full width */}
       <div className="flex items-center gap-3 mb-2">
         <div className="flex-1">
           <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -128,24 +169,26 @@ export function ShoppingTab({ tripId }: Props) {
         <span className="text-xs text-slate-400 w-8 text-right">
           {items.length ? Math.round((checked.length / items.length) * 100) : 0}%
         </span>
-        <button className="btn-round-add" onClick={openAdd}>
-          <FontAwesomeIcon icon={faPlus} className="text-xs" />
-        </button>
       </div>
 
-      {/* Filter segmented control */}
-      <div className="flex gap-1 mb-3 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
-        <button
-          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
-          onClick={() => setShowCompleted(false)}
-        >
-          未買 ({unchecked.length})
-        </button>
-        <button
-          className={`flex-1 text-xs py-1.5 rounded-md transition-all ${showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
-          onClick={() => setShowCompleted(true)}
-        >
-          全部 ({items.length})
+      {/* Filter segmented control + add button */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex gap-1 flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+          <button
+            className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
+            onClick={() => setShowCompleted(false)}
+          >
+            未買 ({unchecked.length})
+          </button>
+          <button
+            className={`flex-1 text-xs py-1.5 rounded-md transition-all ${showCompleted ? 'bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium' : 'text-slate-400'}`}
+            onClick={() => setShowCompleted(true)}
+          >
+            全部 ({items.length})
+          </button>
+        </div>
+        <button className="btn-round-add" onClick={openAdd}>
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 
@@ -188,6 +231,25 @@ export function ShoppingTab({ tripId }: Props) {
         )}
       </div>
 
+      {/* Purchase recording popup */}
+      {purchasePrompt && (
+        <Modal title="登記購買金額" onClose={() => setPurchasePrompt(null)}>
+          <p className="text-sm text-slate-400 mb-3">「{purchasePrompt.text}」已加入喜歡的東西，要登記這次的購買金額嗎？</p>
+          <div className="form-group">
+            <label className="form-label">金額</label>
+            <input className="form-input" value={purchaseAmount} onChange={e => setPurchaseAmount(e.target.value)} autoFocus />
+          </div>
+          <div className="form-group">
+            <label className="form-label">幣別</label>
+            <input className="form-input" value={purchaseCurrency} onChange={e => setPurchaseCurrency(e.target.value)} />
+          </div>
+          <div className="flex gap-2">
+            <button className="btn btn-secondary flex-1" onClick={() => setPurchasePrompt(null)}>跳過</button>
+            <button className="btn btn-primary flex-1" onClick={handlePurchaseSubmit} disabled={!purchaseAmount}>登記</button>
+          </div>
+        </Modal>
+      )}
+
       {/* Edit item popup */}
       {editingItem && (
         <Modal title="編輯項目" onClose={() => setEditingItem(null)}>
@@ -210,6 +272,16 @@ export function ShoppingTab({ tripId }: Props) {
               onChange={e => setNewItem(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addItem()}
               autoFocus
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">圖片</label>
+            <ImageUpload
+              imageUrl={newImageUrl}
+              storagePath="tc-images/shopping"
+              onUploaded={url => setNewImageUrl(url)}
+              onRemoved={() => setNewImageUrl(undefined)}
             />
           </div>
 
