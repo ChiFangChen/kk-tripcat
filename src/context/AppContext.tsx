@@ -197,6 +197,13 @@ function loadInitialState(): AppState {
   let sharedTripData = storage.getItem<Record<string, SharedTripData>>('sharedTripData') || {}
   let userTripData = storage.getItem<Record<string, UserTripData>>('userTripData') || {}
 
+  // Migrate: add setupComplete to existing user trip data
+  for (const [tripId, data] of Object.entries(userTripData)) {
+    if (!data.setupComplete && data.checklist?.length > 0) {
+      userTripData[tripId] = { ...data, setupComplete: true }
+    }
+  }
+
   if (oldTripData && Object.keys(sharedTripData).length === 0) {
     for (const [tripId, data] of Object.entries(oldTripData)) {
       sharedTripData[tripId] = {
@@ -206,10 +213,12 @@ function loadInitialState(): AppState {
         hotels: (data.hotels as Hotel[]) || [],
         transport: (data.transport as TransportItem[]) || [],
       }
+      const checklist = (data.checklist as ChecklistItem[]) || []
       userTripData[tripId] = {
-        checklist: (data.checklist as ChecklistItem[]) || [],
+        checklist,
         shopping: (data.shopping as ShoppingItem[]) || [],
         preparationNotes: (data.preparationNotes as string) || '',
+        setupComplete: checklist.length > 0,
       }
     }
   }
