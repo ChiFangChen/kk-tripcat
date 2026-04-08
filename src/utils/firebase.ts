@@ -128,9 +128,18 @@ export function subscribeToUserTripData(
   userId: string,
   callback: (data: UserTripData) => void
 ): () => void {
-  return onSnapshot(doc(db, 'tcTripUser', userTripDocId(tripId, userId)), (snapshot) => {
+  const docRef = doc(db, 'tcTripUser', userTripDocId(tripId, userId))
+  return onSnapshot(docRef, (snapshot) => {
     if (snapshot.exists()) {
-      callback(snapshot.data() as UserTripData)
+      const data = snapshot.data() as UserTripData
+      // Migrate old data: add setupComplete if user already has checklist data
+      if (!data.setupComplete && data.checklist?.length > 0) {
+        const migrated = { ...data, setupComplete: true }
+        setDoc(docRef, migrated)
+        callback(migrated)
+      } else {
+        callback(data)
+      }
     } else {
       callback({ checklist: [], shopping: [], preparationNotes: '' })
     }
