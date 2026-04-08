@@ -5,13 +5,14 @@ import { useApp } from '../context/AppContext'
 import { MemberMenu } from '../components/MemberMenu'
 import { UserMenu } from '../components/UserMenu'
 import { Modal } from '../components/Modal'
+import { TemplateSelector } from '../components/TemplateSelector'
 import { PreparationTab } from './trip/PreparationTab'
 import { FlightTab } from './trip/FlightTab'
 import { HotelTab } from './trip/HotelTab'
 import { ScheduleTab } from './trip/ScheduleTab'
 import { TransportTab } from './trip/TransportTab'
 import { ShoppingTab } from './trip/ShoppingTab'
-import type { TripTabType } from '../types'
+import type { TripTabType, ChecklistItem, Template } from '../types'
 import * as storage from '../utils/storage'
 
 interface Props {
@@ -38,13 +39,25 @@ const viewerTabs: { key: TripTabType; label: string }[] = [
 ]
 
 export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
-  const { state, isTripAdmin } = useApp()
+  const { state, isTripAdmin, getTripData, setUserTripData, setTemplate } = useApp()
   const trip = state.trips.find(t => t.id === tripId)
+  const tripData = getTripData(tripId)
 
   const [showMembers, setShowMembers] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showShare, setShowShare] = useState(false)
   const [copied, setCopied] = useState('')
+
+  // Template selection for new members who haven't set up yet
+  const needsSetup = !viewOnly
+    && state.auth.currentUser
+    && trip?.members.includes(state.auth.currentUser.id)
+    && !tripData.setupComplete
+  const [showSetup, setShowSetup] = useState(false)
+
+  useEffect(() => {
+    if (needsSetup) setShowSetup(true)
+  }, [needsSetup])
 
   const tabs = viewOnly ? viewerTabs : allTabs
   const defaultTab = viewOnly ? 'schedule' : 'preparation'
@@ -59,11 +72,44 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     if (!viewOnly) storage.setItem(storageKey, activeTab)
   }, [activeTab, storageKey, viewOnly])
 
+  function handleSetupComplete(checklist: ChecklistItem[], notes: string, updatedTemplate: Template | null) {
+    setUserTripData(tripId, {
+      checklist,
+      shopping: [],
+      preparationNotes: notes,
+      setupComplete: true,
+    })
+    if (updatedTemplate) setTemplate(updatedTemplate)
+    setShowSetup(false)
+  }
+
   if (!trip) {
     return (
       <div className="page-container">
         <p className="text-center text-slate-400 py-8">找不到此旅程</p>
         <button className="btn btn-secondary w-full" onClick={onBack}>返回</button>
+      </div>
+    )
+  }
+
+  // Show template selection for new member
+  if (showSetup) {
+    return (
+      <div className="page-container">
+        <div className="flex items-center justify-between mb-4">
+          <button className="text-sky-600 p-2" onClick={() => { setShowSetup(false); onBack() }}>
+            <FontAwesomeIcon icon={faChevronLeft} />
+          </button>
+          <h1 className="text-lg font-bold">選擇準備項目</h1>
+          <div className="w-8" />
+        </div>
+        <p className="text-sm text-slate-400 mb-4">設定「{trip.name}」的個人準備清單</p>
+        <TemplateSelector
+          template={state.template}
+          onConfirm={handleSetupComplete}
+          confirmWithUpdateLabel="更新模板並確認"
+          confirmLabel="確認"
+        />
       </div>
     )
   }
@@ -103,7 +149,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
                   onClick={() => setShowUserMenu(true)}
                   style={{ backgroundColor: state.auth.currentUser.color, color: 'white' }}
                 >
-                  {state.auth.currentUser.displayName.charAt(0)}
+                  {state.auth.currentUser.displayName}
                 </button>
               )}
             </>

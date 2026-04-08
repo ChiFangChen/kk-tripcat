@@ -75,6 +75,7 @@ export function TripsPage({ onSelectTrip }: Props) {
       checklist: pendingChecklist,
       shopping: [],
       preparationNotes: pendingNotes,
+      setupComplete: true,
     })
 
     // Reset

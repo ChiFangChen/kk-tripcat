@@ -138,13 +138,13 @@ export function ScheduleTab({ tripId }: Props) {
                 {day.activities.map(activity => (
                   <div
                     key={activity.id}
-                    className="flex items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
+                    className="flex items-start gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
                     onClick={() => setSelectedActivity({ activity, dayIndex })}
                   >
-                    <span className="text-xs text-slate-400 font-mono w-11 flex-shrink-0">{activity.time || ''}</span>
+                    <span className="text-xs text-slate-400 font-mono w-11 flex-shrink-0 pt-0.5">{activity.time || ''}</span>
                     <div className="flex-1">
                       <span className="text-sm font-medium">{activity.name}</span>
-                      {activity.note && <p className="text-xs text-slate-400 mt-0.5">{activity.note}</p>}
+                      {activity.place && <p className="text-xs text-slate-400 mt-0.5">{activity.place}</p>}
                     </div>
                   </div>
                 ))}
@@ -209,17 +209,22 @@ export function ScheduleTab({ tripId }: Props) {
         </Modal>
       )}
 
-      {/* Activity detail modal */}
+      {/* Activity detail modal - place above time, note only here, map aligned with address */}
       {selectedActivity && (
         <Modal title={selectedActivity.activity.name || '活動'} onClose={() => setSelectedActivity(null)}>
+          <InfoRow label="地點" value={selectedActivity.activity.place} />
           <InfoRow label="時間" value={selectedActivity.activity.time} />
-          <InfoRow label="地址" value={selectedActivity.activity.address} />
-          {selectedActivity.activity.googleMapUrl && (
-            <div className="py-2">
-              <a href={selectedActivity.activity.googleMapUrl} target="_blank" rel="noopener noreferrer" className="map-link">
-                📍 Google Map
-              </a>
-            </div>
+          {(selectedActivity.activity.address || selectedActivity.activity.googleMapUrl) && (
+            <InfoRow label="地址" value={
+              <div>
+                {selectedActivity.activity.address && <div className="break-all">{selectedActivity.activity.address}</div>}
+                {selectedActivity.activity.googleMapUrl && (
+                  <a href={selectedActivity.activity.googleMapUrl} target="_blank" rel="noopener noreferrer" className="map-link">
+                    📍 Google Map
+                  </a>
+                )}
+              </div>
+            } />
           )}
           {selectedActivity.activity.booking?.platform && (
             <InfoRow label="平台" value={
@@ -287,6 +292,7 @@ function ActivityForm({ activity, onSave }: { activity: ScheduleActivity; onSave
   return (
     <div>
       <div className="form-group"><label className="form-label">名稱</label><input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">地點</label><input className="form-input" value={form.place || ''} onChange={e => setForm({ ...form, place: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">時間</label><input className="form-input" value={form.time || ''} onChange={e => setForm({ ...form, time: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">地址</label><input className="form-input" value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">Google Map 連結</label><input className="form-input" value={form.googleMapUrl || ''} onChange={e => setForm({ ...form, googleMapUrl: e.target.value })} /></div>

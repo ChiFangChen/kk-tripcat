@@ -68,13 +68,17 @@ export function HotelTab({ tripId }: Props) {
             } />
           )}
           <InfoRow label="價格" value={hotel.booking?.amount} />
-          <InfoRow label="地址" value={hotel.address} />
-          {hotel.googleMapUrl && (
-            <div className="py-1">
-              <a href={hotel.googleMapUrl} target="_blank" rel="noopener noreferrer" className="map-link">
-                📍 Google Map
-              </a>
-            </div>
+          {(hotel.address || hotel.googleMapUrl) && (
+            <InfoRow label="地址" value={
+              <div>
+                {hotel.address && <div className="break-all">{hotel.address}</div>}
+                {hotel.googleMapUrl && (
+                  <a href={hotel.googleMapUrl} target="_blank" rel="noopener noreferrer" className="map-link">
+                    📍 Google Map
+                  </a>
+                )}
+              </div>
+            } />
           )}
           <InfoRow label="電話" value={hotel.phone} />
           <InfoRow label="入住" value={hotel.checkIn} />
