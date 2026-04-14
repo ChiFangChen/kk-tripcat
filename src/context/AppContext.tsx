@@ -314,11 +314,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }, [viewTripId, dbReady])
 
-  // Subscribe to trip data for trips user is a member of
+  // Cleanup all trip subscriptions on unmount only
+  useEffect(() => {
+    return () => {
+      Object.values(tripSubsRef.current).forEach(fn => fn())
+      tripSubsRef.current = {}
+    }
+  }, [])
+
+  // Subscribe to trip data incrementally — no cleanup on re-run to avoid
+  // tearing down active subscriptions (which would re-fire onSnapshot with
+  // potentially stale Firestore data, overwriting local edits).
   useEffect(() => {
     const db = dbRef.current
     const userId = state.auth.currentUser?.id
-    if (!db || !userId) return
+
+    if (!db || !userId) {
+      // Logged out or no db — unsubscribe from everything
+      for (const unsub of Object.values(tripSubsRef.current)) unsub()
+      tripSubsRef.current = {}
+      return
+    }
 
     const currentTripIds = new Set(state.trips.filter(t => t.members.includes(userId)).map(t => t.id))
 
@@ -330,7 +346,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Subscribe to new trips
+    // Subscribe to new trips only — existing subscriptions stay untouched
     for (const tripId of currentTripIds) {
       if (!tripSubsRef.current[tripId]) {
         const unsub1 = subscribeToSharedTripData(db, tripId, (data) => {
@@ -341,11 +357,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
         tripSubsRef.current[tripId] = () => { unsub1(); unsub2() }
       }
-    }
-
-    return () => {
-      Object.values(tripSubsRef.current).forEach(fn => fn())
-      tripSubsRef.current = {}
     }
   }, [state.trips, state.auth.currentUser?.id])
 
