@@ -172,6 +172,8 @@ export interface ScheduleNote {
   id: string
   title: string
   content: string
+  address?: string
+  googleMapUrl?: string
   imageUrl?: string
 }
 

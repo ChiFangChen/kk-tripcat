@@ -135,13 +135,13 @@ export function ScheduleTab({ tripId }: Props) {
 
             {!collapsedDays[dayIndex] && (
               <div className="mt-3">
-                {day.activities.map(activity => (
+                {[...day.activities].sort((a, b) => (a.time || '').localeCompare(b.time || '')).map(activity => (
                   <div
                     key={activity.id}
-                    className="flex items-start gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
+                    className="flex items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
                     onClick={() => setSelectedActivity({ activity, dayIndex })}
                   >
-                    <span className="text-xs text-slate-400 font-mono w-11 flex-shrink-0 pt-0.5">{activity.time || ''}</span>
+                    <span className="text-xs text-slate-400 font-mono w-11 flex-shrink-0">{activity.time || ''}</span>
                     <div className="flex-1">
                       <span className="text-sm font-medium">{activity.name}</span>
                       {activity.place && <p className="text-xs text-slate-400 mt-0.5">{activity.place}</p>}
@@ -184,6 +184,16 @@ export function ScheduleTab({ tripId }: Props) {
               </div>
             </div>
             <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">{note.content}</p>
+            {(note.address || note.googleMapUrl) && (
+              <div className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
+                {note.address && <span>{note.address}</span>}
+                {note.googleMapUrl && (
+                  <a href={note.googleMapUrl} target="_blank" rel="noopener noreferrer" className="map-link" onClick={e => e.stopPropagation()}>
+                    📍 Google Map
+                  </a>
+                )}
+              </div>
+            )}
             {note.imageUrl && <img src={note.imageUrl} alt="" className="w-full rounded-lg mt-2 max-h-48 object-cover" />}
           </div>
         ))
@@ -329,6 +339,8 @@ function NoteForm({ note, onSave }: { note: ScheduleNote; onSave: (n: ScheduleNo
     <div>
       <div className="form-group"><label className="form-label">標題</label><input className="form-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
       <div className="form-group"><label className="form-label">內容</label><textarea className="form-input" rows={8} value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">地址</label><input className="form-input" value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+      <div className="form-group"><label className="form-label">Google Map 連結</label><input className="form-input" value={form.googleMapUrl || ''} onChange={e => setForm({ ...form, googleMapUrl: e.target.value })} /></div>
       <div className="form-group">
         <label className="form-label">圖片</label>
         <ImageUpload
