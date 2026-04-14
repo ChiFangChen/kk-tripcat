@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChevronLeft, faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
 import { AppProvider, useApp } from './context/AppContext'
+import * as storage from './utils/storage'
 import { UpdatePrompt } from './components/UpdatePrompt'
 import { BottomTabBar } from './components/BottomTabBar'
 import { TemplateSelector } from './components/TemplateSelector'
@@ -20,10 +21,23 @@ import './App.css'
 function AppContent() {
   const { state, loading, setTemplate, setUserTripData, updateTrip, viewTripId, firebaseConnected } = useApp()
   const [authPage, setAuthPage] = useState<'login' | 'register'>('login')
-  const [activeTab, setActiveTab] = useState<TabType>('trips')
-  const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<TabType>(() => storage.getItem<TabType>('activeTab') || 'trips')
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(() => storage.getItem<string>('route-trip'))
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+
+  // Persist route state
+  useEffect(() => {
+    if (selectedTripId) {
+      storage.setItem('route-trip', selectedTripId)
+    } else {
+      storage.removeItem('route-trip')
+    }
+  }, [selectedTripId])
+
+  useEffect(() => {
+    storage.setItem('activeTab', activeTab)
+  }, [activeTab])
 
   // Join trip via URL: ?join=<tripId>
   const [joinTripId, setJoinTripId] = useState<string | null>(() => {

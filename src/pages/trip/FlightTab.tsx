@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../../context/AppContext'
+import { formatDate } from '../../utils/date'
 import { useDoubleTap } from '../../hooks/useDoubleTap'
 import { FullScreenModal } from '../../components/FullScreenModal'
 import { InfoRow } from '../../components/InfoRow'
@@ -109,7 +110,7 @@ export function FlightTab({ tripId }: Props) {
                 {leg.direction}
               </span>
               <div className="mt-2">
-                <InfoRow label="日期" value={leg.date} />
+                <InfoRow label="日期" value={formatDate(leg.date)} />
                 <InfoRow label="航班" value={`${leg.flightNumber}${leg.aircraft ? ` (${leg.aircraft})` : ''}`} />
                 <InfoRow label="起飛" value={
                   <div>
