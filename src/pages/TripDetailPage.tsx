@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronLeft, faUsers, faShareNodes } from '@fortawesome/free-solid-svg-icons'
+import { faChevronLeft, faUsers, faShareNodes, faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { MemberMenu } from '../components/MemberMenu'
 import { UserMenu } from '../components/UserMenu'
@@ -39,7 +39,7 @@ const viewerTabs: { key: TripTabType; label: string }[] = [
 ]
 
 export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
-  const { state, isTripAdmin, getTripData, setUserTripData, setTemplate } = useApp()
+  const { state, isTripAdmin, getTripData, setUserTripData, setTemplate, firebaseConnected } = useApp()
   const trip = state.trips.find(t => t.id === tripId)
   const tripData = getTripData(tripId)
 
@@ -135,6 +135,11 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         <button onClick={onBack} className="text-sky-600 p-2"><FontAwesomeIcon icon={faChevronLeft} /></button>
         <h1>{trip.name}</h1>
         <div className="flex items-center gap-1">
+          {!firebaseConnected && (
+            <span className="sync-warning-icon" title="尚未連線，編輯內容僅儲存在本機">
+              <FontAwesomeIcon icon={faExclamationCircle} />
+            </span>
+          )}
           {!viewOnly && (
             <>
               <button className="header-icon-btn" onClick={() => setShowShare(true)}>
