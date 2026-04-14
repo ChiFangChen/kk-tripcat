@@ -36,7 +36,7 @@ export function ScheduleTab({ tripId }: Props) {
 
   function addDay() {
     if (!newDay.date) return
-    const day: ScheduleDay = { date: newDay.date, label: newDay.label || newDay.date, activities: [] }
+    const day: ScheduleDay = { date: newDay.date, label: newDay.label || '', activities: [] }
     setSharedTripData(tripId, { schedule: [...schedule, day] })
     setNewDay({ date: '', label: '' })
     setShowAddDay(false)
