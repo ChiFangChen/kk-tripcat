@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faChevronLeft } from '@fortawesome/free-solid-svg-icons'
+import { faChevronLeft, faExclamationCircle } from '@fortawesome/free-solid-svg-icons'
 import { AppProvider, useApp } from './context/AppContext'
 import { UpdatePrompt } from './components/UpdatePrompt'
 import { BottomTabBar } from './components/BottomTabBar'
@@ -161,18 +161,21 @@ function AppContent() {
           <span className="text-lg">🐱</span>
           <span className="font-semibold">KK TripCat</span>
         </div>
-        <button
-          className="identity-badge"
-          onClick={() => setShowUserMenu(true)}
-          style={{ backgroundColor: state.auth.currentUser.color, color: 'white' }}
-        >
-          {state.auth.currentUser.displayName}
-        </button>
+        <div className="flex items-center gap-2">
+          {!firebaseConnected && (
+            <span className="sync-warning-icon" title="尚未連線，編輯內容僅儲存在本機">
+              <FontAwesomeIcon icon={faExclamationCircle} />
+            </span>
+          )}
+          <button
+            className="identity-badge"
+            onClick={() => setShowUserMenu(true)}
+            style={{ backgroundColor: state.auth.currentUser.color, color: 'white' }}
+          >
+            {state.auth.currentUser.displayName}
+          </button>
+        </div>
       </div>
-
-      {!firebaseConnected && (
-        <div className="sync-warning">尚未連線，編輯內容僅儲存在本機</div>
-      )}
 
       {activeTab === 'trips' && (
         <TripsPage onSelectTrip={setSelectedTripId} />
