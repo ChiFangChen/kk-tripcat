@@ -709,4 +709,5 @@ textarea.form-input {
 .loading-spinner {
   animation: spin 1.5s linear infinite;
   display: inline-block;
+  font-size: 32px;
 }
