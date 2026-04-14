@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function MemberMenu({ tripId, onClose }: Props) {
-  const { state, dispatch, getUserName, getUserColor, isTripAdmin } = useApp()
+  const { state, updateTrip, getUserName, getUserColor, isTripAdmin } = useApp()
   const trip = state.trips.find(t => t.id === tripId)
   const [showAddMember, setShowAddMember] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState('')
@@ -23,14 +23,14 @@ export function MemberMenu({ tripId, onClose }: Props) {
 
   function addMember() {
     if (!selectedUserId || !trip) return
-    dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, members: [...members, selectedUserId] } })
+    updateTrip({ ...trip, members: [...members, selectedUserId] })
     setSelectedUserId('')
     setShowAddMember(false)
   }
 
   function removeMember(userId: string) {
     if (!trip || userId === trip.creatorId) return
-    dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, members: members.filter(m => m !== userId) } })
+    updateTrip({ ...trip, members: members.filter(m => m !== userId) })
   }
 
   return (
