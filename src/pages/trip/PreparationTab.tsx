@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function PreparationTab({ tripId }: Props) {
-  const { state, dispatch, setUserTripData, getTripData } = useApp()
+  const { state, updateTrip, setUserTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const trip = state.trips.find(t => t.id === tripId)
   const [showCompleted, setShowCompleted] = useState(false)
@@ -126,7 +126,7 @@ export function PreparationTab({ tripId }: Props) {
       fabTimer.current = setTimeout(() => setFabExpanded(false), 3000)
     } else {
       if (!trip) return
-      dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, gotReady: !trip.gotReady } })
+      updateTrip({ ...trip, gotReady: !trip.gotReady })
       setFabExpanded(false)
       if (fabTimer.current) clearTimeout(fabTimer.current)
     }

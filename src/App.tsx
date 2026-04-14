@@ -18,7 +18,7 @@ import type { TabType, ChecklistItem, Template } from './types'
 import './App.css'
 
 function AppContent() {
-  const { state, dispatch, loading, setTemplate, setUserTripData, viewTripId } = useApp()
+  const { state, loading, setTemplate, setUserTripData, updateTrip, viewTripId, firebaseConnected } = useApp()
   const [authPage, setAuthPage] = useState<'login' | 'register'>('login')
   const [activeTab, setActiveTab] = useState<TabType>('trips')
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
@@ -46,7 +46,7 @@ function AppContent() {
 
   function handleJoinWithTemplate(checklist: ChecklistItem[], notes: string, updatedTemplate: Template | null) {
     if (!joinTrip || !state.auth.currentUser) return
-    dispatch({ type: 'UPDATE_TRIP', trip: { ...joinTrip, members: [...joinTrip.members, state.auth.currentUser.id] } })
+    updateTrip({ ...joinTrip, members: [...joinTrip.members, state.auth.currentUser.id] })
     setUserTripData(joinTrip.id, {
       checklist,
       shopping: [],
@@ -169,6 +169,10 @@ function AppContent() {
           {state.auth.currentUser.displayName}
         </button>
       </div>
+
+      {!firebaseConnected && (
+        <div className="sync-warning">尚未連線，編輯內容僅儲存在本機</div>
+      )}
 
       {activeTab === 'trips' && (
         <TripsPage onSelectTrip={setSelectedTripId} />

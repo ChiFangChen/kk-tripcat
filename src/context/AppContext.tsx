@@ -19,6 +19,10 @@ import {
   syncTemplate,
   syncTips,
   syncFavorites,
+  syncTrip,
+  deleteTripFromFirestore,
+  deleteSharedTripData,
+  deleteUserTripData,
 } from '../utils/firebase'
 import { defaultTemplate } from '../data/seed'
 import type { Firestore } from 'firebase/firestore'
@@ -168,11 +172,15 @@ interface AppContextType {
   dispatch: React.Dispatch<Action>
   loading: boolean
   viewTripId: string | null
+  firebaseConnected: boolean
   login: (user: User) => void
   logout: () => void
   register: (username: string, password: string, displayName: string) => Promise<User>
   updateUser: (user: User) => void
   setTemplate: (template: Template) => void
+  addTrip: (trip: Trip) => void
+  updateTrip: (trip: Trip) => void
+  deleteTrip: (tripId: string) => void
   getTripData: (tripId: string) => TripData
   setSharedTripData: (tripId: string, data: Partial<SharedTripData>) => void
   setUserTripData: (tripId: string, data: Partial<UserTripData>) => void
@@ -381,7 +389,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const register = useCallback(async (username: string, password: string, displayName: string): Promise<User> => {
-    const isFirstUser = state.users.length === 0
     const usedColors = state.users.map(u => u.color)
     const available = USER_COLORS.filter(c => !usedColors.includes(c))
     const colorPool = available.length > 0 ? available : USER_COLORS
@@ -392,7 +399,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       password,
       displayName,
       color,
-      isAdmin: isFirstUser,
+      isAdmin: false,
       createdAt: new Date().toISOString(),
     }
     dispatch({ type: 'ADD_USER', user })
@@ -412,6 +419,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       syncTemplate(dbRef.current, state.auth.currentUser.id, template)
     }
   }
+
+  const addTrip = useCallback((trip: Trip) => {
+    dispatch({ type: 'ADD_TRIP', trip })
+    if (dbRef.current) syncTrip(dbRef.current, trip)
+  }, [])
+
+  const updateTrip = useCallback((trip: Trip) => {
+    dispatch({ type: 'UPDATE_TRIP', trip })
+    if (dbRef.current) syncTrip(dbRef.current, trip)
+  }, [])
+
+  const deleteTrip = useCallback((tripId: string) => {
+    const userId = state.auth.currentUser?.id
+    dispatch({ type: 'DELETE_TRIP', tripId })
+    if (dbRef.current) {
+      deleteTripFromFirestore(dbRef.current, tripId)
+      deleteSharedTripData(dbRef.current, tripId)
+      if (userId) deleteUserTripData(dbRef.current, tripId, userId)
+    }
+  }, [state.auth.currentUser?.id])
 
   function getTripData(tripId: string): TripData {
     const shared = state.sharedTripData[tripId] || emptyShared
@@ -452,7 +479,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isTripAdmin = useCallback((trip: Trip): boolean => {
     const user = state.auth.currentUser
     if (!user) return false
-    return trip.creatorId === user.id || !!user.isAdmin
+    if (user.id === 'admin-kiki' || user.username === 'kiki') return true
+    return trip.creatorId === user.id
   }, [state.auth.currentUser])
 
   return (
@@ -461,11 +489,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch,
       loading,
       viewTripId,
+      firebaseConnected: dbReady,
       login,
       logout,
       register,
       updateUser,
       setTemplate,
+      addTrip,
+      updateTrip,
+      deleteTrip,
       getTripData,
       setSharedTripData,
       setUserTripData,

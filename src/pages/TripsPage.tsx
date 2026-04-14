@@ -16,7 +16,7 @@ const tripTypes: TripType[] = ['情侶', '朋友', '家人', '獨旅']
 type Step = 'list' | 'template' | 'info'
 
 export function TripsPage({ onSelectTrip }: Props) {
-  const { state, dispatch, setTemplate, setSharedTripData, setUserTripData, getUserColor } = useApp()
+  const { state, addTrip, setTemplate, setSharedTripData, setUserTripData, getUserColor } = useApp()
   const [step, setStep] = useState<Step>('list')
 
   // Stored from template selection step
@@ -63,7 +63,7 @@ export function TripsPage({ onSelectTrip }: Props) {
       gotReady: false,
     }
 
-    dispatch({ type: 'ADD_TRIP', trip })
+    addTrip(trip)
     setSharedTripData(tripId, {
       schedule: [],
       scheduleNotes: [],
