@@ -162,15 +162,23 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     setTimeout(() => setCopied(""), 2000);
   }
 
-  // Reorder tabs: if gotReady, move preparation to the very end
-  const orderedTabs = trip.gotReady ? preparedTabs : tabs;
+  // Reorder tabs only for editable mode: if gotReady, move preparation to the very end
+  const orderedTabs = viewOnly
+    ? viewerTabs
+    : trip.gotReady
+      ? preparedTabs
+      : tabs;
 
   return (
     <div>
       <div className="page-header">
-        <button onClick={onBack} className="text-sky-600 p-2">
-          <FontAwesomeIcon icon={faChevronLeft} />
-        </button>
+        {viewOnly ? (
+          <div className="w-10" />
+        ) : (
+          <button onClick={onBack} className="text-sky-600 p-2">
+            <FontAwesomeIcon icon={faChevronLeft} />
+          </button>
+        )}
         <h1>{trip.name}</h1>
         <div className="flex items-center gap-1">
           {!firebaseConnected && (
