@@ -56,7 +56,9 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const [showSetup, setShowSetup] = useState(false)
 
   useEffect(() => {
-    if (needsSetup) setShowSetup(true)
+    if (needsSetup) {
+      queueMicrotask(() => setShowSetup(true))
+    }
   }, [needsSetup])
 
   const tabs = viewOnly ? viewerTabs : allTabs
@@ -82,6 +84,8 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     if (updatedTemplate) setTemplate(updatedTemplate)
     setShowSetup(false)
   }
+
+  if (loading) return null
 
   if (!trip) {
     return (
@@ -124,9 +128,12 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     setTimeout(() => setCopied(''), 2000)
   }
 
-  // Reorder tabs: if gotReady, move preparation to end
-  const orderedTabs = !viewOnly && trip.gotReady
-    ? [...tabs.filter(t => t.key !== 'preparation'), tabs.find(t => t.key === 'preparation')!]
+  // Reorder tabs: if gotReady, move preparation and shopping to end
+  const orderedTabs = trip.gotReady
+    ? [
+        ...tabs.filter(t => t.key !== 'preparation' && t.key !== 'shopping'),
+        ...tabs.filter(t => t.key === 'preparation' || t.key === 'shopping')
+      ]
     : tabs
 
   return (
@@ -178,10 +185,10 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
 
       <div className="page-container">
         {activeTab === 'preparation' && !viewOnly && <PreparationTab tripId={tripId} />}
-        {activeTab === 'flight' && <FlightTab tripId={tripId} />}
-        {activeTab === 'hotel' && <HotelTab tripId={tripId} />}
-        {activeTab === 'schedule' && <ScheduleTab tripId={tripId} />}
-        {activeTab === 'transport' && <TransportTab tripId={tripId} />}
+        {activeTab === 'flight' && <FlightTab tripId={tripId} viewOnly={viewOnly} />}
+        {activeTab === 'hotel' && <HotelTab tripId={tripId} viewOnly={viewOnly} />}
+        {activeTab === 'schedule' && <ScheduleTab tripId={tripId} viewOnly={viewOnly} />}
+        {activeTab === 'transport' && <TransportTab tripId={tripId} viewOnly={viewOnly} />}
         {activeTab === 'shopping' && !viewOnly && <ShoppingTab tripId={tripId} />}
       </div>
 

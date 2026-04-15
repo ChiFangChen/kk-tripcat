@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useReducer, useEffect, useRef, useState, useCallback, useMemo, type ReactNode } from 'react'
 import type { User, Trip, Template, TipNote, FavoriteItem, ChecklistItem, FlightInfo, Hotel, ScheduleDay, ScheduleNote, TransportItem, ShoppingItem } from '../types'
 import { USER_COLORS } from '../types'
@@ -202,8 +203,8 @@ function loadInitialState(): AppState {
 
   // Migrate old tripData format to split format
   const oldTripData = storage.getItem<Record<string, Record<string, unknown>>>('tripData')
-  let sharedTripData = storage.getItem<Record<string, SharedTripData>>('sharedTripData') || {}
-  let userTripData = storage.getItem<Record<string, UserTripData>>('userTripData') || {}
+  const sharedTripData = storage.getItem<Record<string, SharedTripData>>('sharedTripData') || {}
+  const userTripData = storage.getItem<Record<string, UserTripData>>('userTripData') || {}
 
   // Migrate: add setupComplete to existing user trip data
   for (const [tripId, data] of Object.entries(userTripData)) {
@@ -304,7 +305,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_FAVORITES', favorites })
     })
     return () => { unsub1(); unsub2(); unsub3() }
-  }, [state.auth.currentUser?.id])
+  }, [state.auth.currentUser])
 
   // Subscribe to shared trip data for view-only link
   useEffect(() => {
@@ -436,9 +437,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (dbRef.current) syncTrip(dbRef.current, trip)
   }, [])
 
-  const updateTrip = useCallback((trip: Trip) => {
-    dispatch({ type: 'UPDATE_TRIP', trip })
-    if (dbRef.current) syncTrip(dbRef.current, trip)
+  const updateTrip = useCallback((trip: Trip, fields?: Partial<Trip>) => {
+    if (fields) {
+      dispatch({ type: 'UPDATE_TRIP', trip: { ...trip, ...fields } })
+      if (dbRef.current) syncTripPartial(dbRef.current, trip.id, fields)
+    } else {
+      dispatch({ type: 'UPDATE_TRIP', trip })
+      if (dbRef.current) syncTrip(dbRef.current, trip)
+    }
   }, [])
 
   const deleteTrip = useCallback((tripId: string) => {
@@ -460,16 +466,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function setSharedTripData(tripId: string, data: Partial<SharedTripData>) {
     dispatch({ type: 'UPDATE_SHARED_TRIP_DATA', tripId, data })
     if (dbRef.current) {
-      const current = state.sharedTripData[tripId] || emptyShared
-      syncSharedTripData(dbRef.current, tripId, { ...current, ...data })
+      syncSharedTripData(dbRef.current, tripId, data)
     }
   }
 
   function setUserTripData(tripId: string, data: Partial<UserTripData>) {
     dispatch({ type: 'UPDATE_USER_TRIP_DATA', tripId, data })
     if (dbRef.current && state.auth.currentUser) {
-      const current = state.userTripData[tripId] || emptyUser
-      syncUserTripData(dbRef.current, tripId, state.auth.currentUser.id, { ...current, ...data })
+      syncUserTripData(dbRef.current, tripId, state.auth.currentUser.id, data)
     }
   }
 
