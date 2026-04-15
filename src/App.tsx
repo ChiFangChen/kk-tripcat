@@ -15,9 +15,6 @@ import { Modal } from "./components/Modal";
 import type { TabType } from "./types";
 import "./App.css";
 
-const CACHE_BUSTER_VERSION = "2026-04-16-1";
-const CACHE_BUSTER_KEY = "kk-tripcat-cache-buster-version";
-
 function AppContent() {
   const { state, loading, updateTrip, viewTripId } = useApp();
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
@@ -29,34 +26,6 @@ function AppContent() {
   );
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (localStorage.getItem(CACHE_BUSTER_KEY) === CACHE_BUSTER_VERSION) {
-      return;
-    }
-
-    async function purgeCaches() {
-      localStorage.setItem(CACHE_BUSTER_KEY, CACHE_BUSTER_VERSION);
-
-      if ("serviceWorker" in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(
-          registrations.map((registration) => registration.unregister()),
-        );
-      }
-
-      if ("caches" in window) {
-        const cacheNames = await caches.keys();
-        await Promise.all(
-          cacheNames.map((cacheName) => caches.delete(cacheName)),
-        );
-      }
-
-      window.location.reload();
-    }
-
-    void purgeCaches();
-  }, []);
 
   // Persist route state
   useEffect(() => {

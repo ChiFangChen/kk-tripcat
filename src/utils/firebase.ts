@@ -25,17 +25,22 @@ import type { SharedTripData, UserTripData } from "../context/AppContext";
 
 export interface DatedTripDoc {
   updatedAt?: string;
+  appVersion?: number;
 }
 
 export interface SharedTripSnapshot {
   data: SharedTripData;
   updatedAt?: string;
+  appVersion?: number;
 }
 
 export interface UserTripSnapshot {
   data: UserTripData;
   updatedAt?: string;
+  appVersion?: number;
 }
+
+export const APP_WRITE_VERSION = 2026041602;
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -79,6 +84,12 @@ function getDocUpdatedAt(data: unknown): string | undefined {
   return typeof updatedAt === "string" ? updatedAt : undefined;
 }
 
+function getDocAppVersion(data: unknown): number | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const appVersion = (data as DatedTripDoc).appVersion;
+  return typeof appVersion === "number" ? appVersion : undefined;
+}
+
 export function shouldApplyIncomingSnapshot(
   currentUpdatedAt?: string,
   incomingUpdatedAt?: string,
@@ -86,6 +97,28 @@ export function shouldApplyIncomingSnapshot(
   if (!currentUpdatedAt) return true;
   if (!incomingUpdatedAt) return false;
   return incomingUpdatedAt >= currentUpdatedAt;
+}
+
+export function isClientVersionOutdated(incomingAppVersion?: number): boolean {
+  if (!incomingAppVersion) return false;
+  return incomingAppVersion > APP_WRITE_VERSION;
+}
+
+export function stripUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefinedDeep(item)) as T;
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value).filter(
+      ([, entryValue]) => entryValue !== undefined,
+    );
+    return Object.fromEntries(
+      entries.map(([key, entryValue]) => [key, stripUndefinedDeep(entryValue)]),
+    ) as T;
+  }
+
+  return value;
 }
 
 export function isFirebaseConfigured(): boolean {
@@ -179,6 +212,7 @@ export function subscribeToSharedTripData(
       callback({
         data: normalizeSharedTripData(data),
         updatedAt: getDocUpdatedAt(data),
+        appVersion: getDocAppVersion(data),
       });
     } else {
       callback({
@@ -194,9 +228,10 @@ export async function syncSharedTripData(
   data: Partial<SharedTripData>,
   updatedAt: string,
 ): Promise<void> {
+  const cleaned = stripUndefinedDeep(data);
   await setDoc(
     doc(db, "tcTripShared", tripId),
-    { ...data, updatedAt },
+    { ...cleaned, updatedAt, appVersion: APP_WRITE_VERSION },
     {
       merge: true,
     },
@@ -245,9 +280,14 @@ export function subscribeToUserTripData(
         callback({
           data: normalizeUserTripData(migrated),
           updatedAt: migrated.updatedAt,
+          appVersion: APP_WRITE_VERSION,
         });
       } else {
-        callback({ data: normalized, updatedAt });
+        callback({
+          data: normalized,
+          updatedAt,
+          appVersion: getDocAppVersion(data),
+        });
       }
     } else {
       callback({
@@ -264,9 +304,10 @@ export async function syncUserTripData(
   data: Partial<UserTripData>,
   updatedAt: string,
 ): Promise<void> {
+  const cleaned = stripUndefinedDeep(data);
   await setDoc(
     doc(db, "tcTripUser", userTripDocId(tripId, userId)),
-    { ...data, updatedAt },
+    { ...cleaned, updatedAt, appVersion: APP_WRITE_VERSION },
     {
       merge: true,
     },

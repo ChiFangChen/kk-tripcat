@@ -48,6 +48,7 @@ import {
   deleteTripFromFirestore,
   deleteSharedTripData,
   deleteUserTripData,
+  isClientVersionOutdated,
   shouldApplyIncomingSnapshot,
 } from "../utils/firebase";
 import { defaultTemplate } from "../data/seed";
@@ -353,6 +354,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const pendingSharedTripUpdatedAtRef = useRef<Record<string, string>>({});
   const pendingUserTripUpdatedAtRef = useRef<Record<string, string>>({});
+  const versionBlockedTripIdsRef = useRef<Set<string>>(new Set());
 
   // Parse viewTripId from URL once
   const viewTripId = useMemo(() => {
@@ -514,6 +516,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!viewTripId || !dbReady || !dbRef.current) return;
     return subscribeToSharedTripData(dbRef.current, viewTripId, (snapshot) => {
+      if (isClientVersionOutdated(snapshot.appVersion)) {
+        versionBlockedTripIdsRef.current.add(viewTripId);
+      }
       const pendingUpdatedAt =
         pendingSharedTripUpdatedAtRef.current[viewTripId];
       if (
@@ -580,6 +585,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     for (const tripId of currentTripIds) {
       if (!tripSubsRef.current[tripId]) {
         const unsub1 = subscribeToSharedTripData(db, tripId, (snapshot) => {
+          if (isClientVersionOutdated(snapshot.appVersion)) {
+            versionBlockedTripIdsRef.current.add(tripId);
+          }
           const pendingUpdatedAt =
             pendingSharedTripUpdatedAtRef.current[tripId];
           if (
@@ -613,6 +621,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           tripId,
           userId,
           (snapshot) => {
+            if (isClientVersionOutdated(snapshot.appVersion)) {
+              versionBlockedTripIdsRef.current.add(tripId);
+            }
             const pendingUpdatedAt =
               pendingUserTripUpdatedAtRef.current[tripId];
             if (
@@ -793,6 +804,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       userTripUpdatedAtRef.current = restUserAt;
       delete pendingSharedTripUpdatedAtRef.current[tripId];
       delete pendingUserTripUpdatedAtRef.current[tripId];
+      versionBlockedTripIdsRef.current.delete(tripId);
       storage.setItem("sharedTripData", restShared);
       storage.setItem("userTripData", restUser);
       storage.setItem("sharedTripUpdatedAt", restSharedAt);
@@ -814,6 +826,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function setSharedTripData(tripId: string, data: Partial<SharedTripData>) {
     if (!firebaseConnected || !dbRef.current) return;
+    if (versionBlockedTripIdsRef.current.has(tripId)) {
+      console.warn("Blocked shared trip write from outdated client:", tripId);
+      return;
+    }
     const updatedAt = new Date().toISOString();
     pendingSharedTripUpdatedAtRef.current = {
       ...pendingSharedTripUpdatedAtRef.current,
@@ -833,6 +849,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function setUserTripData(tripId: string, data: Partial<UserTripData>) {
     if (!firebaseConnected || !dbRef.current || !state.auth.currentUser) return;
+    if (versionBlockedTripIdsRef.current.has(tripId)) {
+      console.warn("Blocked user trip write from outdated client:", tripId);
+      return;
+    }
     const updatedAt = new Date().toISOString();
     pendingUserTripUpdatedAtRef.current = {
       ...pendingUserTripUpdatedAtRef.current,
