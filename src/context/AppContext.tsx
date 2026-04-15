@@ -48,6 +48,7 @@ import {
   deleteTripFromFirestore,
   deleteSharedTripData,
   deleteUserTripData,
+  shouldApplyIncomingSnapshot,
 } from "../utils/firebase";
 import { defaultTemplate } from "../data/seed";
 import type { Firestore } from "firebase/firestore";
@@ -129,6 +130,20 @@ const emptyUser: UserTripData = {
   preparationNotes: "",
   skipPreparation: false,
 };
+
+const WRITE_BLOCKED_ACTIONS = new Set<Action["type"]>([
+  "ADD_USER",
+  "UPDATE_USER",
+  "ADD_TRIP",
+  "UPDATE_TRIP",
+  "DELETE_TRIP",
+  "ADD_TIP",
+  "UPDATE_TIP",
+  "DELETE_TIP",
+  "ADD_FAVORITE",
+  "UPDATE_FAVORITE",
+  "DELETE_FAVORITE",
+]);
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -287,9 +302,6 @@ function loadInitialState(): AppState {
   const favorites = storage.getItem<FavoriteItem[]>("favorites") || [];
   const users = storage.getItem<User[]>("users") || [];
 
-  // Migrate old tripData format to split format
-  const oldTripData =
-    storage.getItem<Record<string, Record<string, unknown>>>("tripData");
   const sharedTripData =
     storage.getItem<Record<string, SharedTripData>>("sharedTripData") || {};
   const userTripData =
@@ -300,23 +312,9 @@ function loadInitialState(): AppState {
     if (!data.setupComplete && data.checklist?.length > 0) {
       userTripData[tripId] = { ...data, setupComplete: true };
     }
-  }
-
-  if (oldTripData && Object.keys(sharedTripData).length === 0) {
-    for (const [tripId, data] of Object.entries(oldTripData)) {
-      sharedTripData[tripId] = {
-        schedule: (data.schedule as ScheduleDay[]) || [],
-        scheduleNotes: (data.scheduleNotes as ScheduleNote[]) || [],
-        flights: (data.flights as FlightInfo[]) || [],
-        hotels: (data.hotels as Hotel[]) || [],
-        transport: (data.transport as TransportItem[]) || [],
-      };
-      const checklist = (data.checklist as ChecklistItem[]) || [];
+    if (data.skipPreparation === undefined) {
       userTripData[tripId] = {
-        checklist,
-        shopping: (data.shopping as ShoppingItem[]) || [],
-        preparationNotes: (data.preparationNotes as string) || "",
-        setupComplete: checklist.length > 0,
+        ...userTripData[tripId],
         skipPreparation: false,
       };
     }
@@ -335,19 +333,109 @@ function loadInitialState(): AppState {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, null, loadInitialState);
+  const [state, rawDispatch] = useReducer(reducer, null, loadInitialState);
   const [loading, setLoading] = useState(isFirebaseConfigured());
   const [dbReady, setDbReady] = useState(false);
+  const [isOnline, setIsOnline] = useState(() => window.navigator.onLine);
   const dbRef = useRef<Firestore | null>(null);
   const firebaseListeningRef = useRef(false);
   const tripSubsRef = useRef<Record<string, () => void>>({});
   const skipFirstSave = useRef(true);
+  const sharedTripDataRef = useRef(state.sharedTripData);
+  const userTripDataRef = useRef(state.userTripData);
+  const sharedTripUpdatedAtRef = useRef(
+    storage.getItem<Record<string, string>>("sharedTripUpdatedAt") || {},
+  );
+  const userTripUpdatedAtRef = useRef(
+    storage.getItem<Record<string, string>>("userTripUpdatedAt") || {},
+  );
 
   // Parse viewTripId from URL once
   const viewTripId = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("view");
   }, []);
+
+  const firebaseConnected = dbReady && isOnline;
+
+  const dispatch = useCallback(
+    (action: Action) => {
+      if (!firebaseConnected && WRITE_BLOCKED_ACTIONS.has(action.type)) {
+        return;
+      }
+      rawDispatch(action);
+    },
+    [firebaseConnected],
+  );
+
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+    }
+
+    function handleOffline() {
+      setIsOnline(false);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    storage.removeItem("tripData");
+  }, []);
+
+  useEffect(() => {
+    sharedTripDataRef.current = state.sharedTripData;
+  }, [state.sharedTripData]);
+
+  useEffect(() => {
+    userTripDataRef.current = state.userTripData;
+  }, [state.userTripData]);
+
+  const persistSharedTripCache = useCallback(
+    (tripId: string, data: SharedTripData, updatedAt?: string) => {
+      const nextSharedTripData = {
+        ...sharedTripDataRef.current,
+        [tripId]: data,
+      };
+      sharedTripDataRef.current = nextSharedTripData;
+      storage.setItem("sharedTripData", nextSharedTripData);
+      if (updatedAt) {
+        const nextUpdatedAt = {
+          ...sharedTripUpdatedAtRef.current,
+          [tripId]: updatedAt,
+        };
+        sharedTripUpdatedAtRef.current = nextUpdatedAt;
+        storage.setItem("sharedTripUpdatedAt", nextUpdatedAt);
+      }
+    },
+    [],
+  );
+
+  const persistUserTripCache = useCallback(
+    (tripId: string, data: UserTripData, updatedAt?: string) => {
+      const nextUserTripData = {
+        ...userTripDataRef.current,
+        [tripId]: data,
+      };
+      userTripDataRef.current = nextUserTripData;
+      storage.setItem("userTripData", nextUserTripData);
+      if (updatedAt) {
+        const nextUpdatedAt = {
+          ...userTripUpdatedAtRef.current,
+          [tripId]: updatedAt,
+        };
+        userTripUpdatedAtRef.current = nextUpdatedAt;
+        storage.setItem("userTripUpdatedAt", nextUpdatedAt);
+      }
+    },
+    [],
+  );
 
   // Initialize Firebase
   useEffect(() => {
@@ -364,12 +452,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
             if (usersLoaded && tripsLoaded) setLoading(false);
           };
           const unsub1 = subscribeToUsers(db, (users) => {
-            dispatch({ type: "SET_USERS", users });
+            rawDispatch({ type: "SET_USERS", users });
+            storage.setItem("users", users);
             usersLoaded = true;
             checkReady();
           });
           const unsub2 = subscribeToTrips(db, (trips) => {
-            dispatch({ type: "SET_TRIPS", trips });
+            rawDispatch({ type: "SET_TRIPS", trips });
+            storage.setItem("trips", trips);
             tripsLoaded = true;
             checkReady();
           });
@@ -392,16 +482,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const userId = state.auth.currentUser.id;
     const unsub1 = subscribeToTemplate(db, userId, (template) => {
       if (template) {
-        dispatch({ type: "SET_TEMPLATE", template });
+        rawDispatch({ type: "SET_TEMPLATE", template });
+        storage.setItem("template", template);
       } else {
-        dispatch({ type: "SET_TEMPLATE", template: defaultTemplate });
+        rawDispatch({ type: "SET_TEMPLATE", template: defaultTemplate });
+        storage.setItem("template", defaultTemplate);
       }
     });
     const unsub2 = subscribeToTips(db, userId, (tips) => {
-      dispatch({ type: "SET_TIPS", tips });
+      rawDispatch({ type: "SET_TIPS", tips });
+      storage.setItem("tips", tips);
     });
     const unsub3 = subscribeToFavorites(db, userId, (favorites) => {
-      dispatch({ type: "SET_FAVORITES", favorites });
+      rawDispatch({ type: "SET_FAVORITES", favorites });
+      storage.setItem("favorites", favorites);
     });
     return () => {
       unsub1();
@@ -413,10 +507,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Subscribe to shared trip data for view-only link
   useEffect(() => {
     if (!viewTripId || !dbReady || !dbRef.current) return;
-    return subscribeToSharedTripData(dbRef.current, viewTripId, (data) => {
-      dispatch({ type: "SET_SHARED_TRIP_DATA", tripId: viewTripId, data });
+    return subscribeToSharedTripData(dbRef.current, viewTripId, (snapshot) => {
+      const currentUpdatedAt = sharedTripUpdatedAtRef.current[viewTripId];
+      if (!shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)) {
+        return;
+      }
+      rawDispatch({
+        type: "SET_SHARED_TRIP_DATA",
+        tripId: viewTripId,
+        data: snapshot.data,
+      });
+      persistSharedTripCache(viewTripId, snapshot.data, snapshot.updatedAt);
     });
-  }, [viewTripId, dbReady]);
+  }, [viewTripId, dbReady, persistSharedTripCache]);
 
   // Cleanup all trip subscriptions on unmount only
   useEffect(() => {
@@ -455,21 +558,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Subscribe to new trips only — existing subscriptions stay untouched
     for (const tripId of currentTripIds) {
       if (!tripSubsRef.current[tripId]) {
-        const unsub1 = subscribeToSharedTripData(db, tripId, (data) => {
-          dispatch({ type: "SET_SHARED_TRIP_DATA", tripId, data });
+        const unsub1 = subscribeToSharedTripData(db, tripId, (snapshot) => {
+          const currentUpdatedAt = sharedTripUpdatedAtRef.current[tripId];
+          if (
+            !shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)
+          ) {
+            return;
+          }
+          rawDispatch({
+            type: "SET_SHARED_TRIP_DATA",
+            tripId,
+            data: snapshot.data,
+          });
+          persistSharedTripCache(tripId, snapshot.data, snapshot.updatedAt);
         });
-        const unsub2 = subscribeToUserTripData(db, tripId, userId, (data) => {
-          dispatch({ type: "SET_USER_TRIP_DATA", tripId, data });
-        });
+        const unsub2 = subscribeToUserTripData(
+          db,
+          tripId,
+          userId,
+          (snapshot) => {
+            const currentUpdatedAt = userTripUpdatedAtRef.current[tripId];
+            if (
+              !shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)
+            ) {
+              return;
+            }
+            rawDispatch({
+              type: "SET_USER_TRIP_DATA",
+              tripId,
+              data: snapshot.data,
+            });
+            persistUserTripCache(tripId, snapshot.data, snapshot.updatedAt);
+          },
+        );
         tripSubsRef.current[tripId] = () => {
           unsub1();
           unsub2();
         };
       }
     }
-  }, [state.trips, state.auth.currentUser?.id]);
+  }, [
+    state.trips,
+    state.auth.currentUser?.id,
+    persistSharedTripCache,
+    persistUserTripCache,
+  ]);
 
-  // Save to localStorage & sync tips/favorites to Firebase
+  // Save local cache for non-trip collections and sync tips/favorites to Firebase.
   const prevTipsRef = useRef(state.tips);
   const prevFavoritesRef = useRef(state.favorites);
   useEffect(() => {
@@ -482,11 +617,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     storage.setItem("template", state.template);
     storage.setItem("tips", state.tips);
     storage.setItem("favorites", state.favorites);
-    storage.setItem("sharedTripData", state.sharedTripData);
-    storage.setItem("userTripData", state.userTripData);
 
     // Sync tips/favorites to Firebase when they change
-    if (dbRef.current && state.auth.currentUser) {
+    if (firebaseConnected && dbRef.current && state.auth.currentUser) {
       if (state.tips !== prevTipsRef.current) {
         syncTips(dbRef.current, state.auth.currentUser.id, state.tips);
       }
@@ -506,9 +639,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     state.template,
     state.tips,
     state.favorites,
-    state.sharedTripData,
-    state.userTripData,
     state.auth.currentUser,
+    firebaseConnected,
   ]);
 
   const login = useCallback((user: User) => {
@@ -541,54 +673,82 @@ export function AppProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
       };
       dispatch({ type: "ADD_USER", user });
-      if (dbRef.current) await syncUser(dbRef.current, user);
+      if (firebaseConnected && dbRef.current)
+        await syncUser(dbRef.current, user);
       return user;
     },
-    [state.users],
+    [state.users, dispatch, firebaseConnected],
   );
 
   const updateUser = useCallback(
     (user: User) => {
       dispatch({ type: "UPDATE_USER", user });
       if (user.id === state.auth.currentUser?.id) storage.saveAuth(user);
-      if (dbRef.current) syncUser(dbRef.current, user);
+      if (firebaseConnected && dbRef.current) syncUser(dbRef.current, user);
     },
-    [state.auth.currentUser],
+    [dispatch, firebaseConnected, state.auth.currentUser],
   );
 
   function setTemplate(template: Template) {
+    if (!firebaseConnected) return;
     dispatch({ type: "SET_TEMPLATE", template });
     if (dbRef.current && state.auth.currentUser) {
       syncTemplate(dbRef.current, state.auth.currentUser.id, template);
     }
   }
 
-  const addTrip = useCallback((trip: Trip) => {
-    dispatch({ type: "ADD_TRIP", trip });
-    if (dbRef.current) syncTrip(dbRef.current, trip);
-  }, []);
-
-  const updateTrip = useCallback((trip: Trip, fields?: Partial<Trip>) => {
-    if (fields) {
-      dispatch({ type: "UPDATE_TRIP", trip: { ...trip, ...fields } });
-      if (dbRef.current) syncTripPartial(dbRef.current, trip.id, fields);
-    } else {
-      dispatch({ type: "UPDATE_TRIP", trip });
+  const addTrip = useCallback(
+    (trip: Trip) => {
+      if (!firebaseConnected) return;
+      dispatch({ type: "ADD_TRIP", trip });
       if (dbRef.current) syncTrip(dbRef.current, trip);
-    }
-  }, []);
+    },
+    [dispatch, firebaseConnected],
+  );
+
+  const updateTrip = useCallback(
+    (trip: Trip, fields?: Partial<Trip>) => {
+      if (!firebaseConnected) return;
+      if (fields) {
+        dispatch({ type: "UPDATE_TRIP", trip: { ...trip, ...fields } });
+        if (dbRef.current) syncTripPartial(dbRef.current, trip.id, fields);
+      } else {
+        dispatch({ type: "UPDATE_TRIP", trip });
+        if (dbRef.current) syncTrip(dbRef.current, trip);
+      }
+    },
+    [dispatch, firebaseConnected],
+  );
 
   const deleteTrip = useCallback(
     (tripId: string) => {
+      if (!firebaseConnected) return;
       const userId = state.auth.currentUser?.id;
       dispatch({ type: "DELETE_TRIP", tripId });
+      const { [tripId]: _shared, ...restShared } = sharedTripDataRef.current;
+      const { [tripId]: _user, ...restUser } = userTripDataRef.current;
+      const { [tripId]: _sharedAt, ...restSharedAt } =
+        sharedTripUpdatedAtRef.current;
+      const { [tripId]: _userAt, ...restUserAt } = userTripUpdatedAtRef.current;
+      void _shared;
+      void _user;
+      void _sharedAt;
+      void _userAt;
+      sharedTripDataRef.current = restShared;
+      userTripDataRef.current = restUser;
+      sharedTripUpdatedAtRef.current = restSharedAt;
+      userTripUpdatedAtRef.current = restUserAt;
+      storage.setItem("sharedTripData", restShared);
+      storage.setItem("userTripData", restUser);
+      storage.setItem("sharedTripUpdatedAt", restSharedAt);
+      storage.setItem("userTripUpdatedAt", restUserAt);
       if (dbRef.current) {
         deleteTripFromFirestore(dbRef.current, tripId);
         deleteSharedTripData(dbRef.current, tripId);
         if (userId) deleteUserTripData(dbRef.current, tripId, userId);
       }
     },
-    [state.auth.currentUser?.id],
+    [dispatch, firebaseConnected, state.auth.currentUser?.id],
   );
 
   function getTripData(tripId: string): TripData {
@@ -598,17 +758,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   function setSharedTripData(tripId: string, data: Partial<SharedTripData>) {
+    if (!firebaseConnected || !dbRef.current) return;
+    const updatedAt = new Date().toISOString();
+    sharedTripUpdatedAtRef.current = {
+      ...sharedTripUpdatedAtRef.current,
+      [tripId]: updatedAt,
+    };
     dispatch({ type: "UPDATE_SHARED_TRIP_DATA", tripId, data });
-    if (dbRef.current) {
-      syncSharedTripData(dbRef.current, tripId, data);
-    }
+    syncSharedTripData(dbRef.current, tripId, data, updatedAt);
   }
 
   function setUserTripData(tripId: string, data: Partial<UserTripData>) {
+    if (!firebaseConnected || !dbRef.current || !state.auth.currentUser) return;
+    const updatedAt = new Date().toISOString();
+    userTripUpdatedAtRef.current = {
+      ...userTripUpdatedAtRef.current,
+      [tripId]: updatedAt,
+    };
     dispatch({ type: "UPDATE_USER_TRIP_DATA", tripId, data });
-    if (dbRef.current && state.auth.currentUser) {
-      syncUserTripData(dbRef.current, tripId, state.auth.currentUser.id, data);
-    }
+    syncUserTripData(
+      dbRef.current,
+      tripId,
+      state.auth.currentUser.id,
+      data,
+      updatedAt,
+    );
   }
 
   const getUserName = useCallback(
@@ -648,7 +822,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch,
         loading,
         viewTripId,
-        firebaseConnected: dbReady,
+        firebaseConnected,
         login,
         logout,
         register,

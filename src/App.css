@@ -113,16 +113,25 @@ body {
 
 .trip-tab {
   flex-shrink: 0;
-  padding: 12px 16px;
+  padding: 8px 12px;
   font-size: 14px;
   color: var(--color-text-secondary);
   white-space: nowrap;
   transition: all 0.2s;
+  flex: 1;
 }
 
 .trip-tab.active {
   color: var(--color-primary-dark);
   font-weight: 600;
+}
+
+.trip-tab.ready {
+  opacity: 0.3;
+}
+
+.trip-tab.ready.active {
+  opacity: initial;
 }
 
 /* Card */
@@ -295,21 +304,6 @@ body {
 
 .top-bar {
   background: var(--color-card);
-}
-
-.sync-warning-icon {
-  color: #f59e0b;
-  font-size: 1.1rem;
-  animation: pulse-warning 2s ease-in-out infinite;
-}
-@keyframes pulse-warning {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
 }
 
 .page-header h1 {
@@ -593,7 +587,7 @@ textarea.form-input {
 .flight-leg-card {
   margin-top: 12px;
   padding: 12px;
-  background: color-mix(in srgb, var(--color-card) 72%, var(--color-bg));
+  background: var(--color-slate-50);
   border-radius: 12px;
 }
 

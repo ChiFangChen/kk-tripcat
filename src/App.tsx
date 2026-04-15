@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { AppProvider, useApp } from "./context/AppContext";
 import * as storage from "./utils/storage";
 import { UpdatePrompt } from "./components/UpdatePrompt";
@@ -18,8 +16,7 @@ import type { TabType } from "./types";
 import "./App.css";
 
 function AppContent() {
-  const { state, loading, updateTrip, viewTripId, firebaseConnected } =
-    useApp();
+  const { state, loading, updateTrip, viewTripId } = useApp();
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
     () => storage.getItem<TabType>("activeTab") || "trips",
@@ -184,14 +181,6 @@ function AppContent() {
           <span className="font-semibold">KK TripCat</span>
         </div>
         <div className="flex items-center gap-2">
-          {!firebaseConnected && (
-            <span
-              className="sync-warning-icon"
-              title="尚未連線，編輯內容僅儲存在本機"
-            >
-              <FontAwesomeIcon icon={faExclamationCircle} />
-            </span>
-          )}
           <button
             className="identity-badge"
             onClick={() => setShowUserMenu(true)}
