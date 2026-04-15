@@ -85,7 +85,11 @@ export function subscribeToTrips(
 }
 
 export async function syncTrip(db: Firestore, trip: Trip): Promise<void> {
-  await setDoc(doc(db, 'tcTrips', trip.id), trip)
+  await setDoc(doc(db, 'tcTrips', trip.id), trip, { merge: true })
+}
+
+export async function syncTripPartial(db: Firestore, tripId: string, fields: Record<string, any>): Promise<void> {
+  await updateDoc(doc(db, 'tcTrips', tripId), fields)
 }
 
 export async function deleteTripFromFirestore(db: Firestore, id: string): Promise<void> {

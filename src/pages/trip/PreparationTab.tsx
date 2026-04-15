@@ -126,7 +126,7 @@ export function PreparationTab({ tripId }: Props) {
       fabTimer.current = setTimeout(() => setFabExpanded(false), 3000)
     } else {
       if (!trip) return
-      updateTrip({ ...trip, gotReady: !trip.gotReady })
+      updateTrip(trip, { gotReady: !trip.gotReady })
       setFabExpanded(false)
       if (fabTimer.current) clearTimeout(fabTimer.current)
     }

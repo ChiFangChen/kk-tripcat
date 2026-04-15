@@ -10,9 +10,10 @@ import type { Hotel } from '../../types'
 
 interface Props {
   tripId: string
+  viewOnly?: boolean
 }
 
-export function HotelTab({ tripId }: Props) {
+export function HotelTab({ tripId, viewOnly }: Props) {
   const { setSharedTripData, getTripData } = useApp()
   const tripData = getTripData(tripId)
   const hotels = tripData.hotels
@@ -41,9 +42,11 @@ export function HotelTab({ tripId }: Props) {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">飯店資訊</h2>
-        <button className="btn-round-add" onClick={() => setEditing(newHotel())}>
-          <FontAwesomeIcon icon={faPlus} className="text-xs" />
-        </button>
+        {!viewOnly && (
+          <button className="btn-round-add" onClick={() => setEditing(newHotel())}>
+            <FontAwesomeIcon icon={faPlus} className="text-xs" />
+          </button>
+        )}
       </div>
 
       {hotels.length === 0 && (
@@ -54,7 +57,7 @@ export function HotelTab({ tripId }: Props) {
         <div key={hotel.id} className="card">
           <h3
             className="font-semibold mb-2 cursor-pointer"
-            onClick={doubleTap(hotel.id, () => setEditing(hotel))}
+            onClick={doubleTap(hotel.id, () => !viewOnly && setEditing(hotel))}
           >
             {hotel.name || '飯店'}
           </h3>

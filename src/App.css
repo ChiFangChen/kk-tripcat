@@ -560,6 +560,7 @@ textarea.form-input {
 /* Info row - for displaying field:value pairs, hide when empty */
 .info-row {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 6px 0;
   font-size: 14px;
@@ -645,7 +646,6 @@ textarea.form-input {
   color: var(--color-primary-dark);
   font-size: 13px;
   text-decoration: none;
-  margin-top: 4px;
 }
 
 /* Auth pages */
