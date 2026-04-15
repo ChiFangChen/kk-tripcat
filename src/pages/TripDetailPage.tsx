@@ -39,7 +39,7 @@ const viewerTabs: { key: TripTabType; label: string }[] = [
 ]
 
 export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
-  const { state, isTripAdmin, getTripData, setUserTripData, setTemplate, firebaseConnected } = useApp()
+  const { state, loading, isTripAdmin, getTripData, setUserTripData, setTemplate, firebaseConnected } = useApp()
   const trip = state.trips.find(t => t.id === tripId)
   const tripData = getTripData(tripId)
 
