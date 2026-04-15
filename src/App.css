@@ -1,6 +1,6 @@
 :root {
-  --color-primary: #7EC8E3;
-  --color-primary-dark: #5BA8C8;
+  --color-primary: #7ec8e3;
+  --color-primary-dark: #5ba8c8;
   --color-bg: #f8fafc;
   --color-card: #ffffff;
   --color-text: #334155;
@@ -42,7 +42,7 @@ input[type="checkbox"]:checked {
   border-color: var(--color-primary-dark);
 }
 input[type="checkbox"]:checked::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 30%;
   top: 8%;
@@ -56,7 +56,8 @@ input[type="checkbox"]:checked::after {
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   padding-bottom: var(--safe-bottom);
 }
 
@@ -282,7 +283,8 @@ body {
 }
 
 /* Header - unified height */
-.page-header, .top-bar {
+.page-header,
+.top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -301,8 +303,13 @@ body {
   animation: pulse-warning 2s ease-in-out infinite;
 }
 @keyframes pulse-warning {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .page-header h1 {
@@ -434,12 +441,22 @@ body {
 
 /* Dialog - centered popup (kk-coincat style, for UserMenu) */
 @keyframes dialogFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes dialogSlideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dialog-overlay {
@@ -573,6 +590,49 @@ textarea.form-input {
   flex-shrink: 0;
 }
 
+.flight-leg-card {
+  margin-top: 12px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--color-card) 72%, var(--color-bg));
+  border-radius: 12px;
+}
+
+.flight-leg-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.flight-airport-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.flight-airport-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.flight-airport-code {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.flight-airport-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 /* Got Ready floating button */
 .got-ready-fab {
   position: fixed;
@@ -703,8 +763,12 @@ textarea.form-input {
 
 /* Loading spinner */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
 }
 .loading-spinner {
   animation: spin 1.5s linear infinite;
