@@ -103,7 +103,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
 
       {flights.map((flight) => (
         <div key={flight.id} className="card">
-          <div className="flex justify-between items-center mb-2">
+          <div className="flex justify-between items-center w-full mb-2">
             <h3
               className="font-semibold text-sky-600 dark:text-sky-400 cursor-pointer"
               onClick={doubleTap(

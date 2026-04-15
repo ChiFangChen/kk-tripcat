@@ -23,6 +23,20 @@ import {
 import type { User, Trip, Template, TipNote, FavoriteItem } from "../types";
 import type { SharedTripData, UserTripData } from "../context/AppContext";
 
+export interface DatedTripDoc {
+  updatedAt?: string;
+}
+
+export interface SharedTripSnapshot {
+  data: SharedTripData;
+  updatedAt?: string;
+}
+
+export interface UserTripSnapshot {
+  data: UserTripData;
+  updatedAt?: string;
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -34,6 +48,45 @@ const firebaseConfig = {
 
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
+
+export function normalizeSharedTripData(
+  data: Partial<SharedTripData> | undefined,
+): SharedTripData {
+  return {
+    schedule: data?.schedule || [],
+    scheduleNotes: data?.scheduleNotes || [],
+    flights: data?.flights || [],
+    hotels: data?.hotels || [],
+    transport: data?.transport || [],
+  };
+}
+
+export function normalizeUserTripData(
+  data: Partial<UserTripData> | undefined,
+): UserTripData {
+  return {
+    checklist: data?.checklist || [],
+    shopping: data?.shopping || [],
+    preparationNotes: data?.preparationNotes || "",
+    setupComplete: data?.setupComplete,
+    skipPreparation: data?.skipPreparation ?? false,
+  };
+}
+
+function getDocUpdatedAt(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const updatedAt = (data as DatedTripDoc).updatedAt;
+  return typeof updatedAt === "string" ? updatedAt : undefined;
+}
+
+export function shouldApplyIncomingSnapshot(
+  currentUpdatedAt?: string,
+  incomingUpdatedAt?: string,
+): boolean {
+  if (!currentUpdatedAt) return true;
+  if (!incomingUpdatedAt) return false;
+  return incomingUpdatedAt >= currentUpdatedAt;
+}
 
 export function isFirebaseConfigured(): boolean {
   return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
@@ -118,18 +171,18 @@ export async function deleteTripFromFirestore(
 export function subscribeToSharedTripData(
   db: Firestore,
   tripId: string,
-  callback: (data: SharedTripData) => void,
+  callback: (snapshot: SharedTripSnapshot) => void,
 ): () => void {
   return onSnapshot(doc(db, "tcTripShared", tripId), (snapshot) => {
     if (snapshot.exists()) {
-      callback(snapshot.data() as SharedTripData);
+      const data = snapshot.data() as Partial<SharedTripData> & DatedTripDoc;
+      callback({
+        data: normalizeSharedTripData(data),
+        updatedAt: getDocUpdatedAt(data),
+      });
     } else {
       callback({
-        schedule: [],
-        scheduleNotes: [],
-        flights: [],
-        hotels: [],
-        transport: [],
+        data: normalizeSharedTripData(undefined),
       });
     }
   });
@@ -139,8 +192,15 @@ export async function syncSharedTripData(
   db: Firestore,
   tripId: string,
   data: Partial<SharedTripData>,
+  updatedAt: string,
 ): Promise<void> {
-  await setDoc(doc(db, "tcTripShared", tripId), data, { merge: true });
+  await setDoc(
+    doc(db, "tcTripShared", tripId),
+    { ...data, updatedAt },
+    {
+      merge: true,
+    },
+  );
 }
 
 export async function deleteSharedTripData(
@@ -160,34 +220,38 @@ export function subscribeToUserTripData(
   db: Firestore,
   tripId: string,
   userId: string,
-  callback: (data: UserTripData) => void,
+  callback: (snapshot: UserTripSnapshot) => void,
 ): () => void {
   const docRef = doc(db, "tcTripUser", userTripDocId(tripId, userId));
   return onSnapshot(docRef, (snapshot) => {
     if (snapshot.exists()) {
-      const data = snapshot.data() as UserTripData;
+      const data = snapshot.data() as Partial<UserTripData> & DatedTripDoc;
+      const normalized = normalizeUserTripData(data);
+      const updatedAt = getDocUpdatedAt(data);
       // Migrate old data: add setupComplete if user already has checklist data
       // and initialize skipPreparation for older documents.
       if (
-        (!data.setupComplete && data.checklist?.length > 0) ||
+        (!normalized.setupComplete && normalized.checklist.length > 0) ||
         data.skipPreparation === undefined
       ) {
         const migrated = {
-          ...data,
-          setupComplete: data.setupComplete || data.checklist?.length > 0,
-          skipPreparation: data.skipPreparation ?? false,
+          ...normalized,
+          setupComplete:
+            normalized.setupComplete || normalized.checklist.length > 0,
+          skipPreparation: normalized.skipPreparation ?? false,
+          updatedAt: updatedAt ?? new Date().toISOString(),
         };
         setDoc(docRef, migrated, { merge: true });
-        callback(migrated);
+        callback({
+          data: normalizeUserTripData(migrated),
+          updatedAt: migrated.updatedAt,
+        });
       } else {
-        callback(data);
+        callback({ data: normalized, updatedAt });
       }
     } else {
       callback({
-        checklist: [],
-        shopping: [],
-        preparationNotes: "",
-        skipPreparation: false,
+        data: normalizeUserTripData(undefined),
       });
     }
   });
@@ -198,10 +262,15 @@ export async function syncUserTripData(
   tripId: string,
   userId: string,
   data: Partial<UserTripData>,
+  updatedAt: string,
 ): Promise<void> {
-  await setDoc(doc(db, "tcTripUser", userTripDocId(tripId, userId)), data, {
-    merge: true,
-  });
+  await setDoc(
+    doc(db, "tcTripUser", userTripDocId(tripId, userId)),
+    { ...data, updatedAt },
+    {
+      merge: true,
+    },
+  );
 }
 
 export async function deleteUserTripData(
