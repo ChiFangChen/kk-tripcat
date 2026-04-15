@@ -1,6 +1,12 @@
-import { initializeApp, type FirebaseApp } from 'firebase/app'
-import { getAuth, signInAnonymously } from 'firebase/auth'
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { initializeApp, type FirebaseApp } from "firebase/app";
+import { getAuth, signInAnonymously } from "firebase/auth";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
 import {
   getFirestore,
   collection,
@@ -13,9 +19,9 @@ import {
   query,
   where,
   type Firestore,
-} from 'firebase/firestore'
-import type { User, Trip, Template, TipNote, FavoriteItem } from '../types'
-import type { SharedTripData, UserTripData } from '../context/AppContext'
+} from "firebase/firestore";
+import type { User, Trip, Template, TipNote, FavoriteItem } from "../types";
+import type { SharedTripData, UserTripData } from "../context/AppContext";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,27 +30,27 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-}
+};
 
-let app: FirebaseApp | null = null
-let db: Firestore | null = null
+let app: FirebaseApp | null = null;
+let db: Firestore | null = null;
 
 export function isFirebaseConfigured(): boolean {
-  return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId)
+  return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 }
 
 export async function initFirebase(): Promise<Firestore | null> {
-  if (!isFirebaseConfigured()) return null
-  if (db) return db
+  if (!isFirebaseConfigured()) return null;
+  if (db) return db;
   try {
-    app = initializeApp(firebaseConfig)
-    const auth = getAuth(app)
-    await signInAnonymously(auth)
-    db = getFirestore(app)
-    return db
+    app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+    db = getFirestore(app);
+    return db;
   } catch (error) {
-    console.error('Firebase init failed:', error)
-    return null
+    console.error("Firebase init failed:", error);
+    return null;
   }
 }
 
@@ -52,49 +58,59 @@ export async function initFirebase(): Promise<Firestore | null> {
 
 export function subscribeToUsers(
   db: Firestore,
-  callback: (users: User[]) => void
+  callback: (users: User[]) => void,
 ): () => void {
-  return onSnapshot(collection(db, 'ccUsers'), (snapshot) => {
-    const users = snapshot.docs.map((doc) => doc.data() as User)
-    users.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    callback(users)
-  })
+  return onSnapshot(collection(db, "ccUsers"), (snapshot) => {
+    const users = snapshot.docs.map((doc) => doc.data() as User);
+    users.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    callback(users);
+  });
 }
 
 export async function syncUser(db: Firestore, user: User): Promise<void> {
-  await setDoc(doc(db, 'ccUsers', user.id), user)
+  await setDoc(doc(db, "ccUsers", user.id), user);
 }
 
-export async function findUserByUsername(db: Firestore, username: string): Promise<User | null> {
-  const q = query(collection(db, 'ccUsers'), where('username', '==', username))
-  const snapshot = await getDocs(q)
-  if (snapshot.empty) return null
-  return snapshot.docs[0].data() as User
+export async function findUserByUsername(
+  db: Firestore,
+  username: string,
+): Promise<User | null> {
+  const q = query(collection(db, "ccUsers"), where("username", "==", username));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].data() as User;
 }
 
 // --- Trips ---
 
 export function subscribeToTrips(
   db: Firestore,
-  callback: (trips: Trip[]) => void
+  callback: (trips: Trip[]) => void,
 ): () => void {
-  return onSnapshot(collection(db, 'tcTrips'), (snapshot) => {
-    const trips = snapshot.docs.map((doc) => doc.data() as Trip)
-    trips.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    callback(trips)
-  })
+  return onSnapshot(collection(db, "tcTrips"), (snapshot) => {
+    const trips = snapshot.docs.map((doc) => doc.data() as Trip);
+    trips.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    callback(trips);
+  });
 }
 
 export async function syncTrip(db: Firestore, trip: Trip): Promise<void> {
-  await setDoc(doc(db, 'tcTrips', trip.id), trip, { merge: true })
+  await setDoc(doc(db, "tcTrips", trip.id), trip, { merge: true });
 }
 
-export async function syncTripPartial(db: Firestore, tripId: string, fields: Partial<Trip>): Promise<void> {
-  await updateDoc(doc(db, 'tcTrips', tripId), fields)
+export async function syncTripPartial(
+  db: Firestore,
+  tripId: string,
+  fields: Partial<Trip>,
+): Promise<void> {
+  await updateDoc(doc(db, "tcTrips", tripId), fields);
 }
 
-export async function deleteTripFromFirestore(db: Firestore, id: string): Promise<void> {
-  await deleteDoc(doc(db, 'tcTrips', id))
+export async function deleteTripFromFirestore(
+  db: Firestore,
+  id: string,
+): Promise<void> {
+  await deleteDoc(doc(db, "tcTrips", id));
 }
 
 // --- Shared trip data (schedule, flights, hotels, transport, scheduleNotes) ---
@@ -102,61 +118,98 @@ export async function deleteTripFromFirestore(db: Firestore, id: string): Promis
 export function subscribeToSharedTripData(
   db: Firestore,
   tripId: string,
-  callback: (data: SharedTripData) => void
+  callback: (data: SharedTripData) => void,
 ): () => void {
-  return onSnapshot(doc(db, 'tcTripShared', tripId), (snapshot) => {
+  return onSnapshot(doc(db, "tcTripShared", tripId), (snapshot) => {
     if (snapshot.exists()) {
-      callback(snapshot.data() as SharedTripData)
+      callback(snapshot.data() as SharedTripData);
     } else {
-      callback({ schedule: [], scheduleNotes: [], flights: [], hotels: [], transport: [] })
+      callback({
+        schedule: [],
+        scheduleNotes: [],
+        flights: [],
+        hotels: [],
+        transport: [],
+      });
     }
-  })
+  });
 }
 
-export async function syncSharedTripData(db: Firestore, tripId: string, data: Partial<SharedTripData>): Promise<void> {
-  await setDoc(doc(db, 'tcTripShared', tripId), data, { merge: true })
+export async function syncSharedTripData(
+  db: Firestore,
+  tripId: string,
+  data: Partial<SharedTripData>,
+): Promise<void> {
+  await setDoc(doc(db, "tcTripShared", tripId), data, { merge: true });
 }
 
-export async function deleteSharedTripData(db: Firestore, tripId: string): Promise<void> {
-  await deleteDoc(doc(db, 'tcTripShared', tripId))
+export async function deleteSharedTripData(
+  db: Firestore,
+  tripId: string,
+): Promise<void> {
+  await deleteDoc(doc(db, "tcTripShared", tripId));
 }
 
 // --- Per-user trip data (checklist, shopping, preparationNotes) ---
 
 function userTripDocId(tripId: string, userId: string) {
-  return `${tripId}_${userId}`
+  return `${tripId}_${userId}`;
 }
 
 export function subscribeToUserTripData(
   db: Firestore,
   tripId: string,
   userId: string,
-  callback: (data: UserTripData) => void
+  callback: (data: UserTripData) => void,
 ): () => void {
-  const docRef = doc(db, 'tcTripUser', userTripDocId(tripId, userId))
+  const docRef = doc(db, "tcTripUser", userTripDocId(tripId, userId));
   return onSnapshot(docRef, (snapshot) => {
     if (snapshot.exists()) {
-      const data = snapshot.data() as UserTripData
+      const data = snapshot.data() as UserTripData;
       // Migrate old data: add setupComplete if user already has checklist data
-      if (!data.setupComplete && data.checklist?.length > 0) {
-        const migrated = { ...data, setupComplete: true }
-        setDoc(docRef, migrated, { merge: true })
-        callback(migrated)
+      // and initialize skipPreparation for older documents.
+      if (
+        (!data.setupComplete && data.checklist?.length > 0) ||
+        data.skipPreparation === undefined
+      ) {
+        const migrated = {
+          ...data,
+          setupComplete: data.setupComplete || data.checklist?.length > 0,
+          skipPreparation: data.skipPreparation ?? false,
+        };
+        setDoc(docRef, migrated, { merge: true });
+        callback(migrated);
       } else {
-        callback(data)
+        callback(data);
       }
     } else {
-      callback({ checklist: [], shopping: [], preparationNotes: '' })
+      callback({
+        checklist: [],
+        shopping: [],
+        preparationNotes: "",
+        skipPreparation: false,
+      });
     }
-  })
+  });
 }
 
-export async function syncUserTripData(db: Firestore, tripId: string, userId: string, data: Partial<UserTripData>): Promise<void> {
-  await setDoc(doc(db, 'tcTripUser', userTripDocId(tripId, userId)), data, { merge: true })
+export async function syncUserTripData(
+  db: Firestore,
+  tripId: string,
+  userId: string,
+  data: Partial<UserTripData>,
+): Promise<void> {
+  await setDoc(doc(db, "tcTripUser", userTripDocId(tripId, userId)), data, {
+    merge: true,
+  });
 }
 
-export async function deleteUserTripData(db: Firestore, tripId: string, userId: string): Promise<void> {
-  await deleteDoc(doc(db, 'tcTripUser', userTripDocId(tripId, userId)))
+export async function deleteUserTripData(
+  db: Firestore,
+  tripId: string,
+  userId: string,
+): Promise<void> {
+  await deleteDoc(doc(db, "tcTripUser", userTripDocId(tripId, userId)));
 }
 
 // --- Templates ---
@@ -164,19 +217,23 @@ export async function deleteUserTripData(db: Firestore, tripId: string, userId: 
 export function subscribeToTemplate(
   db: Firestore,
   userId: string,
-  callback: (template: Template | null) => void
+  callback: (template: Template | null) => void,
 ): () => void {
-  return onSnapshot(doc(db, 'tcTemplates', userId), (snapshot) => {
+  return onSnapshot(doc(db, "tcTemplates", userId), (snapshot) => {
     if (snapshot.exists()) {
-      callback(snapshot.data() as Template)
+      callback(snapshot.data() as Template);
     } else {
-      callback(null)
+      callback(null);
     }
-  })
+  });
 }
 
-export async function syncTemplate(db: Firestore, userId: string, template: Template): Promise<void> {
-  await setDoc(doc(db, 'tcTemplates', userId), template)
+export async function syncTemplate(
+  db: Firestore,
+  userId: string,
+  template: Template,
+): Promise<void> {
+  await setDoc(doc(db, "tcTemplates", userId), template);
 }
 
 // --- Tips per user ---
@@ -184,19 +241,23 @@ export async function syncTemplate(db: Firestore, userId: string, template: Temp
 export function subscribeToTips(
   db: Firestore,
   userId: string,
-  callback: (tips: TipNote[]) => void
+  callback: (tips: TipNote[]) => void,
 ): () => void {
-  return onSnapshot(doc(db, 'tcTips', userId), (snapshot) => {
+  return onSnapshot(doc(db, "tcTips", userId), (snapshot) => {
     if (snapshot.exists()) {
-      callback((snapshot.data() as { tips: TipNote[] }).tips || [])
+      callback((snapshot.data() as { tips: TipNote[] }).tips || []);
     } else {
-      callback([])
+      callback([]);
     }
-  })
+  });
 }
 
-export async function syncTips(db: Firestore, userId: string, tips: TipNote[]): Promise<void> {
-  await setDoc(doc(db, 'tcTips', userId), { tips })
+export async function syncTips(
+  db: Firestore,
+  userId: string,
+  tips: TipNote[],
+): Promise<void> {
+  await setDoc(doc(db, "tcTips", userId), { tips });
 }
 
 // --- Favorites per user ---
@@ -204,37 +265,43 @@ export async function syncTips(db: Firestore, userId: string, tips: TipNote[]): 
 export function subscribeToFavorites(
   db: Firestore,
   userId: string,
-  callback: (favorites: FavoriteItem[]) => void
+  callback: (favorites: FavoriteItem[]) => void,
 ): () => void {
-  return onSnapshot(doc(db, 'tcFavorites', userId), (snapshot) => {
+  return onSnapshot(doc(db, "tcFavorites", userId), (snapshot) => {
     if (snapshot.exists()) {
-      callback((snapshot.data() as { favorites: FavoriteItem[] }).favorites || [])
+      callback(
+        (snapshot.data() as { favorites: FavoriteItem[] }).favorites || [],
+      );
     } else {
-      callback([])
+      callback([]);
     }
-  })
+  });
 }
 
-export async function syncFavorites(db: Firestore, userId: string, favorites: FavoriteItem[]): Promise<void> {
-  await setDoc(doc(db, 'tcFavorites', userId), { favorites })
+export async function syncFavorites(
+  db: Firestore,
+  userId: string,
+  favorites: FavoriteItem[],
+): Promise<void> {
+  await setDoc(doc(db, "tcFavorites", userId), { favorites });
 }
 
 // --- Image Storage ---
 
 export async function uploadImage(path: string, file: Blob): Promise<string> {
-  if (!app) throw new Error('Firebase not initialized')
-  const storage = getStorage(app)
-  const storageRef = ref(storage, path)
-  await uploadBytes(storageRef, file)
-  return getDownloadURL(storageRef)
+  if (!app) throw new Error("Firebase not initialized");
+  const storage = getStorage(app);
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
 }
 
 export async function deleteImage(path: string): Promise<void> {
-  if (!app) throw new Error('Firebase not initialized')
-  const storage = getStorage(app)
-  const storageRef = ref(storage, path)
+  if (!app) throw new Error("Firebase not initialized");
+  const storage = getStorage(app);
+  const storageRef = ref(storage, path);
   try {
-    await deleteObject(storageRef)
+    await deleteObject(storageRef);
   } catch {
     // ignore if not found
   }

@@ -21,7 +21,9 @@ interface Props {
 }
 
 export function ShoppingTab({ tripId, viewOnly }: Props) {
-  const { state, dispatch, setUserTripData, getTripData } = useApp();
+  const { state, dispatch, setUserTripData, getTripData, isTripAdmin } =
+    useApp();
+  const trip = state.trips.find((item) => item.id === tripId);
   const tripData = getTripData(tripId);
   const items = tripData.shopping || [];
   const [showCompleted, setShowCompleted] = useState(false);
@@ -37,6 +39,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
   const displayed = showCompleted ? items : unchecked;
+  const canUseFavorites = !viewOnly && !!trip && isTripAdmin(trip);
 
   function toggleCheck(id: string) {
     if (viewOnly) return;
@@ -57,11 +60,13 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     if (!newItem.trim()) return;
     const text = newItem.trim();
 
-    const matches = state.favorites.filter(
-      (f) =>
-        f.name.toLowerCase().includes(text.toLowerCase()) ||
-        text.toLowerCase().includes(f.name.toLowerCase()),
-    );
+    const matches = canUseFavorites
+      ? state.favorites.filter(
+          (f) =>
+            f.name.toLowerCase().includes(text.toLowerCase()) ||
+            text.toLowerCase().includes(f.name.toLowerCase()),
+        )
+      : [];
 
     if (matches.length > 0) {
       setMatchingFavorites(matches);
@@ -99,7 +104,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   }
 
   function toggleStar(item: ShoppingItem) {
-    if (viewOnly) return;
+    if (!canUseFavorites) return;
 
     if (item.starred && item.favoriteId) {
       const fav = state.favorites.find((f) => f.id === item.favoriteId);
@@ -207,7 +212,8 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             )}
             <div className="flex-1">
               <span className="text-sm">{item.text}</span>
-              {item.starred &&
+              {canUseFavorites &&
+                item.starred &&
                 (() => {
                   const fav = getFavoriteHistory(item.favoriteId);
                   if (!fav) return null;
@@ -221,7 +227,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                   );
                 })()}
             </div>
-            {!viewOnly && (
+            {canUseFavorites && (
               <button
                 className={`star-btn ${item.starred ? "active" : ""}`}
                 onClick={(e) => {

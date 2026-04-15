@@ -1,15 +1,11 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faChevronLeft,
-  faExclamationCircle,
-} from "@fortawesome/free-solid-svg-icons";
+import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { AppProvider, useApp } from "./context/AppContext";
 import * as storage from "./utils/storage";
 import { UpdatePrompt } from "./components/UpdatePrompt";
 import { BottomTabBar } from "./components/BottomTabBar";
-import { TemplateSelector } from "./components/TemplateSelector";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { TripsPage } from "./pages/TripsPage";
@@ -18,19 +14,12 @@ import { NotesPage } from "./pages/NotesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { UserMenu } from "./components/UserMenu";
 import { Modal } from "./components/Modal";
-import type { TabType, ChecklistItem, Template } from "./types";
+import type { TabType } from "./types";
 import "./App.css";
 
 function AppContent() {
-  const {
-    state,
-    loading,
-    setTemplate,
-    setUserTripData,
-    updateTrip,
-    viewTripId,
-    firebaseConnected,
-  } = useApp();
+  const { state, loading, updateTrip, viewTripId, firebaseConnected } =
+    useApp();
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
     () => storage.getItem<TabType>("activeTab") || "trips",
@@ -59,7 +48,6 @@ function AppContent() {
     const params = new URLSearchParams(window.location.search);
     return params.get("join");
   });
-  const [joinStep, setJoinStep] = useState<"confirm" | "template">("confirm");
 
   // Clear join query param from URL, but keep view-only links shareable/reloadable
   useEffect(() => {
@@ -77,28 +65,6 @@ function AppContent() {
 
   const joinTrip = state.trips.find((t) => t.id === joinTripId);
 
-  function handleJoinWithTemplate(
-    checklist: ChecklistItem[],
-    notes: string,
-    updatedTemplate: Template | null,
-  ) {
-    if (!joinTrip || !state.auth.currentUser) return;
-    updateTrip({
-      ...joinTrip,
-      members: [...joinTrip.members, state.auth.currentUser.id],
-    });
-    setUserTripData(joinTrip.id, {
-      checklist,
-      shopping: [],
-      preparationNotes: notes,
-      setupComplete: true,
-    });
-    if (updatedTemplate) setTemplate(updatedTemplate);
-    setJoinTripId(null);
-    setJoinStep("confirm");
-    setSelectedTripId(joinTrip.id);
-  }
-
   function handleJoinConfirm() {
     if (!joinTrip || !state.auth.currentUser) return;
     if (joinTrip.members.includes(state.auth.currentUser.id)) {
@@ -106,7 +72,12 @@ function AppContent() {
       setJoinTripId(null);
       return;
     }
-    setJoinStep("template");
+    updateTrip({
+      ...joinTrip,
+      members: [...joinTrip.members, state.auth.currentUser.id],
+    });
+    setJoinTripId(null);
+    setSelectedTripId(joinTrip.id);
   }
 
   // Viewer mode: no login needed, read-only
@@ -135,36 +106,6 @@ function AppContent() {
       return <Register onSwitchToLogin={() => setAuthPage("login")} />;
     }
     return <Login onSwitchToRegister={() => setAuthPage("register")} />;
-  }
-
-  // Join template selection (full screen)
-  if (joinTripId && joinTrip && joinStep === "template") {
-    return (
-      <div className="page-container">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            className="text-sky-600 p-2"
-            onClick={() => {
-              setJoinTripId(null);
-              setJoinStep("confirm");
-            }}
-          >
-            <FontAwesomeIcon icon={faChevronLeft} />
-          </button>
-          <h1 className="text-lg font-bold">選擇準備項目</h1>
-          <div className="w-8" />
-        </div>
-        <p className="text-sm text-slate-400 mb-4">
-          加入「{joinTrip.name}」— 選擇你的準備清單
-        </p>
-        <TemplateSelector
-          template={state.template}
-          onConfirm={handleJoinWithTemplate}
-          confirmWithUpdateLabel="更新模板並加入旅程"
-          confirmLabel="加入旅程"
-        />
-      </div>
-    );
   }
 
   // Join dialog

@@ -19,6 +19,7 @@ import { TransportTab } from "./trip/TransportTab";
 import { ShoppingTab } from "./trip/ShoppingTab";
 import type { TripTabType, ChecklistItem, Template } from "../types";
 import * as storage from "../utils/storage";
+import { getEditableTabs, getFirstEntryMode } from "./trip/tripEntry";
 
 interface Props {
   tripId: string;
@@ -32,21 +33,6 @@ const viewerTabs: { key: TripTabType; label: string }[] = [
   { key: "hotel", label: "飯店" },
   { key: "schedule", label: "行程表" },
   { key: "transport", label: "交通" },
-];
-
-const commonTabs: { key: TripTabType; label: string }[] = [
-  ...viewerTabs,
-  { key: "shopping", label: "購物" },
-];
-
-const allTabs: { key: TripTabType; label: string }[] = [
-  { key: "preparation", label: "準備" },
-  ...commonTabs,
-];
-
-const preparedTabs: { key: TripTabType; label: string }[] = [
-  ...commonTabs,
-  { key: "preparation", label: "準備" },
 ];
 
 export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
@@ -66,23 +52,27 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [copied, setCopied] = useState("");
+  const [setupChoice, setSetupChoice] = useState<"preparation" | "skip" | null>(
+    null,
+  );
 
-  // Template selection for new members who haven't set up yet
-  const needsSetup =
-    !viewOnly &&
-    state.auth.currentUser &&
-    trip?.members.includes(state.auth.currentUser.id) &&
-    !tripData.setupComplete;
-  const [showSetup, setShowSetup] = useState(false);
-
-  useEffect(() => {
-    if (needsSetup) {
-      queueMicrotask(() => setShowSetup(true));
-    }
-  }, [needsSetup]);
-
-  const tabs = viewOnly ? viewerTabs : allTabs;
-  const defaultTab = viewOnly ? "schedule" : "preparation";
+  const isMember =
+    !!state.auth.currentUser &&
+    !!trip?.members.includes(state.auth.currentUser.id);
+  const firstEntryMode = getFirstEntryMode({
+    viewOnly,
+    isMember,
+    setupComplete: tripData.setupComplete,
+    skipPreparation: tripData.skipPreparation,
+    setupChoice: setupChoice || undefined,
+  });
+  const editableTabs = getEditableTabs(tripData.skipPreparation);
+  const tabs = viewOnly ? viewerTabs : editableTabs;
+  const defaultTab = viewOnly
+    ? "schedule"
+    : tripData.skipPreparation
+      ? "flight"
+      : "preparation";
 
   const storageKey = `trip-tab-${tripId}`;
   const [activeTab, setActiveTab] = useState<TripTabType>(() => {
@@ -94,6 +84,11 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     if (!viewOnly) storage.setItem(storageKey, activeTab);
   }, [activeTab, storageKey, viewOnly]);
 
+  useEffect(() => {
+    if (tabs.some((tab) => tab.key === activeTab)) return;
+    setActiveTab(defaultTab);
+  }, [activeTab, defaultTab, tabs]);
+
   function handleSetupComplete(
     checklist: ChecklistItem[],
     notes: string,
@@ -104,9 +99,18 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       shopping: [],
       preparationNotes: notes,
       setupComplete: true,
+      skipPreparation: false,
     });
     if (updatedTemplate) setTemplate(updatedTemplate);
-    setShowSetup(false);
+    setSetupChoice(null);
+  }
+
+  function handleSkipPreparation() {
+    setUserTripData(tripId, {
+      skipPreparation: true,
+    });
+    setSetupChoice("skip");
+    setActiveTab("flight");
   }
 
   if (loading) return null;
@@ -122,15 +126,40 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     );
   }
 
-  // Show template selection for new member
-  if (showSetup) {
+  if (firstEntryMode === "choice") {
+    return (
+      <div className="page-container">
+        <div className="card">
+          <h1 className="text-lg font-bold mb-2">第一次進入旅程</h1>
+          <p className="text-sm text-slate-400 mb-6">
+            你要為「{trip.name}」設定自己的準備事項嗎？
+          </p>
+          <button
+            className="btn btn-primary w-full"
+            onClick={() => setSetupChoice("preparation")}
+          >
+            加入準備事項
+          </button>
+          <button
+            className="btn btn-secondary w-full mt-2"
+            onClick={handleSkipPreparation}
+          >
+            略過準備事項
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show template selection for new member who chose to use preparation
+  if (firstEntryMode === "template") {
     return (
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
           <button
             className="text-sky-600 p-2"
             onClick={() => {
-              setShowSetup(false);
+              setSetupChoice(null);
               onBack();
             }}
           >
@@ -139,14 +168,12 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
           <h1 className="text-lg font-bold">選擇準備項目</h1>
           <div className="w-8" />
         </div>
-        <p className="text-sm text-slate-400 mb-4">
-          設定「{trip.name}」的個人準備清單
-        </p>
+        <p className="text-sm text-slate-400 mb-4">請編輯準備事項</p>
         <TemplateSelector
           template={state.template}
           onConfirm={handleSetupComplete}
-          confirmWithUpdateLabel="更新模板並確認"
-          confirmLabel="確認"
+          confirmWithUpdateLabel="將以上存入準備事項模板並套用"
+          confirmLabel="直接套用"
         />
       </div>
     );
@@ -162,12 +189,16 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     setTimeout(() => setCopied(""), 2000);
   }
 
-  // Reorder tabs only for editable mode: if gotReady, move preparation to the very end
-  const orderedTabs = viewOnly
-    ? viewerTabs
-    : trip.gotReady
-      ? preparedTabs
-      : tabs;
+  // Reorder tabs only when preparation tab is available.
+  const orderedTabs =
+    viewOnly || tripData.skipPreparation
+      ? tabs
+      : trip.gotReady
+        ? [
+            ...tabs.filter((tab) => tab.key !== "preparation"),
+            tabs.find((tab) => tab.key === "preparation")!,
+          ]
+        : tabs;
 
   return (
     <div>
