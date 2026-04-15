@@ -343,12 +343,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const skipFirstSave = useRef(true);
   const sharedTripDataRef = useRef(state.sharedTripData);
   const userTripDataRef = useRef(state.userTripData);
+  const syncedSharedTripDataRef = useRef(state.sharedTripData);
+  const syncedUserTripDataRef = useRef(state.userTripData);
   const sharedTripUpdatedAtRef = useRef(
     storage.getItem<Record<string, string>>("sharedTripUpdatedAt") || {},
   );
   const userTripUpdatedAtRef = useRef(
     storage.getItem<Record<string, string>>("userTripUpdatedAt") || {},
   );
+  const pendingSharedTripUpdatedAtRef = useRef<Record<string, string>>({});
+  const pendingUserTripUpdatedAtRef = useRef<Record<string, string>>({});
 
   // Parse viewTripId from URL once
   const viewTripId = useMemo(() => {
@@ -400,9 +404,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const persistSharedTripCache = useCallback(
     (tripId: string, data: SharedTripData, updatedAt?: string) => {
       const nextSharedTripData = {
-        ...sharedTripDataRef.current,
+        ...syncedSharedTripDataRef.current,
         [tripId]: data,
       };
+      syncedSharedTripDataRef.current = nextSharedTripData;
       sharedTripDataRef.current = nextSharedTripData;
       storage.setItem("sharedTripData", nextSharedTripData);
       if (updatedAt) {
@@ -420,9 +425,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const persistUserTripCache = useCallback(
     (tripId: string, data: UserTripData, updatedAt?: string) => {
       const nextUserTripData = {
-        ...userTripDataRef.current,
+        ...syncedUserTripDataRef.current,
         [tripId]: data,
       };
+      syncedUserTripDataRef.current = nextUserTripData;
       userTripDataRef.current = nextUserTripData;
       storage.setItem("userTripData", nextUserTripData);
       if (updatedAt) {
@@ -508,9 +514,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!viewTripId || !dbReady || !dbRef.current) return;
     return subscribeToSharedTripData(dbRef.current, viewTripId, (snapshot) => {
+      const pendingUpdatedAt =
+        pendingSharedTripUpdatedAtRef.current[viewTripId];
+      if (
+        pendingUpdatedAt &&
+        (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
+      ) {
+        return;
+      }
       const currentUpdatedAt = sharedTripUpdatedAtRef.current[viewTripId];
       if (!shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)) {
         return;
+      }
+      if (
+        pendingUpdatedAt &&
+        snapshot.updatedAt &&
+        snapshot.updatedAt >= pendingUpdatedAt
+      ) {
+        delete pendingSharedTripUpdatedAtRef.current[viewTripId];
       }
       rawDispatch({
         type: "SET_SHARED_TRIP_DATA",
@@ -559,11 +580,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     for (const tripId of currentTripIds) {
       if (!tripSubsRef.current[tripId]) {
         const unsub1 = subscribeToSharedTripData(db, tripId, (snapshot) => {
+          const pendingUpdatedAt =
+            pendingSharedTripUpdatedAtRef.current[tripId];
+          if (
+            pendingUpdatedAt &&
+            (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
+          ) {
+            return;
+          }
           const currentUpdatedAt = sharedTripUpdatedAtRef.current[tripId];
           if (
             !shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)
           ) {
             return;
+          }
+          if (
+            pendingUpdatedAt &&
+            snapshot.updatedAt &&
+            snapshot.updatedAt >= pendingUpdatedAt
+          ) {
+            delete pendingSharedTripUpdatedAtRef.current[tripId];
           }
           rawDispatch({
             type: "SET_SHARED_TRIP_DATA",
@@ -577,11 +613,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
           tripId,
           userId,
           (snapshot) => {
+            const pendingUpdatedAt =
+              pendingUserTripUpdatedAtRef.current[tripId];
+            if (
+              pendingUpdatedAt &&
+              (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
+            ) {
+              return;
+            }
             const currentUpdatedAt = userTripUpdatedAtRef.current[tripId];
             if (
               !shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)
             ) {
               return;
+            }
+            if (
+              pendingUpdatedAt &&
+              snapshot.updatedAt &&
+              snapshot.updatedAt >= pendingUpdatedAt
+            ) {
+              delete pendingUserTripUpdatedAtRef.current[tripId];
             }
             rawDispatch({
               type: "SET_USER_TRIP_DATA",
@@ -736,8 +787,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       void _userAt;
       sharedTripDataRef.current = restShared;
       userTripDataRef.current = restUser;
+      syncedSharedTripDataRef.current = restShared;
+      syncedUserTripDataRef.current = restUser;
       sharedTripUpdatedAtRef.current = restSharedAt;
       userTripUpdatedAtRef.current = restUserAt;
+      delete pendingSharedTripUpdatedAtRef.current[tripId];
+      delete pendingUserTripUpdatedAtRef.current[tripId];
       storage.setItem("sharedTripData", restShared);
       storage.setItem("userTripData", restUser);
       storage.setItem("sharedTripUpdatedAt", restSharedAt);
@@ -760,19 +815,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function setSharedTripData(tripId: string, data: Partial<SharedTripData>) {
     if (!firebaseConnected || !dbRef.current) return;
     const updatedAt = new Date().toISOString();
-    sharedTripUpdatedAtRef.current = {
-      ...sharedTripUpdatedAtRef.current,
+    pendingSharedTripUpdatedAtRef.current = {
+      ...pendingSharedTripUpdatedAtRef.current,
       [tripId]: updatedAt,
     };
     dispatch({ type: "UPDATE_SHARED_TRIP_DATA", tripId, data });
-    syncSharedTripData(dbRef.current, tripId, data, updatedAt);
+    syncSharedTripData(dbRef.current, tripId, data, updatedAt).catch(
+      (error) => {
+        if (pendingSharedTripUpdatedAtRef.current[tripId] !== updatedAt) return;
+        delete pendingSharedTripUpdatedAtRef.current[tripId];
+        const fallback = syncedSharedTripDataRef.current[tripId] || emptyShared;
+        rawDispatch({ type: "SET_SHARED_TRIP_DATA", tripId, data: fallback });
+        console.error("Failed to sync shared trip data:", error);
+      },
+    );
   }
 
   function setUserTripData(tripId: string, data: Partial<UserTripData>) {
     if (!firebaseConnected || !dbRef.current || !state.auth.currentUser) return;
     const updatedAt = new Date().toISOString();
-    userTripUpdatedAtRef.current = {
-      ...userTripUpdatedAtRef.current,
+    pendingUserTripUpdatedAtRef.current = {
+      ...pendingUserTripUpdatedAtRef.current,
       [tripId]: updatedAt,
     };
     dispatch({ type: "UPDATE_USER_TRIP_DATA", tripId, data });
@@ -782,7 +845,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       state.auth.currentUser.id,
       data,
       updatedAt,
-    );
+    ).catch((error) => {
+      if (pendingUserTripUpdatedAtRef.current[tripId] !== updatedAt) return;
+      delete pendingUserTripUpdatedAtRef.current[tripId];
+      const fallback = syncedUserTripDataRef.current[tripId] || emptyUser;
+      rawDispatch({ type: "SET_USER_TRIP_DATA", tripId, data: fallback });
+      console.error("Failed to sync user trip data:", error);
+    });
   }
 
   const getUserName = useCallback(
