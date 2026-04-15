@@ -7,6 +7,7 @@ import {
   doc,
   onSnapshot,
   setDoc,
+  updateDoc,
   deleteDoc,
   getDocs,
   query,
@@ -79,7 +80,7 @@ export function subscribeToTrips(
 ): () => void {
   return onSnapshot(collection(db, 'tcTrips'), (snapshot) => {
     const trips = snapshot.docs.map((doc) => doc.data() as Trip)
-    trips.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    trips.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     callback(trips)
   })
 }
@@ -88,7 +89,7 @@ export async function syncTrip(db: Firestore, trip: Trip): Promise<void> {
   await setDoc(doc(db, 'tcTrips', trip.id), trip, { merge: true })
 }
 
-export async function syncTripPartial(db: Firestore, tripId: string, fields: Record<string, any>): Promise<void> {
+export async function syncTripPartial(db: Firestore, tripId: string, fields: Partial<Trip>): Promise<void> {
   await updateDoc(doc(db, 'tcTrips', tripId), fields)
 }
 
@@ -112,8 +113,8 @@ export function subscribeToSharedTripData(
   })
 }
 
-export async function syncSharedTripData(db: Firestore, tripId: string, data: SharedTripData): Promise<void> {
-  await setDoc(doc(db, 'tcTripShared', tripId), data)
+export async function syncSharedTripData(db: Firestore, tripId: string, data: Partial<SharedTripData>): Promise<void> {
+  await setDoc(doc(db, 'tcTripShared', tripId), data, { merge: true })
 }
 
 export async function deleteSharedTripData(db: Firestore, tripId: string): Promise<void> {
@@ -139,7 +140,7 @@ export function subscribeToUserTripData(
       // Migrate old data: add setupComplete if user already has checklist data
       if (!data.setupComplete && data.checklist?.length > 0) {
         const migrated = { ...data, setupComplete: true }
-        setDoc(docRef, migrated)
+        setDoc(docRef, migrated, { merge: true })
         callback(migrated)
       } else {
         callback(data)
@@ -150,8 +151,8 @@ export function subscribeToUserTripData(
   })
 }
 
-export async function syncUserTripData(db: Firestore, tripId: string, userId: string, data: UserTripData): Promise<void> {
-  await setDoc(doc(db, 'tcTripUser', userTripDocId(tripId, userId)), data)
+export async function syncUserTripData(db: Firestore, tripId: string, userId: string, data: Partial<UserTripData>): Promise<void> {
+  await setDoc(doc(db, 'tcTripUser', userTripDocId(tripId, userId)), data, { merge: true })
 }
 
 export async function deleteUserTripData(db: Firestore, tripId: string, userId: string): Promise<void> {

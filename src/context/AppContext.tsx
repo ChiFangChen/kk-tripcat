@@ -21,6 +21,7 @@ import {
   syncTips,
   syncFavorites,
   syncTrip,
+  syncTripPartial,
   deleteTripFromFirestore,
   deleteSharedTripData,
   deleteUserTripData,
@@ -180,7 +181,7 @@ interface AppContextType {
   updateUser: (user: User) => void
   setTemplate: (template: Template) => void
   addTrip: (trip: Trip) => void
-  updateTrip: (trip: Trip) => void
+  updateTrip: (trip: Trip, fields?: Partial<Trip>) => void
   deleteTrip: (tripId: string) => void
   getTripData: (tripId: string) => TripData
   setSharedTripData: (tripId: string, data: Partial<SharedTripData>) => void
