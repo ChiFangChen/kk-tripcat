@@ -160,7 +160,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
           </div>
 
           {(flight.memberPlan || flight.memberNumber) && (
-            <div className="flight-section-group">
+            <div className="flight-panel-card">
               <Accordion
                 title="會員資訊"
                 isOpen={
@@ -172,7 +172,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                 }
                 onToggle={() => toggleSection(flight.id, "member")}
               >
-                <div className="flight-section">
+                <div className="flight-panel-body">
                   <InfoRow label="會員方案" value={flight.memberPlan} />
                   <InfoRow label="會員卡號" value={flight.memberNumber} />
                 </div>
@@ -181,7 +181,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
           )}
 
           {(flight.checkedBaggage || flight.carryOn) && (
-            <div className="flight-section-group">
+            <div className="flight-panel-card">
               <Accordion
                 title="行李資訊"
                 isOpen={
@@ -193,7 +193,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                 }
                 onToggle={() => toggleSection(flight.id, "baggage")}
               >
-                <div className="flight-section">
+                <div className="flight-panel-body">
                   <InfoRow label="託運行李" value={flight.checkedBaggage} />
                   <InfoRow label="隨身行李" value={flight.carryOn} />
                 </div>
@@ -286,6 +286,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
           <FlightForm
             flight={editingFlight}
             onSave={saveFlight}
+            onCancel={() => setEditingFlight(null)}
             onDelete={
               editingFlight.airline
                 ? () => deleteFlight(editingFlight.id)
@@ -306,6 +307,10 @@ export function FlightTab({ tripId, viewOnly }: Props) {
           <LegForm
             leg={editingLeg}
             onSave={(leg) => saveLeg(editingFlightId, leg)}
+            onCancel={() => {
+              setEditingLeg(null);
+              setEditingFlightId(null);
+            }}
             onDelete={
               editingLeg.direction
                 ? () => deleteLeg(editingFlightId, editingLeg.id)
@@ -361,12 +366,10 @@ function AirportSide({
 }) {
   return (
     <div className={`flight-route-side ${align === "right" ? "arrival" : ""}`}>
-      <div className="flight-route-time">{time}</div>
-      {airport.code && <div className="flight-route-code">{airport.code}</div>}
-      <div className="flight-route-city">{airport.name}</div>
-      {airport.terminal && (
-        <div className="flight-route-meta">{airport.terminal}</div>
-      )}
+      <div className="flight-route-side-main">
+        <span className="flight-route-time">{time}</span>
+        {airport.code && <span className="flight-route-code">{airport.code}</span>}
+      </div>
     </div>
   );
 }
@@ -374,10 +377,12 @@ function AirportSide({
 function FlightForm({
   flight,
   onSave,
+  onCancel,
   onDelete,
 }: {
   flight: FlightInfo;
   onSave: (f: FlightInfo) => void;
+  onCancel: () => void;
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(flight);
@@ -456,14 +461,16 @@ function FlightForm({
           />
         </div>
       </div>
-      <button
-        className="btn btn-primary w-full mt-8"
-        onClick={() => onSave(form)}
-      >
-        儲存
-      </button>
+      <div className="form-actions mt-8">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button className="btn btn-primary" onClick={() => onSave(form)}>
+          儲存
+        </button>
+      </div>
       {onDelete && (
-        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除航班
         </button>
@@ -475,10 +482,12 @@ function FlightForm({
 function LegForm({
   leg,
   onSave,
+  onCancel,
   onDelete,
 }: {
   leg: FlightLeg;
   onSave: (l: FlightLeg) => void;
+  onCancel: () => void;
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(leg);
@@ -636,11 +645,16 @@ function LegForm({
           onChange={(e) => setForm({ ...form, seat: e.target.value })}
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>
-        儲存
-      </button>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button className="btn btn-primary" onClick={() => onSave(form)}>
+          儲存
+        </button>
+      </div>
       {onDelete && (
-        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除航段
         </button>

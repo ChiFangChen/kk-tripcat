@@ -132,6 +132,7 @@ export function HotelTab({ tripId, viewOnly }: Props) {
           <HotelForm
             hotel={editing}
             onSave={save}
+            onCancel={() => setEditing(null)}
             onDelete={editing.name ? () => remove(editing.id) : undefined}
           />
         </FullScreenModal>
@@ -143,10 +144,12 @@ export function HotelTab({ tripId, viewOnly }: Props) {
 function HotelForm({
   hotel,
   onSave,
+  onCancel,
   onDelete,
 }: {
   hotel: Hotel;
   onSave: (h: Hotel) => void;
+  onCancel: () => void;
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(hotel);
@@ -276,11 +279,16 @@ function HotelForm({
           onRemoved={() => setForm({ ...form, imageUrl: undefined })}
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={handleSave}>
-        儲存
-      </button>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button className="btn btn-primary" onClick={handleSave}>
+          儲存
+        </button>
+      </div>
       {onDelete && (
-        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除飯店
         </button>

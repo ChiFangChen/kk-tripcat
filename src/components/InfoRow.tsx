@@ -11,7 +11,7 @@ export function InfoRow({ label, value, isLink }: Props) {
 
   return (
     <div className="info-row">
-      <span className="info-label">{label}</span>
+      <div className="info-label">{label}</div>
       {isLink && typeof value === "string" ? (
         <a
           href={value}
@@ -22,7 +22,7 @@ export function InfoRow({ label, value, isLink }: Props) {
           {value}
         </a>
       ) : (
-        <span className="info-value break-all">{value}</span>
+        <div className="info-value break-all">{value}</div>
       )}
     </div>
   );

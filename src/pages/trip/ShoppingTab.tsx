@@ -255,6 +255,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
           <EditShoppingForm
             item={editingItem}
             onSave={updateItem}
+            onCancel={() => setEditingItem(null)}
             onDelete={() => deleteItem(editingItem.id)}
           />
         </Modal>
@@ -300,9 +301,17 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             </div>
           )}
 
-          <button className="btn btn-primary w-full" onClick={addItem}>
-            新增
-          </button>
+          <div className="form-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowAddModal(false)}
+            >
+              取消
+            </button>
+            <button className="btn btn-primary" onClick={addItem}>
+              新增
+            </button>
+          </div>
         </FullScreenModal>
       )}
     </div>
@@ -312,10 +321,12 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
 function EditShoppingForm({
   item,
   onSave,
+  onCancel,
   onDelete,
 }: {
   item: ShoppingItem;
   onSave: (i: ShoppingItem) => void;
+  onCancel: () => void;
   onDelete: () => void;
 }) {
   const [form, setForm] = useState(item);
@@ -340,10 +351,15 @@ function EditShoppingForm({
           onRemoved={() => setForm({ ...form, imageUrl: undefined })}
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>
-        儲存
-      </button>
-      <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button className="btn btn-primary" onClick={() => onSave(form)}>
+          儲存
+        </button>
+      </div>
+      <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
         <FontAwesomeIcon icon={faTrash} className="mr-1" />
         刪除
       </button>

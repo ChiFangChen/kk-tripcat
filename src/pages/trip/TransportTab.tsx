@@ -139,6 +139,7 @@ export function TransportTab({ tripId, viewOnly }: Props) {
           <TransportForm
             item={editingItem}
             onSave={saveTransport}
+            onCancel={() => setEditingItem(null)}
             onDelete={
               editingItem.title || editingItem.content
                 ? () => removeTransport(editingItem.id)
@@ -154,10 +155,12 @@ export function TransportTab({ tripId, viewOnly }: Props) {
 function TransportForm({
   item,
   onSave,
+  onCancel,
   onDelete,
 }: {
   item: TransportItem;
   onSave: (item: TransportItem) => void;
+  onCancel: () => void;
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(item);
@@ -192,11 +195,16 @@ function TransportForm({
           onRemoved={() => setForm({ ...form, imageUrl: undefined })}
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>
-        儲存
-      </button>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button className="btn btn-primary" onClick={() => onSave(form)}>
+          儲存
+        </button>
+      </div>
       {onDelete && (
-        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除交通資訊
         </button>

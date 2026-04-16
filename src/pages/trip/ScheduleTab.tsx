@@ -122,6 +122,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
       };
     });
     setSharedTripData(tripId, { schedule: updated });
+    setEditingActivity(null);
     setSelectedActivity(null);
   }
 
@@ -330,9 +331,17 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
               onChange={(e) => setNewDay({ ...newDay, label: e.target.value })}
             />
           </div>
-          <button className="btn btn-primary w-full" onClick={addDay}>
-            新增
-          </button>
+          <div className="form-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowAddDay(false)}
+            >
+              取消
+            </button>
+            <button className="btn btn-primary" onClick={addDay}>
+              新增
+            </button>
+          </div>
         </FullScreenModal>
       )}
 
@@ -342,6 +351,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           <DayForm
             day={schedule[editingDayIndex]}
             onSave={(date, label) => updateDay(editingDayIndex, date, label)}
+            onCancel={() => setEditingDayIndex(null)}
             onDelete={() => deleteDay(editingDayIndex)}
           />
         </Modal>
@@ -445,6 +455,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           <ActivityForm
             activity={editingActivity.activity}
             onSave={(a) => saveActivity(editingActivity.dayIndex, a)}
+            onCancel={() => setEditingActivity(null)}
             onDelete={() =>
               deleteActivity(
                 editingActivity.dayIndex,
@@ -523,6 +534,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           <NoteForm
             note={{ id: generateId(), title: "", content: "" }}
             onSave={saveNote}
+            onCancel={() => setShowAddNote(false)}
           />
         </FullScreenModal>
       )}
@@ -536,6 +548,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           <NoteForm
             note={editingNote}
             onSave={saveNote}
+            onCancel={() => setEditingNote(null)}
             onDelete={() => deleteNote(editingNote.id)}
           />
         </FullScreenModal>
@@ -547,10 +560,12 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 function ActivityForm({
   activity,
   onSave,
+  onCancel,
   onDelete,
 }: {
   activity: ScheduleActivity;
   onSave: (a: ScheduleActivity) => void;
+  onCancel: () => void;
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(activity);
@@ -656,11 +671,16 @@ function ActivityForm({
           onRemoved={() => setForm({ ...form, imageUrl: undefined })}
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={handleSave}>
-        儲存
-      </button>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button className="btn btn-primary" onClick={handleSave}>
+          儲存
+        </button>
+      </div>
       {onDelete && activity.name && (
-        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除活動
         </button>
@@ -672,10 +692,12 @@ function ActivityForm({
 function DayForm({
   day,
   onSave,
+  onCancel,
   onDelete,
 }: {
   day: ScheduleDay;
   onSave: (date: string, label: string) => void;
+  onCancel: () => void;
   onDelete: () => void;
 }) {
   const [date, setDate] = useState(day.date);
@@ -700,13 +722,15 @@ function DayForm({
           onChange={(e) => setLabel(e.target.value)}
         />
       </div>
-      <button
-        className="btn btn-primary w-full"
-        onClick={() => onSave(date, label)}
-      >
-        儲存
-      </button>
-      <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button className="btn btn-primary" onClick={() => onSave(date, label)}>
+          儲存
+        </button>
+      </div>
+      <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
         <FontAwesomeIcon icon={faTrash} className="mr-1" />
         刪除此天
       </button>
@@ -717,10 +741,12 @@ function DayForm({
 function NoteForm({
   note,
   onSave,
+  onCancel,
   onDelete,
 }: {
   note: ScheduleNote;
   onSave: (n: ScheduleNote) => void;
+  onCancel: () => void;
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(note);
@@ -769,11 +795,16 @@ function NoteForm({
           onRemoved={() => setForm({ ...form, imageUrl: undefined })}
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>
-        儲存
-      </button>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button className="btn btn-primary" onClick={() => onSave(form)}>
+          儲存
+        </button>
+      </div>
       {onDelete && note.title && (
-        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除筆記
         </button>
