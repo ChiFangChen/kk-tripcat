@@ -97,6 +97,7 @@ type Action =
   | { type: "UPDATE_TRIP"; trip: Trip }
   | { type: "DELETE_TRIP"; tripId: string }
   | { type: "REMOVE_TRIP_LOCAL_DATA"; tripId: string }
+  | { type: "SET_ALL_USER_TRIP_DATA"; data: Record<string, UserTripData> }
   | { type: "SET_SHARED_TRIP_DATA"; tripId: string; data: SharedTripData }
   | {
       type: "UPDATE_SHARED_TRIP_DATA";
@@ -143,6 +144,14 @@ function getTipsStorageKey(userId: string) {
 
 function getFavoritesStorageKey(userId: string) {
   return `favorites-${userId}`;
+}
+
+function getUserTripDataStorageKey(userId: string) {
+  return `userTripData-${userId}`;
+}
+
+function getUserTripUpdatedAtStorageKey(userId: string) {
+  return `userTripUpdatedAt-${userId}`;
 }
 
 const WRITE_BLOCKED_ACTIONS = new Set<Action["type"]>([
@@ -218,6 +227,11 @@ function reducer(state: AppState, action: Action): AppState {
         userTripData: restUser,
       };
     }
+    case "SET_ALL_USER_TRIP_DATA":
+      return {
+        ...state,
+        userTripData: action.data,
+      };
     case "SET_SHARED_TRIP_DATA":
       return {
         ...state,
@@ -337,8 +351,11 @@ function loadInitialState(): AppState {
 
   const sharedTripData =
     storage.getItem<Record<string, SharedTripData>>("sharedTripData") || {};
-  const userTripData =
-    storage.getItem<Record<string, UserTripData>>("userTripData") || {};
+  const userTripData = currentUser
+    ? storage.getItem<Record<string, UserTripData>>(
+        getUserTripDataStorageKey(currentUser.id),
+      ) || {}
+    : {};
 
   // Migrate: add setupComplete to existing user trip data
   for (const [tripId, data] of Object.entries(userTripData)) {
@@ -367,6 +384,7 @@ function loadInitialState(): AppState {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, rawDispatch] = useReducer(reducer, null, loadInitialState);
+  const currentUserId = state.auth.currentUser?.id;
   const [loading, setLoading] = useState(isFirebaseConfigured());
   const [dbReady, setDbReady] = useState(false);
   const [isOnline, setIsOnline] = useState(() => window.navigator.onLine);
@@ -382,7 +400,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     storage.getItem<Record<string, string>>("sharedTripUpdatedAt") || {},
   );
   const userTripUpdatedAtRef = useRef(
-    storage.getItem<Record<string, string>>("userTripUpdatedAt") || {},
+    currentUserId
+      ? storage.getItem<Record<string, string>>(
+          getUserTripUpdatedAtStorageKey(currentUserId),
+        ) || {}
+      : {},
   );
   const pendingSharedTripUpdatedAtRef = useRef<Record<string, string>>({});
   const pendingUserTripUpdatedAtRef = useRef<Record<string, string>>({});
@@ -395,7 +417,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const firebaseConnected = dbReady && isOnline;
-  const currentUserId = state.auth.currentUser?.id;
 
   const dispatch = useCallback(
     (action: Action) => {
@@ -438,11 +459,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!currentUserId) {
+      rawDispatch({ type: "SET_ALL_USER_TRIP_DATA", data: {} });
       rawDispatch({ type: "SET_TEMPLATE", template: defaultTemplate });
       rawDispatch({ type: "SET_TIPS", tips: [] });
       rawDispatch({ type: "SET_FAVORITES", favorites: [] });
+      userTripDataRef.current = {};
+      syncedUserTripDataRef.current = {};
+      userTripUpdatedAtRef.current = {};
       return;
     }
+
+    const nextUserTripData =
+      storage.getItem<Record<string, UserTripData>>(
+        getUserTripDataStorageKey(currentUserId),
+      ) || {};
+    const nextUserTripUpdatedAt =
+      storage.getItem<Record<string, string>>(
+        getUserTripUpdatedAtStorageKey(currentUserId),
+      ) || {};
+
+    rawDispatch({ type: "SET_ALL_USER_TRIP_DATA", data: nextUserTripData });
+    userTripDataRef.current = nextUserTripData;
+    syncedUserTripDataRef.current = nextUserTripData;
+    userTripUpdatedAtRef.current = nextUserTripUpdatedAt;
 
     rawDispatch({
       type: "SET_TEMPLATE",
@@ -486,23 +525,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const persistUserTripCache = useCallback(
     (tripId: string, data: UserTripData, updatedAt?: string) => {
+      if (!currentUserId) return;
       const nextUserTripData = {
         ...syncedUserTripDataRef.current,
         [tripId]: data,
       };
       syncedUserTripDataRef.current = nextUserTripData;
       userTripDataRef.current = nextUserTripData;
-      storage.setItem("userTripData", nextUserTripData);
+      storage.setItem(
+        getUserTripDataStorageKey(currentUserId),
+        nextUserTripData,
+      );
       if (updatedAt) {
         const nextUpdatedAt = {
           ...userTripUpdatedAtRef.current,
           [tripId]: updatedAt,
         };
         userTripUpdatedAtRef.current = nextUpdatedAt;
-        storage.setItem("userTripUpdatedAt", nextUpdatedAt);
+        storage.setItem(
+          getUserTripUpdatedAtStorageKey(currentUserId),
+          nextUpdatedAt,
+        );
       }
     },
-    [],
+    [currentUserId],
   );
 
   // Initialize Firebase
@@ -665,9 +711,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         delete pendingUserTripUpdatedAtRef.current[tripId];
         versionBlockedTripIdsRef.current.delete(tripId);
         storage.setItem("sharedTripData", restSyncedShared);
-        storage.setItem("userTripData", restSyncedUser);
         storage.setItem("sharedTripUpdatedAt", restSharedAt);
-        storage.setItem("userTripUpdatedAt", restUserAt);
+        storage.setItem(getUserTripDataStorageKey(userId), restSyncedUser);
+        storage.setItem(getUserTripUpdatedAtStorageKey(userId), restUserAt);
       }
     }
 
@@ -770,6 +816,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       storage.setItem(getTemplateStorageKey(currentUserId), state.template);
       storage.setItem(getTipsStorageKey(currentUserId), state.tips);
       storage.setItem(getFavoritesStorageKey(currentUserId), state.favorites);
+      storage.setItem(
+        getUserTripDataStorageKey(currentUserId),
+        state.userTripData,
+      );
+      storage.setItem(
+        getUserTripUpdatedAtStorageKey(currentUserId),
+        userTripUpdatedAtRef.current,
+      );
     }
 
     // Sync tips/favorites to Firebase when they change
@@ -918,9 +972,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       delete pendingUserTripUpdatedAtRef.current[tripId];
       versionBlockedTripIdsRef.current.delete(tripId);
       storage.setItem("sharedTripData", restShared);
-      storage.setItem("userTripData", restUser);
       storage.setItem("sharedTripUpdatedAt", restSharedAt);
-      storage.setItem("userTripUpdatedAt", restUserAt);
+      if (userId) {
+        storage.setItem(getUserTripDataStorageKey(userId), restUser);
+        storage.setItem(getUserTripUpdatedAtStorageKey(userId), restUserAt);
+      }
       if (dbRef.current) {
         deleteTripFromFirestore(dbRef.current, tripId);
         deleteSharedTripData(dbRef.current, tripId);
