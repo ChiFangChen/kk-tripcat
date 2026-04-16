@@ -9,16 +9,29 @@
   --color-success: #22c55e;
   --color-star: #f59e0b;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #0f172a;
-    --color-card: #1e293b;
-    --color-text: #f1f5f9;
-    --color-text-secondary: #94a3b8;
-    --color-border: #334155;
-  }
+.theme-dark {
+  --color-bg: #0f172a;
+  --color-card: #1e293b;
+  --color-text: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-border: #334155;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background-color: var(--color-bg);
+}
+
+.app {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 * {
@@ -262,15 +275,14 @@ body {
   color: #b8906a;
 }
 
-@media (prefers-color-scheme: dark) {
-  .tag-country {
-    background: rgba(99, 102, 241, 0.15);
-    color: #9b9dd4;
-  }
-  .tag-type {
-    background: rgba(251, 146, 60, 0.15);
-    color: #c9a57e;
-  }
+.theme-dark .tag-country {
+  background: rgba(99, 102, 241, 0.15);
+  color: #9b9dd4;
+}
+
+.theme-dark .tag-type {
+  background: rgba(251, 146, 60, 0.15);
+  color: #c9a57e;
 }
 
 /* Filter toggle */
@@ -342,6 +354,23 @@ body {
   text-align: center;
   padding: 48px 16px;
   color: var(--color-text-secondary);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.theme-dark .status-badge {
+  background: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
 }
 
 /* Buttons */
@@ -585,20 +614,10 @@ textarea.form-input {
 }
 
 .flight-card {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(126, 200, 227, 0.12) 0%,
-      rgba(126, 200, 227, 0) 140px
-    ),
-    var(--color-card);
+  background: var(--color-card);
 }
 
 .flight-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
   margin-bottom: 14px;
 }
 
@@ -639,9 +658,15 @@ textarea.form-input {
 
 .flight-section {
   margin-bottom: 14px;
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(248, 250, 252, 0.8);
+  background: rgba(126, 200, 227, 0.08);
+  border: 1px solid rgba(126, 200, 227, 0.12);
+}
+
+.theme-dark .flight-section {
+  background: rgba(51, 65, 85, 0.55);
+  border-color: rgba(148, 163, 184, 0.18);
 }
 
 .flight-section-title {
@@ -655,9 +680,14 @@ textarea.form-input {
 .flight-leg-card {
   margin-top: 12px;
   padding: 14px;
-  background: var(--color-slate-50);
+  background: rgba(126, 200, 227, 0.06);
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.theme-dark .flight-leg-card {
+  background: rgba(15, 23, 42, 0.55);
+  border-color: rgba(148, 163, 184, 0.18);
 }
 
 .flight-leg-title {
@@ -696,6 +726,70 @@ textarea.form-input {
   gap: 6px;
 }
 
+.flight-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin: 14px 0;
+}
+
+.flight-route-side {
+  min-width: 0;
+}
+
+.flight-route-side.arrival {
+  text-align: right;
+}
+
+.flight-route-time {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.flight-route-city {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.flight-route-code {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-primary-dark);
+}
+
+.flight-route-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  min-width: 92px;
+}
+
+.flight-route-line {
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(126, 200, 227, 0.2),
+    rgba(91, 168, 200, 0.85),
+    rgba(126, 200, 227, 0.2)
+  );
+}
+
+.flight-route-meta {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
 /* Got Ready floating button */
 .got-ready-fab {
   position: fixed;
@@ -724,11 +818,9 @@ textarea.form-input {
   padding: 8px 12px 8px 16px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .got-ready-fab {
-    background: #3d6b4f;
-    color: #a8d8b9;
-  }
+.theme-dark .got-ready-fab {
+  background: #3d6b4f;
+  color: #a8d8b9;
 }
 
 /* Full screen modal */

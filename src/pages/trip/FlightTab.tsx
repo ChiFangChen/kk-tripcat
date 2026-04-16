@@ -175,24 +175,27 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                   {leg.direction}
                 </button>
 
-                <div className="mt-2">
-                  <InfoRow label="日期" value={formatDate(leg.date)} />
+                <div className="flight-route">
+                  <AirportSide time={leg.departureTime} airport={departure} />
+                  <div className="flight-route-center">
+                    <div className="flight-route-line" />
+                    <div className="flight-route-meta">
+                      <div>{formatDate(leg.date)}</div>
+                      <div>{getFlightNumberLabel(leg)}</div>
+                      {leg.duration && <div>{leg.duration}</div>}
+                    </div>
+                  </div>
+                  <AirportSide
+                    time={leg.arrivalTime}
+                    airport={arrival}
+                    align="right"
+                  />
+                </div>
+
+                <div>
                   <InfoRow label="航班" value={getFlightNumberLabel(leg)} />
-                  <InfoRow
-                    label="起飛"
-                    value={
-                      <AirportTiming
-                        time={leg.departureTime}
-                        airport={departure}
-                      />
-                    }
-                  />
-                  <InfoRow
-                    label="抵達"
-                    value={
-                      <AirportTiming time={leg.arrivalTime} airport={arrival} />
-                    }
-                  />
+                  <InfoRow label="起飛航廈" value={departure.terminal} />
+                  <InfoRow label="抵達航廈" value={arrival.terminal} />
                   <InfoRow label="飛行時間" value={leg.duration} />
                   <InfoRow label="餐點" value={leg.meal} />
                   <InfoRow label="座位" value={leg.seat} />
@@ -255,25 +258,23 @@ export function FlightTab({ tripId, viewOnly }: Props) {
   );
 }
 
-function AirportTiming({
+function AirportSide({
   time,
   airport,
+  align = "left",
 }: {
   time: string;
   airport: ReturnType<typeof getAirportDisplay>;
+  align?: "left" | "right";
 }) {
   return (
-    <div className="flight-airport-block">
-      <div>{time}</div>
-      <div className="flight-airport-meta">
-        {airport.code && (
-          <div className="flight-airport-code">{airport.code}</div>
-        )}
-        <div className="flight-airport-name-row">
-          <span>{airport.name}</span>
-          {airport.terminal && <span className="tag">{airport.terminal}</span>}
-        </div>
-      </div>
+    <div className={`flight-route-side ${align === "right" ? "arrival" : ""}`}>
+      <div className="flight-route-time">{time}</div>
+      {airport.code && <div className="flight-route-code">{airport.code}</div>}
+      <div className="flight-route-city">{airport.name}</div>
+      {airport.terminal && (
+        <div className="flight-route-meta">{airport.terminal}</div>
+      )}
     </div>
   );
 }

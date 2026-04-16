@@ -13,11 +13,20 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { UserMenu } from "./components/UserMenu";
 import { Modal } from "./components/Modal";
 import type { TabType } from "./types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
 import "./App.css";
 
 function AppContent() {
   const { state, loading, updateTrip, viewTripId, isCurrentUserAdmin } =
     useApp();
+  const [theme, setTheme] = useState<"light" | "dark">(
+    () =>
+      storage.getItem<"light" | "dark">("theme") ||
+      (window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"),
+  );
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
     () => storage.getItem<TabType>("activeTab") || "trips",
@@ -53,6 +62,18 @@ function AppContent() {
       setActiveTab("trips");
     }
   }, [activeTab, canAccessNotes]);
+
+  useEffect(() => {
+    storage.setItem("theme", theme);
+    document.documentElement.className = `theme-${theme}`;
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      themeColorMeta.setAttribute(
+        "content",
+        theme === "dark" ? "#1e293b" : "#7EC8E3",
+      );
+    }
+  }, [theme]);
 
   useEffect(() => {
     if (!selectedTripId) return;
@@ -100,18 +121,20 @@ function AppContent() {
   // Viewer mode: no login needed, read-only
   if (viewTripId) {
     return (
-      <TripDetailPage
-        tripId={viewTripId}
-        onBack={() => (window.location.href = window.location.pathname)}
-        viewOnly
-      />
+      <div className={`app theme-${theme}`}>
+        <TripDetailPage
+          tripId={viewTripId}
+          onBack={() => (window.location.href = window.location.pathname)}
+          viewOnly
+        />
+      </div>
     );
   }
 
   // Loading Firebase data
   if (loading) {
     return (
-      <div className="identity-page">
+      <div className={`identity-page theme-${theme}`}>
         <div className="login-logo loading-spinner">🐱</div>
       </div>
     );
@@ -120,9 +143,17 @@ function AppContent() {
   // Not logged in
   if (!state.auth.currentUser) {
     if (authPage === "register") {
-      return <Register onSwitchToLogin={() => setAuthPage("login")} />;
+      return (
+        <div className={`app theme-${theme}`}>
+          <Register onSwitchToLogin={() => setAuthPage("login")} />
+        </div>
+      );
     }
-    return <Login onSwitchToRegister={() => setAuthPage("register")} />;
+    return (
+      <div className={`app theme-${theme}`}>
+        <Login onSwitchToRegister={() => setAuthPage("register")} />
+      </div>
+    );
   }
 
   // Join dialog
@@ -181,26 +212,33 @@ function AppContent() {
   // Inside a trip
   if (selectedTripId && selectedTrip) {
     return (
-      <>
+      <div className={`app theme-${theme}`}>
         <TripDetailPage
           tripId={selectedTrip.id}
           onBack={() => setSelectedTripId(null)}
         />
         {joinDialog}
         {noticeDialog}
-      </>
+      </div>
     );
   }
 
   // Main app with tabs
   return (
-    <>
+    <div className={`app theme-${theme}`}>
       <div className="top-bar">
         <div className="flex items-center gap-2">
           <span className="text-lg">🐱</span>
           <span className="font-semibold">KK TripCat</span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            className="header-icon-btn"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title="切換主題"
+          >
+            <FontAwesomeIcon icon={theme === "dark" ? faSun : faMoon} />
+          </button>
           <button
             className="identity-badge"
             onClick={() => setShowUserMenu(true)}
@@ -230,7 +268,7 @@ function AppContent() {
       )}
       {joinDialog}
       {noticeDialog}
-    </>
+    </div>
   );
 }
 

@@ -236,11 +236,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         <div className="flex items-center gap-1">
           {!viewOnly && (
             <>
-              {completed && (
-                <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
-                  已完成
-                </span>
-              )}
+              {completed && <span className="status-badge">已完成</span>}
               {admin && (
                 <button
                   className="header-icon-btn"
@@ -278,11 +274,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
               )}
             </>
           )}
-          {viewOnly && (
-            <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
-              唯讀
-            </span>
-          )}
+          {viewOnly && <span className="status-badge">唯讀</span>}
         </div>
       </div>
 
