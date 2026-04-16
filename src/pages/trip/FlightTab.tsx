@@ -93,12 +93,15 @@ export function FlightTab({ tripId, viewOnly }: Props) {
 
   function getSectionCollapseKey(
     flightId: string,
-    section: "member" | "baggage",
+    section: "booking" | "member" | "baggage",
   ) {
     return `${flightId}-${section}`;
   }
 
-  function toggleSection(flightId: string, section: "member" | "baggage") {
+  function toggleSection(
+    flightId: string,
+    section: "booking" | "member" | "baggage",
+  ) {
     const key = getSectionCollapseKey(flightId, section);
     setCollapsedSections((current) => ({
       ...current,
@@ -158,6 +161,37 @@ export function FlightTab({ tripId, viewOnly }: Props) {
               </div>
             </div>
           </div>
+
+          {(flight.booking?.platform ||
+            flight.booking?.orderNumber ||
+            flight.booking?.amount ||
+            flight.booking?.note ||
+            flight.booking?.assignee) && (
+            <div className="flight-panel-card">
+              <Accordion
+                title="票務資訊"
+                isOpen={
+                  !(
+                    collapsedSections[
+                      getSectionCollapseKey(flight.id, "booking")
+                    ] ?? false
+                  )
+                }
+                onToggle={() => toggleSection(flight.id, "booking")}
+              >
+                <div className="flight-panel-body">
+                  <InfoRow label="平台" value={flight.booking?.platform} />
+                  <InfoRow
+                    label="訂單編號"
+                    value={flight.booking?.orderNumber}
+                  />
+                  <InfoRow label="金額" value={flight.booking?.amount} />
+                  <InfoRow label="負責人" value={flight.booking?.assignee} />
+                  <InfoRow label="備註" value={flight.booking?.note} />
+                </div>
+              </Accordion>
+            </div>
+          )}
 
           {(flight.memberPlan || flight.memberNumber) && (
             <div className="flight-panel-card">
@@ -384,6 +418,7 @@ function FlightForm({
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(flight);
+  const [booking, setBooking] = useState(flight.booking || {});
 
   return (
     <div>
@@ -419,6 +454,52 @@ function FlightForm({
           className="form-input"
           value={form.ticketNumber || ""}
           onChange={(e) => setForm({ ...form, ticketNumber: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">平台</label>
+        <input
+          className="form-input"
+          value={booking.platform || ""}
+          onChange={(e) => setBooking({ ...booking, platform: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">訂單編號</label>
+        <input
+          className="form-input"
+          value={booking.orderNumber || ""}
+          onChange={(e) =>
+            setBooking({ ...booking, orderNumber: e.target.value })
+          }
+        />
+      </div>
+      <div className="form-row">
+        <div className="form-group flex-1">
+          <label className="form-label">金額</label>
+          <input
+            className="form-input"
+            value={booking.amount || ""}
+            onChange={(e) => setBooking({ ...booking, amount: e.target.value })}
+          />
+        </div>
+        <div className="form-group flex-1">
+          <label className="form-label">負責人</label>
+          <input
+            className="form-input"
+            value={booking.assignee || ""}
+            onChange={(e) =>
+              setBooking({ ...booking, assignee: e.target.value })
+            }
+          />
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">票務備註</label>
+        <textarea
+          className="form-input"
+          value={booking.note || ""}
+          onChange={(e) => setBooking({ ...booking, note: e.target.value })}
         />
       </div>
       <div className="form-row">
@@ -463,7 +544,17 @@ function FlightForm({
         <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
-        <button className="btn btn-primary" onClick={() => onSave(form)}>
+        <button
+          className="btn btn-primary"
+          onClick={() =>
+            onSave({
+              ...form,
+              booking: Object.values(booking).some((value) => value)
+                ? booking
+                : undefined,
+            })
+          }
+        >
           儲存
         </button>
       </div>
