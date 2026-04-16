@@ -142,34 +142,18 @@ export function FlightTab({ tripId, viewOnly }: Props) {
               >
                 {flight.airline || "航班"}
               </h3>
-              <div className="flight-card-meta">
-                {flight.bookingCode && (
-                  <span className="flight-meta-chip">
-                    訂位 {flight.bookingCode}
-                  </span>
-                )}
-                {flight.ticketNumber && (
-                  <span className="flight-meta-chip">
-                    票號 {flight.ticketNumber}
-                  </span>
-                )}
-                {flight.ticketPrice && (
-                  <span className="flight-meta-chip flight-meta-chip-accent">
-                    {flight.ticketPrice}
-                  </span>
-                )}
-              </div>
             </div>
           </div>
 
-          {(flight.booking?.platform ||
-            flight.booking?.orderNumber ||
-            flight.booking?.amount ||
+          {(flight.bookingCode ||
+            flight.ticketPrice ||
+            flight.ticketNumber ||
+            flight.booking?.platform ||
             flight.booking?.note ||
             flight.booking?.assignee) && (
             <div className="flight-panel-card">
               <Accordion
-                title="票務資訊"
+                title="票務"
                 isOpen={
                   !(
                     collapsedSections[
@@ -180,12 +164,13 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                 onToggle={() => toggleSection(flight.id, "booking")}
               >
                 <div className="flight-panel-body">
-                  <InfoRow label="平台" value={flight.booking?.platform} />
                   <InfoRow
-                    label="訂單編號"
-                    value={flight.booking?.orderNumber}
+                    label="訂位代號"
+                    value={getFlightBookingCode(flight)}
                   />
-                  <InfoRow label="金額" value={flight.booking?.amount} />
+                  <InfoRow label="票號" value={flight.ticketNumber} />
+                  <InfoRow label="票價" value={getFlightTicketPrice(flight)} />
+                  <InfoRow label="平台" value={flight.booking?.platform} />
                   <InfoRow label="負責人" value={flight.booking?.assignee} />
                   <InfoRow label="備註" value={flight.booking?.note} />
                 </div>
@@ -196,7 +181,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
           {(flight.memberPlan || flight.memberNumber) && (
             <div className="flight-panel-card">
               <Accordion
-                title="會員資訊"
+                title="會員"
                 isOpen={
                   !(
                     collapsedSections[
@@ -217,7 +202,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
           {(flight.checkedBaggage || flight.carryOn) && (
             <div className="flight-panel-card">
               <Accordion
-                title="行李資訊"
+                title="行李"
                 isOpen={
                   !(
                     collapsedSections[
@@ -268,7 +253,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                   <div className="flight-route-center">
                     <div>{formatDate(leg.date)}</div>
                     <div className="flight-route-line" />
-                    {leg.duration && <div>{leg.duration}</div>}
+                    {leg.duration && <div className="flight-route-duration">{leg.duration}</div>}
                   </div>
                   <AirportSide
                     time={formatFlightTime(leg.arrivalTime)}
@@ -417,8 +402,16 @@ function FlightForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
-  const [form, setForm] = useState(flight);
-  const [booking, setBooking] = useState(flight.booking || {});
+  const [form, setForm] = useState({
+    ...flight,
+    bookingCode: getFlightBookingCode(flight) || "",
+    ticketPrice: getFlightTicketPrice(flight) || "",
+  });
+  const [booking, setBooking] = useState({
+    platform: flight.booking?.platform || "",
+    assignee: flight.booking?.assignee || "",
+    note: flight.booking?.note || "",
+  });
 
   return (
     <div>
@@ -464,25 +457,25 @@ function FlightForm({
           onChange={(e) => setBooking({ ...booking, platform: e.target.value })}
         />
       </div>
-      <div className="form-group">
-        <label className="form-label">訂單編號</label>
-        <input
-          className="form-input"
-          value={booking.orderNumber || ""}
-          onChange={(e) =>
-            setBooking({ ...booking, orderNumber: e.target.value })
-          }
-        />
-      </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">金額</label>
+          <label className="form-label">票價</label>
           <input
             className="form-input"
-            value={booking.amount || ""}
-            onChange={(e) => setBooking({ ...booking, amount: e.target.value })}
+            value={form.ticketPrice || ""}
+            onChange={(e) => setForm({ ...form, ticketPrice: e.target.value })}
           />
         </div>
+        <div className="form-group flex-1">
+          <label className="form-label">訂位代號</label>
+          <input
+            className="form-input"
+            value={form.bookingCode || ""}
+            onChange={(e) => setForm({ ...form, bookingCode: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="form-row">
         <div className="form-group flex-1">
           <label className="form-label">負責人</label>
           <input
@@ -493,6 +486,7 @@ function FlightForm({
             }
           />
         </div>
+        <div className="form-group flex-1" />
       </div>
       <div className="form-group">
         <label className="form-label">票務備註</label>
@@ -549,6 +543,8 @@ function FlightForm({
           onClick={() =>
             onSave({
               ...form,
+              bookingCode: form.bookingCode || undefined,
+              ticketPrice: form.ticketPrice || undefined,
               booking: Object.values(booking).some((value) => value)
                 ? booking
                 : undefined,
@@ -569,6 +565,14 @@ function FlightForm({
       )}
     </div>
   );
+}
+
+function getFlightBookingCode(flight: FlightInfo): string | undefined {
+  return flight.bookingCode || flight.booking?.orderNumber;
+}
+
+function getFlightTicketPrice(flight: FlightInfo): string | undefined {
+  return flight.ticketPrice || flight.booking?.amount;
 }
 
 function LegForm({
