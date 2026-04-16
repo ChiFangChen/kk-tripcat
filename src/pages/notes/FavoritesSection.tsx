@@ -52,8 +52,7 @@ export function FavoritesSection() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold">喜歡的東西</h2>
+      <div className="flex justify-end items-center mb-4">
         <button className="btn-round-add" onClick={() => setEditing(newFavorite())}><FontAwesomeIcon icon={faPlus} className="text-xs" /></button>
       </div>
 
