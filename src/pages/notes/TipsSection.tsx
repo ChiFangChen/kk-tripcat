@@ -11,7 +11,6 @@ import type { TipNote } from "../../types";
 
 export function TipsSection() {
   const { state, dispatch } = useApp();
-  const [selected, setSelected] = useState<TipNote | null>(null);
   const [editing, setEditing] = useState<TipNote | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
@@ -102,7 +101,9 @@ export function TipsSection() {
           <div
             key={tip.id}
             className="card cursor-pointer"
-            onClick={() => setSelected(tip)}
+            onClick={detailDoubleTap("tip-detail-title", () => {
+              setEditing(tip);
+            })}
           >
             <h3 className="font-semibold mb-1">{tip.title}</h3>
             <p className="text-sm text-slate-500 whitespace-pre-wrap mb-2">
@@ -117,42 +118,6 @@ export function TipsSection() {
             </div>
           </div>
         ))
-      )}
-
-      {selected && (
-        <Modal
-          title={
-            <button
-              className="schedule-detail-title-btn"
-              onClick={detailDoubleTap("tip-detail-title", () => {
-                setEditing(selected);
-                setSelected(null);
-              })}
-            >
-              {selected.title || "筆記"}
-            </button>
-          }
-          onClose={() => setSelected(null)}
-        >
-          <InfoRow
-            label="內容"
-            value={<div className="schedule-note-text">{selected.content}</div>}
-          />
-          {selected.tags.length > 0 && (
-            <InfoRow
-              label="標籤"
-              value={
-                <div className="flex flex-wrap gap-1">
-                  {selected.tags.map((tag) => (
-                    <span key={tag} className="tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              }
-            />
-          )}
-        </Modal>
       )}
 
       {editing && (

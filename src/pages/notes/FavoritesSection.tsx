@@ -1,77 +1,115 @@
-import { useState } from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faStar, faPlus, faTrash, faPen } from '@fortawesome/free-solid-svg-icons'
-import { useApp } from '../../context/AppContext'
-import { Modal } from '../../components/Modal'
-import { generateId } from '../../utils/id'
-import { formatDate } from '../../utils/date'
-import { ImageUpload } from '../../components/ImageUpload'
-import type { FavoriteItem, Purchase } from '../../types'
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faStar,
+  faPlus,
+  faTrash,
+  faPen,
+} from "@fortawesome/free-solid-svg-icons";
+import { useApp } from "../../context/AppContext";
+import { Modal } from "../../components/Modal";
+import { generateId } from "../../utils/id";
+import { formatDate } from "../../utils/date";
+import { ImageUpload } from "../../components/ImageUpload";
+import type { FavoriteItem, Purchase } from "../../types";
 
 export function FavoritesSection() {
-  const { state, dispatch, setUserTripData } = useApp()
-  const [editing, setEditing] = useState<FavoriteItem | null>(null)
-  const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null)
+  const { state, dispatch, setUserTripData } = useApp();
+  const [editing, setEditing] = useState<FavoriteItem | null>(null);
+  const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null);
 
   function remove(id: string) {
-    dispatch({ type: 'DELETE_FAVORITE', favoriteId: id })
+    dispatch({ type: "DELETE_FAVORITE", favoriteId: id });
     // Also unstar in all shopping lists
     Object.entries(state.userTripData).forEach(([tripId, data]) => {
-      const updated = data.shopping.map(item =>
-        item.favoriteId === id ? { ...item, starred: false, favoriteId: undefined } : item
-      )
+      const updated = data.shopping.map((item) =>
+        item.favoriteId === id
+          ? { ...item, starred: false, favoriteId: undefined }
+          : item,
+      );
       if (updated.some((item, i) => item !== data.shopping[i])) {
-        setUserTripData(tripId, { shopping: updated })
+        setUserTripData(tripId, { shopping: updated });
       }
-    })
-    setEditing(null)
+    });
+    setEditing(null);
   }
 
   function addPurchase(favoriteId: string, purchase: Purchase) {
-    const fav = state.favorites.find(f => f.id === favoriteId)
-    if (!fav) return
+    const fav = state.favorites.find((f) => f.id === favoriteId);
+    if (!fav) return;
     dispatch({
-      type: 'UPDATE_FAVORITE',
+      type: "UPDATE_FAVORITE",
       favorite: { ...fav, purchases: [purchase, ...fav.purchases] },
-    })
-    setAddingPurchaseTo(null)
+    });
+    setAddingPurchaseTo(null);
   }
 
   function deletePurchase(favoriteId: string, purchaseId: string) {
-    const fav = state.favorites.find(f => f.id === favoriteId)
-    if (!fav) return
+    const fav = state.favorites.find((f) => f.id === favoriteId);
+    if (!fav) return;
     dispatch({
-      type: 'UPDATE_FAVORITE',
-      favorite: { ...fav, purchases: fav.purchases.filter(p => p.id !== purchaseId) },
-    })
+      type: "UPDATE_FAVORITE",
+      favorite: {
+        ...fav,
+        purchases: fav.purchases.filter((p) => p.id !== purchaseId),
+      },
+    });
   }
 
   function newFavorite(): FavoriteItem {
-    return { id: generateId(), name: '', purchases: [] }
+    return { id: generateId(), name: "", purchases: [] };
   }
 
   return (
     <div>
       <div className="flex justify-end items-center mb-4">
-        <button className="btn-round-add" onClick={() => setEditing(newFavorite())}><FontAwesomeIcon icon={faPlus} className="text-xs" /></button>
+        <button
+          className="btn-round-add"
+          onClick={() => setEditing(newFavorite())}
+        >
+          <FontAwesomeIcon icon={faPlus} className="text-xs" />
+        </button>
       </div>
 
       {state.favorites.length === 0 ? (
-        <div className="empty-state"><p>還沒有喜歡的東西</p></div>
+        <div className="empty-state">
+          <p>還沒有喜歡的東西</p>
+        </div>
       ) : (
-        state.favorites.map(fav => (
+        state.favorites.map((fav) => (
           <div key={fav.id} className="card">
-            {fav.imageUrl && <img src={fav.imageUrl} alt="" className="w-full rounded-lg max-h-48 object-cover mb-2" />}
+            {fav.imageUrl && (
+              <img
+                src={fav.imageUrl}
+                alt=""
+                className="w-full rounded-lg max-h-48 object-cover mb-2"
+              />
+            )}
             <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold"><FontAwesomeIcon icon={faStar} className="text-amber-400 mr-1" />{fav.name}</h3>
+              <h3 className="font-semibold">
+                <FontAwesomeIcon
+                  icon={faStar}
+                  className="text-amber-400 mr-1"
+                />
+                {fav.name}
+              </h3>
               <div className="flex gap-2">
-                <button className="btn-round-add !w-6 !h-6" onClick={() => setAddingPurchaseTo(fav.id)}>
+                <button
+                  className="btn-round-add !w-6 !h-6"
+                  onClick={() => setAddingPurchaseTo(fav.id)}
+                >
                   <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
                 </button>
-                <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => setEditing(fav)}>
+                <button
+                  className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
+                  onClick={() => setEditing(fav)}
+                >
                   <FontAwesomeIcon icon={faPen} />
                 </button>
-                <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => remove(fav.id)}>
+                <button
+                  className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
+                  onClick={() => remove(fav.id)}
+                >
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
               </div>
@@ -79,20 +117,36 @@ export function FavoritesSection() {
 
             {fav.purchases.length > 0 ? (
               <div className="text-sm">
-                {fav.purchases.map(p => (
-                  <div key={p.id} className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                {fav.purchases.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-700 last:border-0"
+                  >
                     <div>
                       <span className="font-medium">{p.amount}</span>
-                      {p.currency && <span className="text-slate-400 ml-1">{p.currency}</span>}
-                      <span className="text-slate-400 ml-2">{formatDate(p.date)}</span>
-                      {p.tripName && <span className="text-slate-400 ml-1">({p.tripName})</span>}
+                      {p.currency && (
+                        <span className="text-slate-400 ml-1">
+                          {p.currency}
+                        </span>
+                      )}
+                      <span className="text-slate-400 ml-2">
+                        {formatDate(p.date)}
+                      </span>
+                      {p.tripName && (
+                        <span className="text-slate-400 ml-1">
+                          ({p.tripName})
+                        </span>
+                      )}
                       {p.note && (
                         <span className="text-slate-400 ml-1 whitespace-pre-wrap">
                           - {p.note}
                         </span>
                       )}
                     </div>
-                    <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deletePurchase(fav.id, p.id)}>
+                    <button
+                      className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
+                      onClick={() => deletePurchase(fav.id, p.id)}
+                    >
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
                   </div>
@@ -107,13 +161,23 @@ export function FavoritesSection() {
 
       {/* New/Edit favorite modal */}
       {editing && (
-        <Modal title={state.favorites.find(f => f.id === editing.id) ? '編輯喜歡的東西' : '新增喜歡的東西'} onClose={() => setEditing(null)}>
+        <Modal
+          title={
+            state.favorites.find((f) => f.id === editing.id)
+              ? "編輯喜歡的東西"
+              : "新增喜歡的東西"
+          }
+          onClose={() => setEditing(null)}
+        >
           <FavoriteForm
             favorite={editing}
             onSave={(fav) => {
-              const exists = state.favorites.find(f => f.id === fav.id)
-              dispatch({ type: exists ? 'UPDATE_FAVORITE' : 'ADD_FAVORITE', favorite: fav })
-              setEditing(null)
+              const exists = state.favorites.find((f) => f.id === fav.id);
+              dispatch({
+                type: exists ? "UPDATE_FAVORITE" : "ADD_FAVORITE",
+                favorite: fav,
+              });
+              setEditing(null);
             }}
           />
         </Modal>
@@ -126,43 +190,92 @@ export function FavoritesSection() {
         </Modal>
       )}
     </div>
-  )
+  );
 }
 
-function FavoriteForm({ favorite, onSave }: { favorite: FavoriteItem; onSave: (f: FavoriteItem) => void }) {
-  const [form, setForm] = useState(favorite)
+function FavoriteForm({
+  favorite,
+  onSave,
+}: {
+  favorite: FavoriteItem;
+  onSave: (f: FavoriteItem) => void;
+}) {
+  const [form, setForm] = useState(favorite);
   return (
     <div>
-      <div className="form-group"><label className="form-label">名稱</label><input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+      <div className="form-group">
+        <label className="form-label">名稱</label>
+        <input
+          className="form-input"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+        />
+      </div>
       <div className="form-group">
         <label className="form-label">圖片</label>
         <ImageUpload
           imageUrl={form.imageUrl}
           storagePath="tc-images/favorites"
-          onUploaded={url => setForm({ ...form, imageUrl: url })}
+          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
           onRemoved={() => setForm({ ...form, imageUrl: undefined })}
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>儲存</button>
+      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>
+        儲存
+      </button>
     </div>
-  )
+  );
 }
 
 function PurchaseForm({ onSave }: { onSave: (p: Purchase) => void }) {
-  const [form, setForm] = useState<Omit<Purchase, 'id'>>({
-    date: new Date().toISOString().split('T')[0],
-    amount: '',
-    currency: '',
-    note: '',
-  })
+  const [form, setForm] = useState<Omit<Purchase, "id">>({
+    date: new Date().toISOString().split("T")[0],
+    amount: "",
+    currency: "",
+    note: "",
+  });
 
   return (
     <div>
-      <div className="form-group"><label className="form-label">金額</label><input className="form-input" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">幣別</label><input className="form-input" value={form.currency || ''} onChange={e => setForm({ ...form, currency: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">日期</label><input className="form-input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">備註</label><input className="form-input" value={form.note || ''} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
-      <button className="btn btn-primary w-full" onClick={() => onSave({ ...form, id: generateId() } as Purchase)}>儲存</button>
+      <div className="form-group">
+        <label className="form-label">金額</label>
+        <input
+          className="form-input"
+          value={form.amount}
+          onChange={(e) => setForm({ ...form, amount: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">幣別</label>
+        <input
+          className="form-input"
+          value={form.currency || ""}
+          onChange={(e) => setForm({ ...form, currency: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">日期</label>
+        <input
+          className="form-input"
+          type="date"
+          value={form.date}
+          onChange={(e) => setForm({ ...form, date: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">備註</label>
+        <input
+          className="form-input"
+          value={form.note || ""}
+          onChange={(e) => setForm({ ...form, note: e.target.value })}
+        />
+      </div>
+      <button
+        className="btn btn-primary w-full"
+        onClick={() => onSave({ ...form, id: generateId() } as Purchase)}
+      >
+        儲存
+      </button>
     </div>
-  )
+  );
 }
