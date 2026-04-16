@@ -16,7 +16,8 @@ import type { TabType } from "./types";
 import "./App.css";
 
 function AppContent() {
-  const { state, loading, updateTrip, viewTripId } = useApp();
+  const { state, loading, updateTrip, viewTripId, isCurrentUserAdmin } =
+    useApp();
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
     () => storage.getItem<TabType>("activeTab") || "trips",
@@ -39,6 +40,25 @@ function AppContent() {
   useEffect(() => {
     storage.setItem("activeTab", activeTab);
   }, [activeTab]);
+
+  const currentUserId = state.auth.currentUser?.id;
+  const visibleTrips = currentUserId
+    ? state.trips.filter((trip) => trip.members.includes(currentUserId))
+    : [];
+  const selectedTrip = visibleTrips.find((trip) => trip.id === selectedTripId);
+  const canAccessNotes = isCurrentUserAdmin();
+
+  useEffect(() => {
+    if (activeTab === "notes" && !canAccessNotes) {
+      setActiveTab("trips");
+    }
+  }, [activeTab, canAccessNotes]);
+
+  useEffect(() => {
+    if (!selectedTripId) return;
+    if (selectedTrip) return;
+    setSelectedTripId(null);
+  }, [selectedTrip, selectedTripId]);
 
   // Join trip via URL: ?join=<tripId>
   const [joinTripId, setJoinTripId] = useState<string | null>(() => {
@@ -159,11 +179,11 @@ function AppContent() {
     : null;
 
   // Inside a trip
-  if (selectedTripId) {
+  if (selectedTripId && selectedTrip) {
     return (
       <>
         <TripDetailPage
-          tripId={selectedTripId}
+          tripId={selectedTrip.id}
           onBack={() => setSelectedTripId(null)}
         />
         {joinDialog}
@@ -195,7 +215,7 @@ function AppContent() {
       </div>
 
       {activeTab === "trips" && <TripsPage onSelectTrip={setSelectedTripId} />}
-      {activeTab === "notes" && <NotesPage />}
+      {activeTab === "notes" && canAccessNotes && <NotesPage />}
       {activeTab === "settings" && <SettingsPage />}
       <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
 

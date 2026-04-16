@@ -102,26 +102,53 @@ export function FlightTab({ tripId, viewOnly }: Props) {
       )}
 
       {flights.map((flight) => (
-        <div key={flight.id} className="card">
-          <div className="flex justify-between items-center w-full mb-2">
-            <h3
-              className="font-semibold text-sky-600 dark:text-sky-400 cursor-pointer"
-              onClick={doubleTap(
-                flight.id,
-                () => !viewOnly && setEditingFlight(flight),
-              )}
-            >
-              {flight.airline || "航班"}
-            </h3>
+        <div key={flight.id} className="card flight-card">
+          <div className="flight-card-header">
+            <div>
+              <h3
+                className="flight-card-title"
+                onClick={doubleTap(
+                  flight.id,
+                  () => !viewOnly && setEditingFlight(flight),
+                )}
+              >
+                {flight.airline || "航班"}
+              </h3>
+              <div className="flight-card-meta">
+                {flight.bookingCode && (
+                  <span className="flight-meta-chip">
+                    訂位 {flight.bookingCode}
+                  </span>
+                )}
+                {flight.ticketNumber && (
+                  <span className="flight-meta-chip">
+                    票號 {flight.ticketNumber}
+                  </span>
+                )}
+                {flight.ticketPrice && (
+                  <span className="flight-meta-chip flight-meta-chip-accent">
+                    {flight.ticketPrice}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          <InfoRow label="訂位代號" value={flight.bookingCode} />
-          <InfoRow label="機票號碼" value={flight.ticketNumber} />
-          <InfoRow label="會員方案" value={flight.memberPlan} />
-          <InfoRow label="會員卡號" value={flight.memberNumber} />
-          <InfoRow label="票價" value={flight.ticketPrice} />
-          <InfoRow label="託運行李" value={flight.checkedBaggage} />
-          <InfoRow label="隨身行李" value={flight.carryOn} />
+          {(flight.memberPlan || flight.memberNumber) && (
+            <div className="flight-section">
+              <div className="flight-section-title">會員資訊</div>
+              <InfoRow label="會員方案" value={flight.memberPlan} />
+              <InfoRow label="會員卡號" value={flight.memberNumber} />
+            </div>
+          )}
+
+          {(flight.checkedBaggage || flight.carryOn) && (
+            <div className="flight-section">
+              <div className="flight-section-title">行李資訊</div>
+              <InfoRow label="託運行李" value={flight.checkedBaggage} />
+              <InfoRow label="隨身行李" value={flight.carryOn} />
+            </div>
+          )}
 
           {flight.legs.map((leg) => {
             const departure = getAirportDisplay(

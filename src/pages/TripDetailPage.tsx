@@ -4,6 +4,8 @@ import {
   faChevronLeft,
   faUsers,
   faShareNodes,
+  faCircleCheck,
+  faPenToSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../context/AppContext";
 import { MemberMenu } from "../components/MemberMenu";
@@ -42,9 +44,12 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     getTripData,
     setUserTripData,
     setTemplate,
+    updateTrip,
   } = useApp();
   const trip = state.trips.find((t) => t.id === tripId);
   const tripData = getTripData(tripId);
+  const completed = !!trip?.isCompleted;
+  const readOnly = !!viewOnly || completed;
 
   const [showMembers, setShowMembers] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -67,7 +72,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const editableTabs = getEditableTabs(tripData.skipPreparation);
   const tabs = viewOnly ? viewerTabs : editableTabs;
   const defaultTab = viewOnly
-    ? "schedule"
+    ? viewerTabs[0].key
     : tripData.skipPreparation
       ? "flight"
       : "preparation";
@@ -124,7 +129,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     );
   }
 
-  if (firstEntryMode === "choice") {
+  if (!completed && firstEntryMode === "choice") {
     return (
       <div className="page-container">
         <div className="card">
@@ -150,7 +155,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   }
 
   // Show template selection for new member who chose to use preparation
-  if (firstEntryMode === "template") {
+  if (!completed && firstEntryMode === "template") {
     return (
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
@@ -187,6 +192,25 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     setTimeout(() => setCopied(""), 2000);
   }
 
+  function toggleCompleted() {
+    if (!admin || !trip) return;
+    if (completed) {
+      updateTrip(trip, {
+        isCompleted: false,
+        completedAt: "",
+        completedBy: "",
+      });
+      return;
+    }
+
+    if (!state.auth.currentUser) return;
+    updateTrip(trip, {
+      isCompleted: true,
+      completedAt: new Date().toISOString(),
+      completedBy: state.auth.currentUser.id,
+    });
+  }
+
   // Reorder tabs only when preparation tab is available.
   const orderedTabs =
     viewOnly || tripData.skipPreparation
@@ -212,6 +236,22 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         <div className="flex items-center gap-1">
           {!viewOnly && (
             <>
+              {completed && (
+                <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                  已完成
+                </span>
+              )}
+              {admin && (
+                <button
+                  className="header-icon-btn"
+                  onClick={toggleCompleted}
+                  title={completed ? "取消完成" : "完成旅程"}
+                >
+                  <FontAwesomeIcon
+                    icon={completed ? faPenToSquare : faCircleCheck}
+                  />
+                </button>
+              )}
               <button
                 className="header-icon-btn"
                 onClick={() => setShowShare(true)}
@@ -260,27 +300,31 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
 
       <div className="page-container">
         {activeTab === "preparation" && !viewOnly && (
-          <PreparationTab tripId={tripId} />
+          <PreparationTab tripId={tripId} viewOnly={readOnly} />
         )}
         {activeTab === "flight" && (
-          <FlightTab tripId={tripId} viewOnly={viewOnly} />
+          <FlightTab tripId={tripId} viewOnly={readOnly} />
         )}
         {activeTab === "hotel" && (
-          <HotelTab tripId={tripId} viewOnly={viewOnly} />
+          <HotelTab tripId={tripId} viewOnly={readOnly} />
         )}
         {activeTab === "schedule" && (
-          <ScheduleTab tripId={tripId} viewOnly={viewOnly} />
+          <ScheduleTab tripId={tripId} viewOnly={readOnly} />
         )}
         {activeTab === "transport" && (
-          <TransportTab tripId={tripId} viewOnly={viewOnly} />
+          <TransportTab tripId={tripId} viewOnly={readOnly} />
         )}
         {activeTab === "shopping" && !viewOnly && (
-          <ShoppingTab tripId={tripId} />
+          <ShoppingTab tripId={tripId} viewOnly={readOnly} />
         )}
       </div>
 
       {showMembers && (
-        <MemberMenu tripId={tripId} onClose={() => setShowMembers(false)} />
+        <MemberMenu
+          tripId={tripId}
+          readOnly={readOnly}
+          onClose={() => setShowMembers(false)}
+        />
       )}
       {showUserMenu && <UserMenu onClose={() => setShowUserMenu(false)} />}
 

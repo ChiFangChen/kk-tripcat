@@ -584,16 +584,85 @@ textarea.form-input {
   flex-shrink: 0;
 }
 
+.flight-card {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(126, 200, 227, 0.12) 0%,
+      rgba(126, 200, 227, 0) 140px
+    ),
+    var(--color-card);
+}
+
+.flight-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.flight-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.flight-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.flight-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.flight-meta-chip-accent {
+  background: rgba(14, 165, 233, 0.14);
+  color: var(--color-primary-dark);
+}
+
+.flight-section {
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.flight-section-title {
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
 .flight-leg-card {
   margin-top: 12px;
-  padding: 12px;
+  padding: 14px;
   background: var(--color-slate-50);
-  border-radius: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .flight-leg-title {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.98rem;
+  font-weight: 700;
   color: var(--color-text);
   background: transparent;
   border: none;
