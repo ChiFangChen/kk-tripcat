@@ -399,6 +399,9 @@ export async function syncFavorites(
 // --- Image Storage ---
 
 export async function uploadImage(path: string, file: Blob): Promise<string> {
+  if (!app) {
+    await initFirebase();
+  }
   if (!app) throw new Error("Firebase not initialized");
   const storage = getStorage(app);
   const storageRef = ref(storage, path);
@@ -407,6 +410,9 @@ export async function uploadImage(path: string, file: Blob): Promise<string> {
 }
 
 export async function deleteImage(path: string): Promise<void> {
+  if (!app) {
+    await initFirebase();
+  }
   if (!app) throw new Error("Firebase not initialized");
   const storage = getStorage(app);
   const storageRef = ref(storage, path);

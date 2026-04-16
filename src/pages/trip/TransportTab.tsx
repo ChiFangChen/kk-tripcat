@@ -9,6 +9,7 @@ import {
 import { useApp } from "../../context/AppContext";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
+import { ImageUpload } from "../../components/ImageUpload";
 import { generateId } from "../../utils/id";
 import * as storage from "../../utils/storage";
 import type { TransportItem } from "../../types";
@@ -113,9 +114,18 @@ export function TransportTab({ tripId, viewOnly }: Props) {
               )}
             </div>
             {!isCollapsed && (
-              <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">
-                {item.content}
-              </p>
+              <>
+                <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">
+                  {item.content}
+                </p>
+                {item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt=""
+                    className="w-full rounded-lg mt-3 max-h-56 object-cover"
+                  />
+                )}
+              </>
             )}
           </div>
         );
@@ -171,6 +181,15 @@ function TransportForm({
           value={form.content}
           onChange={(e) => setForm({ ...form, content: e.target.value })}
           placeholder="內容（如：時刻表、轉乘資訊、地圖截圖連結...）"
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <ImageUpload
+          imageUrl={form.imageUrl}
+          storagePath="tc-images/transport"
+          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
+          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
         />
       </div>
       <button className="btn btn-primary w-full" onClick={() => onSave(form)}>

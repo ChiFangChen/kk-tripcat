@@ -426,6 +426,13 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
               </div>
             }
           />
+          {selectedActivity.activity.imageUrl && (
+            <img
+              src={selectedActivity.activity.imageUrl}
+              alt=""
+              className="w-full rounded-lg mt-2 max-h-64 object-cover"
+            />
+          )}
         </Modal>
       )}
 
@@ -638,6 +645,15 @@ function ActivityForm({
           className="form-input"
           value={form.note || ""}
           onChange={(e) => setForm({ ...form, note: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <ImageUpload
+          imageUrl={form.imageUrl}
+          storagePath="tc-images/schedule-activities"
+          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
+          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
         />
       </div>
       <button className="btn btn-primary w-full" onClick={handleSave}>
