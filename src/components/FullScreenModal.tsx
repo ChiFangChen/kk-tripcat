@@ -38,7 +38,7 @@ export function FullScreenModal({ title, onClose, children }: Props) {
   return (
     <div className="fullscreen-modal">
       <div className="fullscreen-modal-header">
-        <button onClick={onClose} className="text-sky-600 p-2">
+        <button onClick={onClose} className="text-sky-600">
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
         <h2>{title}</h2>

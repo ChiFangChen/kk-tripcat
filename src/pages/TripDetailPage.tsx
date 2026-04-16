@@ -170,7 +170,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
           <button
-            className="text-sky-600 p-2"
+            className="text-sky-600"
             onClick={() => {
               setSetupChoice(null);
               onBack();
@@ -238,7 +238,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         {viewOnly ? (
           <div className="w-10" />
         ) : (
-          <button onClick={onBack} className="text-sky-600 p-2">
+          <button onClick={onBack} className="text-sky-600">
             <FontAwesomeIcon icon={faChevronLeft} />
           </button>
         )}
