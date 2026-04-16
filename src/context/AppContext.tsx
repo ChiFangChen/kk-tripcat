@@ -96,6 +96,7 @@ type Action =
   | { type: "ADD_TRIP"; trip: Trip }
   | { type: "UPDATE_TRIP"; trip: Trip }
   | { type: "DELETE_TRIP"; tripId: string }
+  | { type: "REMOVE_TRIP_LOCAL_DATA"; tripId: string }
   | { type: "SET_SHARED_TRIP_DATA"; tripId: string; data: SharedTripData }
   | {
       type: "UPDATE_SHARED_TRIP_DATA";
@@ -190,6 +191,17 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         trips: state.trips.filter((t) => t.id !== action.tripId),
+        sharedTripData: restShared,
+        userTripData: restUser,
+      };
+    }
+    case "REMOVE_TRIP_LOCAL_DATA": {
+      const { [action.tripId]: _s, ...restShared } = state.sharedTripData;
+      const { [action.tripId]: _u, ...restUser } = state.userTripData;
+      void _s;
+      void _u;
+      return {
+        ...state,
         sharedTripData: restShared,
         userTripData: restUser,
       };
@@ -578,6 +590,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!currentTripIds.has(tripId)) {
         unsub();
         delete tripSubsRef.current[tripId];
+        rawDispatch({ type: "REMOVE_TRIP_LOCAL_DATA", tripId });
+        const { [tripId]: _shared, ...restShared } = sharedTripDataRef.current;
+        const { [tripId]: _user, ...restUser } = userTripDataRef.current;
+        const { [tripId]: _syncedShared, ...restSyncedShared } =
+          syncedSharedTripDataRef.current;
+        const { [tripId]: _syncedUser, ...restSyncedUser } =
+          syncedUserTripDataRef.current;
+        const { [tripId]: _sharedAt, ...restSharedAt } =
+          sharedTripUpdatedAtRef.current;
+        const { [tripId]: _userAt, ...restUserAt } =
+          userTripUpdatedAtRef.current;
+        void _shared;
+        void _user;
+        void _syncedShared;
+        void _syncedUser;
+        void _sharedAt;
+        void _userAt;
+        sharedTripDataRef.current = restShared;
+        userTripDataRef.current = restUser;
+        syncedSharedTripDataRef.current = restSyncedShared;
+        syncedUserTripDataRef.current = restSyncedUser;
+        sharedTripUpdatedAtRef.current = restSharedAt;
+        userTripUpdatedAtRef.current = restUserAt;
+        delete pendingSharedTripUpdatedAtRef.current[tripId];
+        delete pendingUserTripUpdatedAtRef.current[tripId];
+        versionBlockedTripIdsRef.current.delete(tripId);
+        storage.setItem("sharedTripData", restSyncedShared);
+        storage.setItem("userTripData", restSyncedUser);
+        storage.setItem("sharedTripUpdatedAt", restSharedAt);
+        storage.setItem("userTripUpdatedAt", restUserAt);
       }
     }
 
@@ -771,15 +813,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateTrip = useCallback(
     (trip: Trip, fields?: Partial<Trip>) => {
       if (!firebaseConnected) return;
+      const currentTrip =
+        state.trips.find((item) => item.id === trip.id) || trip;
+      const nextTrip = fields ? { ...currentTrip, ...fields } : trip;
+      const removedMemberIds = currentTrip.members.filter(
+        (memberId) => !nextTrip.members.includes(memberId),
+      );
       if (fields) {
-        dispatch({ type: "UPDATE_TRIP", trip: { ...trip, ...fields } });
-        if (dbRef.current) syncTripPartial(dbRef.current, trip.id, fields);
+        dispatch({ type: "UPDATE_TRIP", trip: nextTrip });
+        if (dbRef.current) {
+          syncTripPartial(dbRef.current, trip.id, fields);
+          removedMemberIds.forEach((memberId) => {
+            deleteUserTripData(dbRef.current!, trip.id, memberId);
+          });
+        }
       } else {
-        dispatch({ type: "UPDATE_TRIP", trip });
-        if (dbRef.current) syncTrip(dbRef.current, trip);
+        dispatch({ type: "UPDATE_TRIP", trip: nextTrip });
+        if (dbRef.current) {
+          syncTrip(dbRef.current, nextTrip);
+          removedMemberIds.forEach((memberId) => {
+            deleteUserTripData(dbRef.current!, trip.id, memberId);
+          });
+        }
       }
     },
-    [dispatch, firebaseConnected],
+    [dispatch, firebaseConnected, state.trips],
   );
 
   const deleteTrip = useCallback(

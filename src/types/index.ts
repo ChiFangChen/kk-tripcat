@@ -36,6 +36,9 @@ export interface Trip {
   tags: string[];
   createdAt: string;
   gotReady: boolean;
+  isCompleted?: boolean;
+  completedAt?: string;
+  completedBy?: string;
 }
 
 export interface ChecklistItem {
