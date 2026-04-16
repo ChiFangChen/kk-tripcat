@@ -142,6 +142,20 @@ export function FlightTab({ tripId, viewOnly }: Props) {
               >
                 {flight.airline || "航班"}
               </h3>
+              {(flight.memberPlan || flight.memberNumber) && (
+                <div className="flight-card-meta">
+                  {flight.memberPlan && (
+                    <span className="flight-meta-chip">
+                      {flight.memberPlan}
+                    </span>
+                  )}
+                  {flight.memberNumber && (
+                    <span className="flight-meta-chip">
+                      {flight.memberNumber}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -149,6 +163,8 @@ export function FlightTab({ tripId, viewOnly }: Props) {
             flight.ticketPrice ||
             flight.ticketNumber ||
             flight.booking?.platform ||
+            flight.checkedBaggage ||
+            flight.carryOn ||
             flight.booking?.note ||
             flight.booking?.assignee) && (
             <div className="flight-panel-card">
@@ -173,46 +189,6 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                   <InfoRow label="平台" value={flight.booking?.platform} />
                   <InfoRow label="負責人" value={flight.booking?.assignee} />
                   <InfoRow label="備註" value={flight.booking?.note} />
-                </div>
-              </Accordion>
-            </div>
-          )}
-
-          {(flight.memberPlan || flight.memberNumber) && (
-            <div className="flight-panel-card">
-              <Accordion
-                title="會員"
-                isOpen={
-                  !(
-                    collapsedSections[
-                      getSectionCollapseKey(flight.id, "member")
-                    ] ?? false
-                  )
-                }
-                onToggle={() => toggleSection(flight.id, "member")}
-              >
-                <div className="flight-panel-body">
-                  <InfoRow label="會員方案" value={flight.memberPlan} />
-                  <InfoRow label="會員卡號" value={flight.memberNumber} />
-                </div>
-              </Accordion>
-            </div>
-          )}
-
-          {(flight.checkedBaggage || flight.carryOn) && (
-            <div className="flight-panel-card">
-              <Accordion
-                title="行李"
-                isOpen={
-                  !(
-                    collapsedSections[
-                      getSectionCollapseKey(flight.id, "baggage")
-                    ] ?? false
-                  )
-                }
-                onToggle={() => toggleSection(flight.id, "baggage")}
-              >
-                <div className="flight-panel-body">
                   <InfoRow label="託運行李" value={flight.checkedBaggage} />
                   <InfoRow label="隨身行李" value={flight.carryOn} />
                 </div>
@@ -253,7 +229,11 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                   <div className="flight-route-center">
                     <div>{formatDate(leg.date)}</div>
                     <div className="flight-route-line" />
-                    {leg.duration && <div className="flight-route-duration">{leg.duration}</div>}
+                    {leg.duration && (
+                      <div className="flight-route-duration">
+                        {leg.duration}
+                      </div>
+                    )}
                   </div>
                   <AirportSide
                     time={formatFlightTime(leg.arrivalTime)}
