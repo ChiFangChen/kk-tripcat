@@ -448,6 +448,8 @@ body {
   max-width: 768px;
   max-height: 80vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-header {
@@ -600,7 +602,7 @@ textarea.form-input {
 /* Info row - for displaying field:value pairs, hide when empty */
 .info-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 6px 0;
   font-size: 14px;
@@ -611,6 +613,12 @@ textarea.form-input {
   color: var(--color-text-secondary);
   min-width: 60px;
   flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.info-value {
+  flex: 1;
+  min-width: 0;
 }
 
 .flight-card {
@@ -657,11 +665,24 @@ textarea.form-input {
 }
 
 .flight-section {
-  margin-bottom: 14px;
+  margin-bottom: 0;
   padding: 12px 14px;
   border-radius: 14px;
   background: rgba(126, 200, 227, 0.08);
   border: 1px solid rgba(126, 200, 227, 0.12);
+}
+
+.flight-section-group {
+  margin-bottom: 14px;
+}
+
+.flight-section-group .accordion-header {
+  margin-bottom: 0;
+}
+
+.flight-section-group .accordion-body {
+  padding: 0;
+  background: transparent;
 }
 
 .theme-dark .flight-section {
@@ -721,6 +742,13 @@ textarea.form-input {
 
 .flight-airport-name-row {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.flight-airport-name-inline {
+  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
@@ -851,6 +879,24 @@ textarea.form-input {
   overflow-y: auto;
   padding: 16px;
   padding-bottom: calc(24px + var(--safe-bottom));
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.schedule-note-text {
+  white-space: pre-wrap;
+}
+
+.schedule-detail-title-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
 }
 
 /* Google Map link icon */

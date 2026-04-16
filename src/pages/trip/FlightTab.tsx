@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
@@ -6,9 +6,11 @@ import { formatDate } from "../../utils/date";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { InfoRow } from "../../components/InfoRow";
+import { Accordion } from "../../components/Accordion";
 import { generateId } from "../../utils/id";
 import type { FlightInfo, FlightLeg } from "../../types";
 import { getAirportDisplay, getFlightNumberLabel } from "./flightDisplay";
+import * as storage from "../../utils/storage";
 
 interface Props {
   tripId: string;
@@ -19,10 +21,18 @@ export function FlightTab({ tripId, viewOnly }: Props) {
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
   const flights = tripData.flights;
+  const collapsedStorageKey = `flight-sections-collapsed-${tripId}`;
+  const [collapsedSections, setCollapsedSections] = useState<
+    Record<string, boolean>
+  >(() => storage.getItem<Record<string, boolean>>(collapsedStorageKey) || {});
   const [editingFlight, setEditingFlight] = useState<FlightInfo | null>(null);
   const [editingLeg, setEditingLeg] = useState<FlightLeg | null>(null);
   const [editingFlightId, setEditingFlightId] = useState<string | null>(null);
   const doubleTap = useDoubleTap();
+
+  useEffect(() => {
+    storage.setItem(collapsedStorageKey, collapsedSections);
+  }, [collapsedSections, collapsedStorageKey]);
 
   function saveFlight(flight: FlightInfo) {
     const exists = flights.find((f) => f.id === flight.id);
@@ -81,6 +91,21 @@ export function FlightTab({ tripId, viewOnly }: Props) {
     };
   }
 
+  function getSectionCollapseKey(
+    flightId: string,
+    section: "member" | "baggage",
+  ) {
+    return `${flightId}-${section}`;
+  }
+
+  function toggleSection(flightId: string, section: "member" | "baggage") {
+    const key = getSectionCollapseKey(flightId, section);
+    setCollapsedSections((current) => ({
+      ...current,
+      [key]: !(current[key] ?? false),
+    }));
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
@@ -135,18 +160,44 @@ export function FlightTab({ tripId, viewOnly }: Props) {
           </div>
 
           {(flight.memberPlan || flight.memberNumber) && (
-            <div className="flight-section">
-              <div className="flight-section-title">會員資訊</div>
-              <InfoRow label="會員方案" value={flight.memberPlan} />
-              <InfoRow label="會員卡號" value={flight.memberNumber} />
+            <div className="flight-section-group">
+              <Accordion
+                title="會員資訊"
+                isOpen={
+                  !(
+                    collapsedSections[
+                      getSectionCollapseKey(flight.id, "member")
+                    ] ?? false
+                  )
+                }
+                onToggle={() => toggleSection(flight.id, "member")}
+              >
+                <div className="flight-section">
+                  <InfoRow label="會員方案" value={flight.memberPlan} />
+                  <InfoRow label="會員卡號" value={flight.memberNumber} />
+                </div>
+              </Accordion>
             </div>
           )}
 
           {(flight.checkedBaggage || flight.carryOn) && (
-            <div className="flight-section">
-              <div className="flight-section-title">行李資訊</div>
-              <InfoRow label="託運行李" value={flight.checkedBaggage} />
-              <InfoRow label="隨身行李" value={flight.carryOn} />
+            <div className="flight-section-group">
+              <Accordion
+                title="行李資訊"
+                isOpen={
+                  !(
+                    collapsedSections[
+                      getSectionCollapseKey(flight.id, "baggage")
+                    ] ?? false
+                  )
+                }
+                onToggle={() => toggleSection(flight.id, "baggage")}
+              >
+                <div className="flight-section">
+                  <InfoRow label="託運行李" value={flight.checkedBaggage} />
+                  <InfoRow label="隨身行李" value={flight.carryOn} />
+                </div>
+              </Accordion>
             </div>
           )}
 
@@ -176,7 +227,10 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                 </button>
 
                 <div className="flight-route">
-                  <AirportSide time={leg.departureTime} airport={departure} />
+                  <AirportSide
+                    time={formatFlightTime(leg.departureTime)}
+                    airport={departure}
+                  />
                   <div className="flight-route-center">
                     <div className="flight-route-line" />
                     <div className="flight-route-meta">
@@ -186,7 +240,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                     </div>
                   </div>
                   <AirportSide
-                    time={leg.arrivalTime}
+                    time={formatFlightTime(leg.arrivalTime)}
                     airport={arrival}
                     align="right"
                   />
@@ -194,8 +248,14 @@ export function FlightTab({ tripId, viewOnly }: Props) {
 
                 <div>
                   <InfoRow label="航班" value={getFlightNumberLabel(leg)} />
-                  <InfoRow label="起飛航廈" value={departure.terminal} />
-                  <InfoRow label="抵達航廈" value={arrival.terminal} />
+                  <InfoRow
+                    label="起飛機場"
+                    value={<AirportNameWithTerminal airport={departure} />}
+                  />
+                  <InfoRow
+                    label="抵達機場"
+                    value={<AirportNameWithTerminal airport={arrival} />}
+                  />
                   <InfoRow label="飛行時間" value={leg.duration} />
                   <InfoRow label="餐點" value={leg.meal} />
                   <InfoRow label="座位" value={leg.seat} />
@@ -256,6 +316,38 @@ export function FlightTab({ tripId, viewOnly }: Props) {
       )}
     </div>
   );
+}
+
+function AirportNameWithTerminal({
+  airport,
+}: {
+  airport: ReturnType<typeof getAirportDisplay>;
+}) {
+  return (
+    <span className="flight-airport-name-inline">
+      <span>{airport.name}</span>
+      {airport.terminal && <span className="tag">{airport.terminal}</span>}
+    </span>
+  );
+}
+
+function formatFlightTime(time: string): string {
+  const trimmed = time.trim();
+  const match = trimmed.match(/^(\d{1,2}:\d{2})(?:\s?(AM|PM))$/i);
+  if (!match) return trimmed;
+
+  const [, timePart, meridiem] = match;
+  const [hourText, minute] = timePart.split(":");
+  let hour = Number(hourText);
+  const upperMeridiem = meridiem.toUpperCase();
+
+  if (upperMeridiem === "AM") {
+    hour = hour === 12 ? 0 : hour;
+  } else {
+    hour = hour === 12 ? 12 : hour + 12;
+  }
+
+  return `${String(hour).padStart(2, "0")}:${minute}`;
 }
 
 function AirportSide({
