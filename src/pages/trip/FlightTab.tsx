@@ -181,11 +181,42 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                   />
                   <InfoRow label="票號" value={flight.ticketNumber} />
                   <InfoRow label="票價" value={getFlightTicketPrice(flight)} />
-                  <InfoRow label="平台" value={flight.booking?.platform} />
-                  <InfoRow label="負責人" value={flight.booking?.assignee} />
+                  <InfoRow
+                    label="平台"
+                    value={
+                      flight.booking?.platform ? (
+                        <div className="flex items-center gap-2">
+                          <span>{flight.booking.platform}</span>
+                          {flight.booking.assignee && (
+                            <span className="tag">
+                              {flight.booking.assignee}
+                            </span>
+                          )}
+                        </div>
+                      ) : undefined
+                    }
+                  />
                   <InfoRow label="備註" value={flight.booking?.note} />
-                  <InfoRow label="託運行李" value={flight.checkedBaggage} />
-                  <InfoRow label="隨身行李" value={flight.carryOn} />
+                  <InfoRow
+                    label="託運行李"
+                    value={
+                      flight.checkedBaggage ? (
+                        <div className="flight-multiline-text">
+                          {flight.checkedBaggage}
+                        </div>
+                      ) : undefined
+                    }
+                  />
+                  <InfoRow
+                    label="隨身行李"
+                    value={
+                      flight.carryOn ? (
+                        <div className="flight-multiline-text">
+                          {flight.carryOn}
+                        </div>
+                      ) : undefined
+                    }
+                  />
                 </div>
               </Accordion>
             </div>
@@ -474,8 +505,9 @@ function FlightForm({
       <div className="form-row">
         <div className="form-group flex-1">
           <label className="form-label">託運行李</label>
-          <input
+          <textarea
             className="form-input"
+            rows={4}
             value={form.checkedBaggage || ""}
             onChange={(e) =>
               setForm({ ...form, checkedBaggage: e.target.value })
@@ -484,8 +516,9 @@ function FlightForm({
         </div>
         <div className="form-group flex-1">
           <label className="form-label">隨身行李</label>
-          <input
+          <textarea
             className="form-input"
+            rows={4}
             value={form.carryOn || ""}
             onChange={(e) => setForm({ ...form, carryOn: e.target.value })}
           />
