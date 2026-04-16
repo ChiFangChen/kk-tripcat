@@ -832,19 +832,17 @@ textarea.form-input {
 }
 
 /* Got Ready floating button */
-.got-ready-fab {
+.get-ready-fab {
   position: fixed;
   right: 0;
   top: 130px;
   z-index: 35;
   display: flex;
   align-items: center;
-  gap: 0;
   gap: 8px;
   padding: 8px 12px 8px 16px;
+  height: 37px;
   border-radius: 999px 0 0 999px;
-  border: none;
-  cursor: pointer;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -854,7 +852,26 @@ textarea.form-input {
   white-space: nowrap;
 }
 
-.theme-dark .got-ready-fab {
+.got-ready-fab-icon,
+.got-ready-fab-label {
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+.got-ready-fab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.got-ready-fab-label {
+  font: inherit;
+}
+
+.theme-dark .get-ready-fab {
   background: #3d6b4f;
   color: #a8d8b9;
 }
