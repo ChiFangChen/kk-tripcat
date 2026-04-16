@@ -75,8 +75,11 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     : tripData.skipPreparation
       ? "flight"
       : "preparation";
+  const tabStorageUserKey = viewOnly
+    ? "viewer"
+    : state.auth.currentUser?.id || "guest";
 
-  const storageKey = `trip-tab-${tripId}`;
+  const storageKey = `trip-tab-${tripId}-${tabStorageUserKey}`;
   const [activeTab, setActiveTab] = useState<TripTabType>(() => {
     if (viewOnly) return defaultTab;
     return storage.getItem<TripTabType>(storageKey) || defaultTab;
@@ -90,6 +93,10 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     if (tabs.some((tab) => tab.key === activeTab)) return;
     setActiveTab(defaultTab);
   }, [activeTab, defaultTab, tabs]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [tripId, firstEntryMode]);
 
   function handleSetupComplete(
     checklist: ChecklistItem[],
@@ -106,6 +113,8 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     });
     if (updatedTemplate) setTemplate(updatedTemplate);
     setSetupChoice(null);
+    setActiveTab("preparation");
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   function handleSkipPreparation() {
@@ -114,6 +123,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     });
     setSetupChoice("skip");
     setActiveTab("flight");
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   if (loading) return null;
