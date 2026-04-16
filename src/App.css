@@ -337,6 +337,14 @@ body {
   cursor: pointer;
 }
 
+.header-icon-btn.active {
+  color: var(--color-success);
+}
+
+.theme-dark .header-icon-btn.active {
+  color: #4ade80;
+}
+
 /* Identity badge - pill shape with text, matching kk-coincat */
 .identity-badge {
   font-size: 0.75rem;

@@ -5,7 +5,6 @@ import {
   faUsers,
   faShareNodes,
   faCircleCheck,
-  faPenToSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../context/AppContext";
 import { MemberMenu } from "../components/MemberMenu";
@@ -236,16 +235,13 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         <div className="flex items-center gap-1">
           {!viewOnly && (
             <>
-              {completed && <span className="status-badge">已完成</span>}
               {admin && (
                 <button
-                  className="header-icon-btn"
+                  className={`header-icon-btn ${completed ? "active" : ""}`}
                   onClick={toggleCompleted}
                   title={completed ? "取消完成" : "完成旅程"}
                 >
-                  <FontAwesomeIcon
-                    icon={completed ? faPenToSquare : faCircleCheck}
-                  />
+                  <FontAwesomeIcon icon={faCircleCheck} />
                 </button>
               )}
               <button
