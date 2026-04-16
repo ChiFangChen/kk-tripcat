@@ -101,6 +101,7 @@ export interface Hotel {
   guests?: string;
   googleMapUrl?: string;
   note?: string;
+  imageUrl?: string;
 }
 
 export interface ScheduleDay {
@@ -118,6 +119,7 @@ export interface ScheduleActivity {
   googleMapUrl?: string;
   booking?: BookingInfo;
   note?: string;
+  imageUrl?: string;
 }
 
 export interface TransportItem {
@@ -125,6 +127,7 @@ export interface TransportItem {
   title: string;
   content: string;
   isOpen: boolean;
+  imageUrl?: string;
 }
 
 export interface ShoppingItem {

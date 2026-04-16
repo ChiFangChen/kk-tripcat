@@ -1,41 +1,42 @@
-import { useState } from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons'
-import { useApp } from '../../context/AppContext'
-import { useDoubleTap } from '../../hooks/useDoubleTap'
-import { FullScreenModal } from '../../components/FullScreenModal'
-import { InfoRow } from '../../components/InfoRow'
-import { generateId } from '../../utils/id'
-import type { Hotel } from '../../types'
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { useApp } from "../../context/AppContext";
+import { useDoubleTap } from "../../hooks/useDoubleTap";
+import { FullScreenModal } from "../../components/FullScreenModal";
+import { InfoRow } from "../../components/InfoRow";
+import { ImageUpload } from "../../components/ImageUpload";
+import { generateId } from "../../utils/id";
+import type { Hotel } from "../../types";
 
 interface Props {
-  tripId: string
-  viewOnly?: boolean
+  tripId: string;
+  viewOnly?: boolean;
 }
 
 export function HotelTab({ tripId, viewOnly }: Props) {
-  const { setSharedTripData, getTripData } = useApp()
-  const tripData = getTripData(tripId)
-  const hotels = tripData.hotels
-  const [editing, setEditing] = useState<Hotel | null>(null)
-  const doubleTap = useDoubleTap()
+  const { setSharedTripData, getTripData } = useApp();
+  const tripData = getTripData(tripId);
+  const hotels = tripData.hotels;
+  const [editing, setEditing] = useState<Hotel | null>(null);
+  const doubleTap = useDoubleTap();
 
   function save(hotel: Hotel) {
-    const exists = hotels.find(h => h.id === hotel.id)
+    const exists = hotels.find((h) => h.id === hotel.id);
     const updated = exists
-      ? hotels.map(h => h.id === hotel.id ? hotel : h)
-      : [...hotels, hotel]
-    setSharedTripData(tripId, { hotels: updated })
-    setEditing(null)
+      ? hotels.map((h) => (h.id === hotel.id ? hotel : h))
+      : [...hotels, hotel];
+    setSharedTripData(tripId, { hotels: updated });
+    setEditing(null);
   }
 
   function remove(id: string) {
-    setSharedTripData(tripId, { hotels: hotels.filter(h => h.id !== id) })
-    setEditing(null)
+    setSharedTripData(tripId, { hotels: hotels.filter((h) => h.id !== id) });
+    setEditing(null);
   }
 
   function newHotel(): Hotel {
-    return { id: generateId(), name: '' }
+    return { id: generateId(), name: "" };
   }
 
   return (
@@ -43,45 +44,69 @@ export function HotelTab({ tripId, viewOnly }: Props) {
       <div className="flex justify-between items-center mb-4">
         <h2 className="font-semibold">飯店資訊</h2>
         {!viewOnly && (
-          <button className="btn-round-add" onClick={() => setEditing(newHotel())}>
+          <button
+            className="btn-round-add"
+            onClick={() => setEditing(newHotel())}
+          >
             <FontAwesomeIcon icon={faPlus} className="text-xs" />
           </button>
         )}
       </div>
 
       {hotels.length === 0 && (
-        <div className="empty-state"><p>尚無飯店資訊</p></div>
+        <div className="empty-state">
+          <p>尚無飯店資訊</p>
+        </div>
       )}
 
-      {hotels.map(hotel => (
+      {hotels.map((hotel) => (
         <div key={hotel.id} className="card">
           <h3
             className="font-semibold mb-2 cursor-pointer"
             onClick={doubleTap(hotel.id, () => !viewOnly && setEditing(hotel))}
           >
-            {hotel.name || '飯店'}
+            {hotel.name || "飯店"}
           </h3>
 
           {hotel.booking?.platform && (
-            <InfoRow label="訂房平台" value={
-              <div className="flex items-center gap-2">
-                <span>{hotel.booking.platform}{hotel.booking.orderNumber && ` ${hotel.booking.orderNumber}`}</span>
-                {hotel.booking.assignee && <span className="tag">{hotel.booking.assignee}</span>}
-              </div>
-            } />
+            <InfoRow
+              label="訂房平台"
+              value={
+                <div className="flex items-center gap-2">
+                  <span>
+                    {hotel.booking.platform}
+                    {hotel.booking.orderNumber &&
+                      ` ${hotel.booking.orderNumber}`}
+                  </span>
+                  {hotel.booking.assignee && (
+                    <span className="tag">{hotel.booking.assignee}</span>
+                  )}
+                </div>
+              }
+            />
           )}
           <InfoRow label="價格" value={hotel.booking?.amount} />
           {(hotel.address || hotel.googleMapUrl) && (
-            <InfoRow label="地址" value={
-              <div>
-                {hotel.address && <div className="break-all">{hotel.address}</div>}
-                {hotel.googleMapUrl && (
-                  <a href={hotel.googleMapUrl} target="_blank" rel="noopener noreferrer" className="map-link">
-                    📍 Google Map
-                  </a>
-                )}
-              </div>
-            } />
+            <InfoRow
+              label="地址"
+              value={
+                <div>
+                  {hotel.address && (
+                    <div className="break-all">{hotel.address}</div>
+                  )}
+                  {hotel.googleMapUrl && (
+                    <a
+                      href={hotel.googleMapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="map-link"
+                    >
+                      📍 Google Map
+                    </a>
+                  )}
+                </div>
+              }
+            />
           )}
           <InfoRow label="電話" value={hotel.phone} />
           <InfoRow label="入住" value={hotel.checkIn} />
@@ -89,47 +114,177 @@ export function HotelTab({ tripId, viewOnly }: Props) {
           <InfoRow label="房型" value={hotel.roomType} />
           <InfoRow label="人數" value={hotel.guests} />
           <InfoRow label="備註" value={hotel.booking?.note || hotel.note} />
+          {hotel.imageUrl && (
+            <img
+              src={hotel.imageUrl}
+              alt=""
+              className="w-full rounded-lg mt-3 max-h-56 object-cover"
+            />
+          )}
         </div>
       ))}
 
       {editing && (
-        <FullScreenModal title={editing.name ? '編輯飯店' : '新增飯店'} onClose={() => setEditing(null)}>
-          <HotelForm hotel={editing} onSave={save} onDelete={editing.name ? () => remove(editing.id) : undefined} />
+        <FullScreenModal
+          title={editing.name ? "編輯飯店" : "新增飯店"}
+          onClose={() => setEditing(null)}
+        >
+          <HotelForm
+            hotel={editing}
+            onSave={save}
+            onDelete={editing.name ? () => remove(editing.id) : undefined}
+          />
         </FullScreenModal>
       )}
     </div>
-  )
+  );
 }
 
-function HotelForm({ hotel, onSave, onDelete }: { hotel: Hotel; onSave: (h: Hotel) => void; onDelete?: () => void }) {
-  const [form, setForm] = useState(hotel)
-  const [booking, setBooking] = useState(hotel.booking || {})
+function HotelForm({
+  hotel,
+  onSave,
+  onDelete,
+}: {
+  hotel: Hotel;
+  onSave: (h: Hotel) => void;
+  onDelete?: () => void;
+}) {
+  const [form, setForm] = useState(hotel);
+  const [booking, setBooking] = useState(hotel.booking || {});
 
   function handleSave() {
-    onSave({ ...form, booking: Object.values(booking).some(v => v) ? booking : undefined })
+    onSave({
+      ...form,
+      booking: Object.values(booking).some((v) => v) ? booking : undefined,
+    });
   }
 
   return (
     <div>
-      <div className="form-group"><label className="form-label">飯店名稱</label><input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">訂房平台</label><input className="form-input" value={booking.platform || ''} onChange={e => setBooking({ ...booking, platform: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">訂單編號</label><input className="form-input" value={booking.orderNumber || ''} onChange={e => setBooking({ ...booking, orderNumber: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">負責人</label><input className="form-input" value={booking.assignee || ''} onChange={e => setBooking({ ...booking, assignee: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">價格</label><input className="form-input" value={booking.amount || ''} onChange={e => setBooking({ ...booking, amount: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">地址</label><input className="form-input" value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">Google Map 連結</label><input className="form-input" value={form.googleMapUrl || ''} onChange={e => setForm({ ...form, googleMapUrl: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">電話</label><input className="form-input" value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">入住時間</label><input className="form-input" value={form.checkIn || ''} onChange={e => setForm({ ...form, checkIn: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">退房時間</label><input className="form-input" value={form.checkOut || ''} onChange={e => setForm({ ...form, checkOut: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">房型</label><input className="form-input" value={form.roomType || ''} onChange={e => setForm({ ...form, roomType: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">人數</label><input className="form-input" value={form.guests || ''} onChange={e => setForm({ ...form, guests: e.target.value })} /></div>
-      <div className="form-group"><label className="form-label">備註</label><textarea className="form-input" value={form.note || ''} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
-      <button className="btn btn-primary w-full" onClick={handleSave}>儲存</button>
+      <div className="form-group">
+        <label className="form-label">飯店名稱</label>
+        <input
+          className="form-input"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">訂房平台</label>
+        <input
+          className="form-input"
+          value={booking.platform || ""}
+          onChange={(e) => setBooking({ ...booking, platform: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">訂單編號</label>
+        <input
+          className="form-input"
+          value={booking.orderNumber || ""}
+          onChange={(e) =>
+            setBooking({ ...booking, orderNumber: e.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">負責人</label>
+        <input
+          className="form-input"
+          value={booking.assignee || ""}
+          onChange={(e) => setBooking({ ...booking, assignee: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">價格</label>
+        <input
+          className="form-input"
+          value={booking.amount || ""}
+          onChange={(e) => setBooking({ ...booking, amount: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">地址</label>
+        <input
+          className="form-input"
+          value={form.address || ""}
+          onChange={(e) => setForm({ ...form, address: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Google Map 連結</label>
+        <input
+          className="form-input"
+          value={form.googleMapUrl || ""}
+          onChange={(e) => setForm({ ...form, googleMapUrl: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">電話</label>
+        <input
+          className="form-input"
+          value={form.phone || ""}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">入住時間</label>
+        <input
+          className="form-input"
+          value={form.checkIn || ""}
+          onChange={(e) => setForm({ ...form, checkIn: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">退房時間</label>
+        <input
+          className="form-input"
+          value={form.checkOut || ""}
+          onChange={(e) => setForm({ ...form, checkOut: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">房型</label>
+        <input
+          className="form-input"
+          value={form.roomType || ""}
+          onChange={(e) => setForm({ ...form, roomType: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">人數</label>
+        <input
+          className="form-input"
+          value={form.guests || ""}
+          onChange={(e) => setForm({ ...form, guests: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">備註</label>
+        <textarea
+          className="form-input"
+          value={form.note || ""}
+          onChange={(e) => setForm({ ...form, note: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <ImageUpload
+          imageUrl={form.imageUrl}
+          storagePath="tc-images/hotels"
+          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
+          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        />
+      </div>
+      <button className="btn btn-primary w-full" onClick={handleSave}>
+        儲存
+      </button>
       {onDelete && (
         <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
-          <FontAwesomeIcon icon={faTrash} className="mr-1" />刪除飯店
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />
+          刪除飯店
         </button>
       )}
     </div>
-  )
+  );
 }
