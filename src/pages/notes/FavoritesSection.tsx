@@ -87,7 +87,11 @@ export function FavoritesSection() {
                       {p.currency && <span className="text-slate-400 ml-1">{p.currency}</span>}
                       <span className="text-slate-400 ml-2">{formatDate(p.date)}</span>
                       {p.tripName && <span className="text-slate-400 ml-1">({p.tripName})</span>}
-                      {p.note && <span className="text-slate-400 ml-1">- {p.note}</span>}
+                      {p.note && (
+                        <span className="text-slate-400 ml-1 whitespace-pre-wrap">
+                          - {p.note}
+                        </span>
+                      )}
                     </div>
                     <button className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded" onClick={() => deletePurchase(fav.id, p.id)}>
                       <FontAwesomeIcon icon={faTrash} />
