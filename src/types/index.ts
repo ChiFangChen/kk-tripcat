@@ -62,6 +62,7 @@ export interface FlightInfo {
   airline: string;
   bookingCode?: string;
   ticketNumber?: string;
+  booking?: BookingInfo;
   memberPlan?: string;
   memberNumber?: string;
   ticketPrice?: string;
