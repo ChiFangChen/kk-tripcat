@@ -678,8 +678,7 @@ textarea.form-input {
 .flight-panel-card {
   margin-bottom: 14px;
   border-radius: 14px;
-  background: rgba(126, 200, 227, 0.08);
-  border: 1px solid rgba(126, 200, 227, 0.12);
+  background: rgba(126, 200, 227, 0.05);
   overflow: hidden;
 }
 
@@ -715,7 +714,6 @@ textarea.form-input {
   padding: 14px;
   background: rgba(126, 200, 227, 0.06);
   border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .theme-dark .flight-leg-card {
@@ -787,8 +785,8 @@ textarea.form-input {
 
 .flight-route-side-main {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
 }
 
 .flight-route-time {
@@ -810,6 +808,10 @@ textarea.form-input {
   align-items: center;
   gap: 6px;
   min-width: 132px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
 }
 
 .flight-route-line {
@@ -822,13 +824,6 @@ textarea.form-input {
     rgba(91, 168, 200, 0.85),
     rgba(126, 200, 227, 0.2)
   );
-}
-
-.flight-route-meta {
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  line-height: 1.4;
 }
 
 /* Got Ready floating button */
