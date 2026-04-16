@@ -826,6 +826,10 @@ textarea.form-input {
   );
 }
 
+.flight-route-duration {
+  font-size: 0.65rem;
+}
+
 /* Got Ready floating button */
 .get-ready-fab {
   position: fixed;
