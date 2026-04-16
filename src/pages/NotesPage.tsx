@@ -10,10 +10,10 @@ export function NotesPage() {
     <div>
       <div className="trip-tabs">
         <button className={`trip-tab ${activeTab === 'tips' ? 'active' : ''}`} onClick={() => setActiveTab('tips')}>
-          心得 & Tips
+          Experiences & Tips
         </button>
         <button className={`trip-tab ${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>
-          喜歡的東西
+          Liked
         </button>
       </div>
       <div className="page-container">

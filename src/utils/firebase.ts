@@ -40,6 +40,16 @@ export interface UserTripSnapshot {
   appVersion?: number;
 }
 
+export interface TipsSnapshot {
+  tips: TipNote[];
+  updatedAt?: string;
+}
+
+export interface FavoritesSnapshot {
+  favorites: FavoriteItem[];
+  updatedAt?: string;
+}
+
 export const APP_WRITE_VERSION = 2026041602;
 
 const firebaseConfig = {
@@ -354,13 +364,17 @@ export async function syncTemplate(
 export function subscribeToTips(
   db: Firestore,
   userId: string,
-  callback: (tips: TipNote[]) => void,
+  callback: (snapshot: TipsSnapshot) => void,
 ): () => void {
   return onSnapshot(doc(db, "tcTips", userId), (snapshot) => {
     if (snapshot.exists()) {
-      callback((snapshot.data() as { tips: TipNote[] }).tips || []);
+      const data = snapshot.data() as { tips?: TipNote[]; updatedAt?: string };
+      callback({
+        tips: data.tips || [],
+        updatedAt: getDocUpdatedAt(data),
+      });
     } else {
-      callback([]);
+      callback({ tips: [] });
     }
   });
 }
@@ -369,8 +383,9 @@ export async function syncTips(
   db: Firestore,
   userId: string,
   tips: TipNote[],
+  updatedAt: string,
 ): Promise<void> {
-  await setDoc(doc(db, "tcTips", userId), { tips });
+  await setDoc(doc(db, "tcTips", userId), { tips, updatedAt });
 }
 
 // --- Favorites per user ---
@@ -378,15 +393,20 @@ export async function syncTips(
 export function subscribeToFavorites(
   db: Firestore,
   userId: string,
-  callback: (favorites: FavoriteItem[]) => void,
+  callback: (snapshot: FavoritesSnapshot) => void,
 ): () => void {
   return onSnapshot(doc(db, "tcFavorites", userId), (snapshot) => {
     if (snapshot.exists()) {
-      callback(
-        (snapshot.data() as { favorites: FavoriteItem[] }).favorites || [],
-      );
+      const data = snapshot.data() as {
+        favorites?: FavoriteItem[];
+        updatedAt?: string;
+      };
+      callback({
+        favorites: data.favorites || [],
+        updatedAt: getDocUpdatedAt(data),
+      });
     } else {
-      callback([]);
+      callback({ favorites: [] });
     }
   });
 }
@@ -395,8 +415,9 @@ export async function syncFavorites(
   db: Firestore,
   userId: string,
   favorites: FavoriteItem[],
+  updatedAt: string,
 ): Promise<void> {
-  await setDoc(doc(db, "tcFavorites", userId), { favorites });
+  await setDoc(doc(db, "tcFavorites", userId), { favorites, updatedAt });
 }
 
 // --- Image Storage ---

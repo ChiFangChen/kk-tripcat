@@ -148,6 +148,14 @@ function getFavoritesStorageKey(userId: string) {
   return `favorites-${userId}`;
 }
 
+function getTipsUpdatedAtStorageKey(userId: string) {
+  return `tipsUpdatedAt-${userId}`;
+}
+
+function getFavoritesUpdatedAtStorageKey(userId: string) {
+  return `favoritesUpdatedAt-${userId}`;
+}
+
 function getUserTripDataStorageKey(userId: string) {
   return `userTripData-${userId}`;
 }
@@ -404,6 +412,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const userTripDataRef = useRef(state.userTripData);
   const syncedSharedTripDataRef = useRef(state.sharedTripData);
   const syncedUserTripDataRef = useRef(state.userTripData);
+  const tipsUpdatedAtRef = useRef<string | undefined>(
+    currentUserId
+      ? storage.getItem<string>(getTipsUpdatedAtStorageKey(currentUserId)) ||
+          undefined
+      : undefined,
+  );
+  const favoritesUpdatedAtRef = useRef<string | undefined>(
+    currentUserId
+      ? storage.getItem<string>(
+          getFavoritesUpdatedAtStorageKey(currentUserId),
+        ) || undefined
+      : undefined,
+  );
   const sharedTripUpdatedAtRef = useRef(
     storage.getItem<Record<string, string>>("sharedTripUpdatedAt") || {},
   );
@@ -416,6 +437,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const pendingSharedTripUpdatedAtRef = useRef<Record<string, string>>({});
   const pendingUserTripUpdatedAtRef = useRef<Record<string, string>>({});
+  const pendingTipsUpdatedAtRef = useRef<string | undefined>(undefined);
+  const pendingFavoritesUpdatedAtRef = useRef<string | undefined>(undefined);
   const versionBlockedTripIdsRef = useRef<Set<string>>(new Set());
 
   // Parse viewTripId from URL once
@@ -474,6 +497,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       userTripDataRef.current = {};
       syncedUserTripDataRef.current = {};
       userTripUpdatedAtRef.current = {};
+      tipsUpdatedAtRef.current = undefined;
+      favoritesUpdatedAtRef.current = undefined;
+      pendingTipsUpdatedAtRef.current = undefined;
+      pendingFavoritesUpdatedAtRef.current = undefined;
       return;
     }
 
@@ -501,6 +528,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       type: "SET_TIPS",
       tips: storage.getItem<TipNote[]>(getTipsStorageKey(currentUserId)) || [],
     });
+    tipsUpdatedAtRef.current =
+      storage.getItem<string>(getTipsUpdatedAtStorageKey(currentUserId)) ||
+      undefined;
     rawDispatch({
       type: "SET_FAVORITES",
       favorites:
@@ -508,6 +538,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           getFavoritesStorageKey(currentUserId),
         ) || [],
     });
+    favoritesUpdatedAtRef.current =
+      storage.getItem<string>(getFavoritesUpdatedAtStorageKey(currentUserId)) ||
+      undefined;
   }, [currentUserId]);
 
   const persistSharedTripCache = useCallback(
@@ -611,13 +644,68 @@ export function AppProvider({ children }: { children: ReactNode }) {
         storage.setItem(getTemplateStorageKey(userId), defaultTemplate);
       }
     });
-    const unsub2 = subscribeToTips(db, userId, (tips) => {
-      rawDispatch({ type: "SET_TIPS", tips });
-      storage.setItem(getTipsStorageKey(userId), tips);
+    const unsub2 = subscribeToTips(db, userId, (snapshot) => {
+      const pendingUpdatedAt = pendingTipsUpdatedAtRef.current;
+      if (
+        pendingUpdatedAt &&
+        (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
+      ) {
+        return;
+      }
+      if (
+        !shouldApplyIncomingSnapshot(
+          tipsUpdatedAtRef.current,
+          snapshot.updatedAt,
+        )
+      ) {
+        return;
+      }
+      if (
+        pendingUpdatedAt &&
+        snapshot.updatedAt &&
+        snapshot.updatedAt >= pendingUpdatedAt
+      ) {
+        pendingTipsUpdatedAtRef.current = undefined;
+      }
+      rawDispatch({ type: "SET_TIPS", tips: snapshot.tips });
+      storage.setItem(getTipsStorageKey(userId), snapshot.tips);
+      if (snapshot.updatedAt) {
+        tipsUpdatedAtRef.current = snapshot.updatedAt;
+        storage.setItem(getTipsUpdatedAtStorageKey(userId), snapshot.updatedAt);
+      }
     });
-    const unsub3 = subscribeToFavorites(db, userId, (favorites) => {
-      rawDispatch({ type: "SET_FAVORITES", favorites });
-      storage.setItem(getFavoritesStorageKey(userId), favorites);
+    const unsub3 = subscribeToFavorites(db, userId, (snapshot) => {
+      const pendingUpdatedAt = pendingFavoritesUpdatedAtRef.current;
+      if (
+        pendingUpdatedAt &&
+        (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
+      ) {
+        return;
+      }
+      if (
+        !shouldApplyIncomingSnapshot(
+          favoritesUpdatedAtRef.current,
+          snapshot.updatedAt,
+        )
+      ) {
+        return;
+      }
+      if (
+        pendingUpdatedAt &&
+        snapshot.updatedAt &&
+        snapshot.updatedAt >= pendingUpdatedAt
+      ) {
+        pendingFavoritesUpdatedAtRef.current = undefined;
+      }
+      rawDispatch({ type: "SET_FAVORITES", favorites: snapshot.favorites });
+      storage.setItem(getFavoritesStorageKey(userId), snapshot.favorites);
+      if (snapshot.updatedAt) {
+        favoritesUpdatedAtRef.current = snapshot.updatedAt;
+        storage.setItem(
+          getFavoritesUpdatedAtStorageKey(userId),
+          snapshot.updatedAt,
+        );
+      }
     });
     return () => {
       unsub1();
@@ -824,6 +912,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       storage.setItem(getTemplateStorageKey(currentUserId), state.template);
       storage.setItem(getTipsStorageKey(currentUserId), state.tips);
       storage.setItem(getFavoritesStorageKey(currentUserId), state.favorites);
+      if (tipsUpdatedAtRef.current) {
+        storage.setItem(
+          getTipsUpdatedAtStorageKey(currentUserId),
+          tipsUpdatedAtRef.current,
+        );
+      }
+      if (favoritesUpdatedAtRef.current) {
+        storage.setItem(
+          getFavoritesUpdatedAtStorageKey(currentUserId),
+          favoritesUpdatedAtRef.current,
+        );
+      }
       storage.setItem(
         getUserTripDataStorageKey(currentUserId),
         state.userTripData,
@@ -837,14 +937,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Sync tips/favorites to Firebase when they change
     if (firebaseConnected && dbRef.current && state.auth.currentUser) {
       if (state.tips !== prevTipsRef.current) {
-        syncTips(dbRef.current, state.auth.currentUser.id, state.tips);
+        const updatedAt = new Date().toISOString();
+        pendingTipsUpdatedAtRef.current = updatedAt;
+        tipsUpdatedAtRef.current = updatedAt;
+        syncTips(
+          dbRef.current,
+          state.auth.currentUser.id,
+          state.tips,
+          updatedAt,
+        ).catch(() => {
+          if (pendingTipsUpdatedAtRef.current !== updatedAt) return;
+          pendingTipsUpdatedAtRef.current = undefined;
+        });
       }
       if (state.favorites !== prevFavoritesRef.current) {
+        const updatedAt = new Date().toISOString();
+        pendingFavoritesUpdatedAtRef.current = updatedAt;
+        favoritesUpdatedAtRef.current = updatedAt;
         syncFavorites(
           dbRef.current,
           state.auth.currentUser.id,
           state.favorites,
-        );
+          updatedAt,
+        ).catch(() => {
+          if (pendingFavoritesUpdatedAtRef.current !== updatedAt) return;
+          pendingFavoritesUpdatedAtRef.current = undefined;
+        });
       }
     }
     prevTipsRef.current = state.tips;
