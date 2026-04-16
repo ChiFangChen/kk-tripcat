@@ -22,7 +22,7 @@ export function InfoRow({ label, value, isLink }: Props) {
           {value}
         </a>
       ) : (
-        <div className="info-value break-all">{value}</div>
+        <div className="info-value break-all whitespace-pre-wrap">{value}</div>
       )}
     </div>
   );
