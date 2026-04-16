@@ -70,6 +70,7 @@ export interface UserTripData {
   preparationNotes: string;
   setupComplete?: boolean;
   skipPreparation?: boolean;
+  gotReady?: boolean;
 }
 
 // Combined for backward compat
@@ -132,6 +133,7 @@ const emptyUser: UserTripData = {
   shopping: [],
   preparationNotes: "",
   skipPreparation: false,
+  gotReady: false,
 };
 
 function getTemplateStorageKey(userId: string) {
@@ -366,6 +368,12 @@ function loadInitialState(): AppState {
       userTripData[tripId] = {
         ...userTripData[tripId],
         skipPreparation: false,
+      };
+    }
+    if (data.gotReady === undefined) {
+      userTripData[tripId] = {
+        ...userTripData[tripId],
+        gotReady: false,
       };
     }
   }

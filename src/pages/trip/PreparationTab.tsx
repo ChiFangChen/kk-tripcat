@@ -20,9 +20,8 @@ interface Props {
 }
 
 export function PreparationTab({ tripId, viewOnly }: Props) {
-  const { state, updateTrip, setUserTripData, getTripData } = useApp();
+  const { setUserTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
-  const trip = state.trips.find((t) => t.id === tripId);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null);
@@ -152,8 +151,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
       if (fabTimer.current) clearTimeout(fabTimer.current);
       fabTimer.current = setTimeout(() => setFabExpanded(false), 3000);
     } else {
-      if (!trip) return;
-      updateTrip(trip, { gotReady: !trip.gotReady });
+      setUserTripData(tripId, { gotReady: !tripData.gotReady });
       setFabExpanded(false);
       if (fabTimer.current) clearTimeout(fabTimer.current);
     }
@@ -190,10 +188,10 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
           onClick={handleFabClick}
         >
           <FontAwesomeIcon
-            icon={trip?.gotReady ? faCircleCheck : faSuitcaseRolling}
+            icon={tripData.gotReady ? faCircleCheck : faSuitcaseRolling}
           />
           {fabExpanded && (
-            <span>{trip?.gotReady ? "取消準備" : "Got Ready!"}</span>
+            <span>{tripData.gotReady ? "取消準備" : "Got Ready!"}</span>
           )}
         </button>
       )}

@@ -102,6 +102,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       preparationNotes: notes,
       setupComplete: true,
       skipPreparation: false,
+      gotReady: false,
     });
     if (updatedTemplate) setTemplate(updatedTemplate);
     setSetupChoice(null);
@@ -214,7 +215,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const orderedTabs =
     viewOnly || tripData.skipPreparation
       ? tabs
-      : trip.gotReady
+      : tripData.gotReady
         ? [
             ...tabs.filter((tab) => tab.key !== "preparation"),
             tabs.find((tab) => tab.key === "preparation")!,
@@ -278,7 +279,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         {orderedTabs.map((tab) => (
           <button
             key={tab.key}
-            className={`trip-tab ${activeTab === tab.key ? "active" : ""}${tab.key === "preparation" && trip.gotReady ? " ready" : ""}`}
+            className={`trip-tab ${activeTab === tab.key ? "active" : ""}${tab.key === "preparation" && tripData.gotReady ? " ready" : ""}`}
             onClick={() => setActiveTab(tab.key)}
           >
             {tab.label}
