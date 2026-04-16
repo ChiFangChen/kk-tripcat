@@ -427,15 +427,18 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             label="金額"
             value={selectedActivity.activity.booking?.amount}
           />
-          <InfoRow
-            label="備註"
-            value={
-              <div className="schedule-note-text">
-                {selectedActivity.activity.note ||
-                  selectedActivity.activity.booking?.note}
-              </div>
-            }
-          />
+          {(selectedActivity.activity.note ||
+            selectedActivity.activity.booking?.note) && (
+            <InfoRow
+              label="備註"
+              value={
+                <div className="schedule-note-text">
+                  {selectedActivity.activity.note ||
+                    selectedActivity.activity.booking?.note}
+                </div>
+              }
+            />
+          )}
           {selectedActivity.activity.imageUrl && (
             <img
               src={selectedActivity.activity.imageUrl}
