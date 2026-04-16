@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
-  faPen,
   faTrash,
   faChevronDown,
   faChevronUp,
@@ -56,6 +55,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 
   // Schedule notes state
   const [editingNote, setEditingNote] = useState<ScheduleNote | null>(null);
+  const [selectedNote, setSelectedNote] = useState<ScheduleNote | null>(null);
   const [showAddNote, setShowAddNote] = useState(false);
   const detailDoubleTap = useDoubleTap();
 
@@ -146,6 +146,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
       scheduleNotes: scheduleNotes.filter((n) => n.id !== id),
     });
     setEditingNote(null);
+    setSelectedNote(null);
   }
 
   return (
@@ -271,25 +272,13 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
         </div>
       ) : (
         scheduleNotes.map((note) => (
-          <div key={note.id} className="card">
+          <div
+            key={note.id}
+            className="card cursor-pointer"
+            onClick={() => setSelectedNote(note)}
+          >
             <div className="flex justify-between items-center mb-1">
               <h3 className="font-semibold text-sm">{note.title}</h3>
-              {!viewOnly && (
-                <div className="flex gap-2">
-                  <button
-                    className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                    onClick={() => setEditingNote(note)}
-                  >
-                    <FontAwesomeIcon icon={faPen} />
-                  </button>
-                  <button
-                    className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                    onClick={() => deleteNote(note.id)}
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                </div>
-              )}
             </div>
             <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">
               {note.content}
@@ -459,6 +448,65 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
         </FullScreenModal>
       )}
 
+      {selectedNote && (
+        <Modal
+          title={
+            !viewOnly ? (
+              <button
+                className="schedule-detail-title-btn"
+                onClick={detailDoubleTap("schedule-note-detail-title", () => {
+                  setEditingNote(selectedNote);
+                  setSelectedNote(null);
+                })}
+              >
+                {selectedNote.title || "行程筆記"}
+              </button>
+            ) : (
+              selectedNote.title || "行程筆記"
+            )
+          }
+          onClose={() => setSelectedNote(null)}
+        >
+          <InfoRow
+            label="內容"
+            value={
+              <div className="schedule-note-text">{selectedNote.content}</div>
+            }
+          />
+          {(selectedNote.address || selectedNote.googleMapUrl) && (
+            <InfoRow
+              label="地址"
+              value={
+                <div>
+                  {selectedNote.address && (
+                    <div className="break-all schedule-note-text">
+                      {selectedNote.address}
+                    </div>
+                  )}
+                  {selectedNote.googleMapUrl && (
+                    <a
+                      href={selectedNote.googleMapUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="map-link"
+                    >
+                      📍 Google Map
+                    </a>
+                  )}
+                </div>
+              }
+            />
+          )}
+          {selectedNote.imageUrl && (
+            <img
+              src={selectedNote.imageUrl}
+              alt=""
+              className="w-full rounded-lg mt-2 max-h-64 object-cover"
+            />
+          )}
+        </Modal>
+      )}
+
       {/* Add schedule note */}
       {showAddNote && (
         <FullScreenModal
@@ -478,7 +526,11 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           title="編輯行程筆記"
           onClose={() => setEditingNote(null)}
         >
-          <NoteForm note={editingNote} onSave={saveNote} />
+          <NoteForm
+            note={editingNote}
+            onSave={saveNote}
+            onDelete={() => deleteNote(editingNote.id)}
+          />
         </FullScreenModal>
       )}
     </div>
@@ -649,9 +701,11 @@ function DayForm({
 function NoteForm({
   note,
   onSave,
+  onDelete,
 }: {
   note: ScheduleNote;
   onSave: (n: ScheduleNote) => void;
+  onDelete?: () => void;
 }) {
   const [form, setForm] = useState(note);
 
@@ -702,6 +756,12 @@ function NoteForm({
       <button className="btn btn-primary w-full" onClick={() => onSave(form)}>
         儲存
       </button>
+      {onDelete && note.title && (
+        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />
+          刪除筆記
+        </button>
+      )}
     </div>
   );
 }
