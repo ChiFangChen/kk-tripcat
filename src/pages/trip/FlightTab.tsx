@@ -232,12 +232,9 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                     airport={departure}
                   />
                   <div className="flight-route-center">
+                    <div>{formatDate(leg.date)}</div>
                     <div className="flight-route-line" />
-                    <div className="flight-route-meta">
-                      <div>{formatDate(leg.date)}</div>
-                      <div>{getFlightNumberLabel(leg)}</div>
-                      {leg.duration && <div>{leg.duration}</div>}
-                    </div>
+                    {leg.duration && <div>{leg.duration}</div>}
                   </div>
                   <AirportSide
                     time={formatFlightTime(leg.arrivalTime)}
@@ -256,7 +253,6 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                     label="抵達機場"
                     value={<AirportNameWithTerminal airport={arrival} />}
                   />
-                  <InfoRow label="飛行時間" value={leg.duration} />
                   <InfoRow label="餐點" value={leg.meal} />
                   <InfoRow label="座位" value={leg.seat} />
                 </div>
@@ -368,7 +364,9 @@ function AirportSide({
     <div className={`flight-route-side ${align === "right" ? "arrival" : ""}`}>
       <div className="flight-route-side-main">
         <span className="flight-route-time">{time}</span>
-        {airport.code && <span className="flight-route-code">{airport.code}</span>}
+        {airport.code && (
+          <span className="flight-route-code">{airport.code}</span>
+        )}
       </div>
     </div>
   );
@@ -470,7 +468,10 @@ function FlightForm({
         </button>
       </div>
       {onDelete && (
-        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除航班
         </button>
@@ -654,7 +655,10 @@ function LegForm({
         </button>
       </div>
       {onDelete && (
-        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除航段
         </button>
