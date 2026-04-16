@@ -144,14 +144,9 @@ export function FlightTab({ tripId, viewOnly }: Props) {
               </h3>
               {(flight.memberPlan || flight.memberNumber) && (
                 <div className="flight-card-meta">
-                  {flight.memberPlan && (
+                  {(flight.memberPlan || flight.memberNumber) && (
                     <span className="flight-meta-chip">
-                      {flight.memberPlan}
-                    </span>
-                  )}
-                  {flight.memberNumber && (
-                    <span className="flight-meta-chip">
-                      {flight.memberNumber}
+                      {`${flight.memberPlan && flight.memberPlan} ${flight.memberNumber && flight.memberNumber}`}
                     </span>
                   )}
                 </div>
@@ -362,10 +357,10 @@ function AirportSide({
   return (
     <div className={`flight-route-side ${align === "right" ? "arrival" : ""}`}>
       <div className="flight-route-side-main">
-        <span className="flight-route-time">{time}</span>
         {airport.code && (
           <span className="flight-route-code">{airport.code}</span>
         )}
+        <span className="flight-route-time">{time}</span>
       </div>
     </div>
   );
@@ -412,69 +407,14 @@ function FlightForm({
             onChange={(e) => setForm({ ...form, bookingCode: e.target.value })}
           />
         </div>
-        <div className="form-group flex-1">
-          <label className="form-label">票價</label>
+        <div className="form-group">
+          <label className="form-label">機票號碼</label>
           <input
             className="form-input"
-            value={form.ticketPrice || ""}
-            onChange={(e) => setForm({ ...form, ticketPrice: e.target.value })}
+            value={form.ticketNumber || ""}
+            onChange={(e) => setForm({ ...form, ticketNumber: e.target.value })}
           />
         </div>
-      </div>
-      <div className="form-group">
-        <label className="form-label">機票號碼</label>
-        <input
-          className="form-input"
-          value={form.ticketNumber || ""}
-          onChange={(e) => setForm({ ...form, ticketNumber: e.target.value })}
-        />
-      </div>
-      <div className="form-group">
-        <label className="form-label">平台</label>
-        <input
-          className="form-input"
-          value={booking.platform || ""}
-          onChange={(e) => setBooking({ ...booking, platform: e.target.value })}
-        />
-      </div>
-      <div className="form-row">
-        <div className="form-group flex-1">
-          <label className="form-label">票價</label>
-          <input
-            className="form-input"
-            value={form.ticketPrice || ""}
-            onChange={(e) => setForm({ ...form, ticketPrice: e.target.value })}
-          />
-        </div>
-        <div className="form-group flex-1">
-          <label className="form-label">訂位代號</label>
-          <input
-            className="form-input"
-            value={form.bookingCode || ""}
-            onChange={(e) => setForm({ ...form, bookingCode: e.target.value })}
-          />
-        </div>
-      </div>
-      <div className="form-row">
-        <div className="form-group flex-1">
-          <label className="form-label">負責人</label>
-          <input
-            className="form-input"
-            value={booking.assignee || ""}
-            onChange={(e) =>
-              setBooking({ ...booking, assignee: e.target.value })
-            }
-          />
-        </div>
-        <div className="form-group flex-1" />
-      </div>
-      <div className="form-group">
-        <label className="form-label">票務備註</label>
-        <textarea
-          className="form-input"
-          value={booking.note || ""}
-          onChange={(e) => setBooking({ ...booking, note: e.target.value })}
-        />
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
@@ -493,6 +433,43 @@ function FlightForm({
             onChange={(e) => setForm({ ...form, memberNumber: e.target.value })}
           />
         </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">平台</label>
+        <input
+          className="form-input"
+          value={booking.platform || ""}
+          onChange={(e) => setBooking({ ...booking, platform: e.target.value })}
+        />
+      </div>
+      <div className="form-row">
+        <div className="form-group flex-1">
+          <label className="form-label">負責人</label>
+          <input
+            className="form-input"
+            value={booking.assignee || ""}
+            onChange={(e) =>
+              setBooking({ ...booking, assignee: e.target.value })
+            }
+          />
+        </div>
+        <div className="form-group flex-1" />
+      </div>
+      <div className="form-group flex-1">
+        <label className="form-label">票價</label>
+        <input
+          className="form-input"
+          value={form.ticketPrice || ""}
+          onChange={(e) => setForm({ ...form, ticketPrice: e.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">票務備註</label>
+        <textarea
+          className="form-input"
+          value={booking.note || ""}
+          onChange={(e) => setBooking({ ...booking, note: e.target.value })}
+        />
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
