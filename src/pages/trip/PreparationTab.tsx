@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleCheck,
@@ -25,6 +25,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null);
+  const [fabExpanded, setFabExpanded] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState("");
   const doubleTap = useDoubleTap();
@@ -142,9 +143,27 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
     setEditingItem(null);
   }
 
-  function handleFabClick() {
+  function openFab() {
+    setFabExpanded(true);
+  }
+
+  function closeFab() {
+    setFabExpanded(false);
+  }
+
+  function handleFabToggle() {
+    if (viewOnly) return;
+    if (fabExpanded) {
+      closeFab();
+      return;
+    }
+    openFab();
+  }
+
+  function handleFabConfirm() {
     if (viewOnly) return;
     setUserTripData(tripId, { gotReady: !tripData.gotReady });
+    closeFab();
   }
 
   function openEditNotes() {
@@ -161,14 +180,32 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
 
   return (
     <div>
+      {fabExpanded && !viewOnly && (
+        <div className="fixed inset-0 z-30" onClick={closeFab} />
+      )}
+
       {/* Got Ready FAB */}
       {!viewOnly && (
-        <button className="got-ready-fab" onClick={handleFabClick}>
-          <FontAwesomeIcon
-            icon={tripData.gotReady ? faCircleCheck : faSuitcaseRolling}
-          />
-          <span>{tripData.gotReady ? "取消準備" : "Get Ready!"}</span>
-        </button>
+        <div className={`get-ready-fab ${fabExpanded ? "expanded" : ""}`}>
+          <button
+            className="got-ready-fab-icon"
+            onClick={handleFabToggle}
+            type="button"
+          >
+            <FontAwesomeIcon
+              icon={tripData.gotReady ? faCircleCheck : faSuitcaseRolling}
+            />
+          </button>
+          {fabExpanded && (
+            <button
+              className="got-ready-fab-label"
+              onClick={handleFabConfirm}
+              type="button"
+            >
+              {tripData.gotReady ? "Cancel Ready" : "Get Ready!"}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Notes block - double tap title to edit */}
@@ -539,11 +576,7 @@ function EditItemForm({
         儲存
       </button>
       <div className="form-actions">
-        <button
-          className="btn btn-secondary"
-          onClick={onCancel}
-          type="button"
-        >
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
         <button

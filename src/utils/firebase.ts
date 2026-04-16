@@ -75,6 +75,7 @@ export function normalizeUserTripData(
     preparationNotes: data?.preparationNotes || "",
     setupComplete: data?.setupComplete,
     skipPreparation: data?.skipPreparation ?? false,
+    gotReady: data?.gotReady ?? false,
   };
 }
 
@@ -267,13 +268,15 @@ export function subscribeToUserTripData(
       // and initialize skipPreparation for older documents.
       if (
         (!normalized.setupComplete && normalized.checklist.length > 0) ||
-        data.skipPreparation === undefined
+        data.skipPreparation === undefined ||
+        data.gotReady === undefined
       ) {
         const migrated = {
           ...normalized,
           setupComplete:
             normalized.setupComplete || normalized.checklist.length > 0,
           skipPreparation: normalized.skipPreparation ?? false,
+          gotReady: normalized.gotReady ?? false,
           updatedAt: updatedAt ?? new Date().toISOString(),
         };
         setDoc(docRef, migrated, { merge: true });
