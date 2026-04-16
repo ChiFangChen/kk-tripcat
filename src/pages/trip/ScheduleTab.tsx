@@ -57,6 +57,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
   // Schedule notes state
   const [editingNote, setEditingNote] = useState<ScheduleNote | null>(null);
   const [showAddNote, setShowAddNote] = useState(false);
+  const detailDoubleTap = useDoubleTap();
 
   useEffect(() => {
     storage.setItem(collapsedStorageKey, collapsedDays);
@@ -360,7 +361,21 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
       {/* Activity detail modal - place above time, note only here, map aligned with address */}
       {selectedActivity && (
         <Modal
-          title={selectedActivity.activity.name || "活動"}
+          title={
+            !viewOnly ? (
+              <button
+                className="schedule-detail-title-btn"
+                onClick={detailDoubleTap("activity-detail-title", () => {
+                  setEditingActivity(selectedActivity);
+                  setSelectedActivity(null);
+                })}
+              >
+                {selectedActivity.activity.name || "活動"}
+              </button>
+            ) : (
+              selectedActivity.activity.name || "活動"
+            )
+          }
           onClose={() => setSelectedActivity(null)}
         >
           <InfoRow label="地點" value={selectedActivity.activity.place} />
@@ -416,36 +431,12 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           <InfoRow
             label="備註"
             value={
-              selectedActivity.activity.note ||
-              selectedActivity.activity.booking?.note
+              <div className="schedule-note-text">
+                {selectedActivity.activity.note ||
+                  selectedActivity.activity.booking?.note}
+              </div>
             }
           />
-          {!viewOnly && (
-            <div className="flex gap-2 mt-4">
-              <button
-                className="btn btn-primary flex-1"
-                onClick={() => {
-                  setEditingActivity(selectedActivity);
-                  setSelectedActivity(null);
-                }}
-              >
-                <FontAwesomeIcon icon={faPen} className="mr-1" />
-                編輯
-              </button>
-              <button
-                className="btn btn-secondary flex-1"
-                onClick={() =>
-                  deleteActivity(
-                    selectedActivity.dayIndex,
-                    selectedActivity.activity.id,
-                  )
-                }
-              >
-                <FontAwesomeIcon icon={faTrash} className="mr-1" />
-                刪除
-              </button>
-            </div>
-          )}
         </Modal>
       )}
 
@@ -458,6 +449,12 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           <ActivityForm
             activity={editingActivity.activity}
             onSave={(a) => saveActivity(editingActivity.dayIndex, a)}
+            onDelete={() =>
+              deleteActivity(
+                editingActivity.dayIndex,
+                editingActivity.activity.id,
+              )
+            }
           />
         </FullScreenModal>
       )}
@@ -491,9 +488,11 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 function ActivityForm({
   activity,
   onSave,
+  onDelete,
 }: {
   activity: ScheduleActivity;
   onSave: (a: ScheduleActivity) => void;
+  onDelete?: () => void;
 }) {
   const [form, setForm] = useState(activity);
   const [booking, setBooking] = useState<BookingInfo>(activity.booking || {});
@@ -592,6 +591,12 @@ function ActivityForm({
       <button className="btn btn-primary w-full" onClick={handleSave}>
         儲存
       </button>
+      {onDelete && activity.name && (
+        <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />
+          刪除活動
+        </button>
+      )}
     </div>
   );
 }

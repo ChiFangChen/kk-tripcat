@@ -133,6 +133,18 @@ const emptyUser: UserTripData = {
   skipPreparation: false,
 };
 
+function getTemplateStorageKey(userId: string) {
+  return `template-${userId}`;
+}
+
+function getTipsStorageKey(userId: string) {
+  return `tips-${userId}`;
+}
+
+function getFavoritesStorageKey(userId: string) {
+  return `favorites-${userId}`;
+}
+
 const WRITE_BLOCKED_ACTIONS = new Set<Action["type"]>([
   "ADD_USER",
   "UPDATE_USER",
@@ -310,9 +322,17 @@ const AppContext = createContext<AppContextType | null>(null);
 function loadInitialState(): AppState {
   const currentUser = storage.loadAuth();
   const trips = storage.getItem<Trip[]>("trips") || [];
-  const template = storage.getItem<Template>("template") || defaultTemplate;
-  const tips = storage.getItem<TipNote[]>("tips") || [];
-  const favorites = storage.getItem<FavoriteItem[]>("favorites") || [];
+  const template = currentUser
+    ? storage.getItem<Template>(getTemplateStorageKey(currentUser.id)) ||
+      defaultTemplate
+    : defaultTemplate;
+  const tips = currentUser
+    ? storage.getItem<TipNote[]>(getTipsStorageKey(currentUser.id)) || []
+    : [];
+  const favorites = currentUser
+    ? storage.getItem<FavoriteItem[]>(getFavoritesStorageKey(currentUser.id)) ||
+      []
+    : [];
   const users = storage.getItem<User[]>("users") || [];
 
   const sharedTripData =
@@ -375,6 +395,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const firebaseConnected = dbReady && isOnline;
+  const currentUserId = state.auth.currentUser?.id;
 
   const dispatch = useCallback(
     (action: Action) => {
@@ -414,6 +435,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     userTripDataRef.current = state.userTripData;
   }, [state.userTripData]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      rawDispatch({ type: "SET_TEMPLATE", template: defaultTemplate });
+      rawDispatch({ type: "SET_TIPS", tips: [] });
+      rawDispatch({ type: "SET_FAVORITES", favorites: [] });
+      return;
+    }
+
+    rawDispatch({
+      type: "SET_TEMPLATE",
+      template:
+        storage.getItem<Template>(getTemplateStorageKey(currentUserId)) ||
+        defaultTemplate,
+    });
+    rawDispatch({
+      type: "SET_TIPS",
+      tips: storage.getItem<TipNote[]>(getTipsStorageKey(currentUserId)) || [],
+    });
+    rawDispatch({
+      type: "SET_FAVORITES",
+      favorites:
+        storage.getItem<FavoriteItem[]>(
+          getFavoritesStorageKey(currentUserId),
+        ) || [],
+    });
+  }, [currentUserId]);
 
   const persistSharedTripCache = useCallback(
     (tripId: string, data: SharedTripData, updatedAt?: string) => {
@@ -503,19 +551,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const unsub1 = subscribeToTemplate(db, userId, (template) => {
       if (template) {
         rawDispatch({ type: "SET_TEMPLATE", template });
-        storage.setItem("template", template);
+        storage.setItem(getTemplateStorageKey(userId), template);
       } else {
         rawDispatch({ type: "SET_TEMPLATE", template: defaultTemplate });
-        storage.setItem("template", defaultTemplate);
+        storage.setItem(getTemplateStorageKey(userId), defaultTemplate);
       }
     });
     const unsub2 = subscribeToTips(db, userId, (tips) => {
       rawDispatch({ type: "SET_TIPS", tips });
-      storage.setItem("tips", tips);
+      storage.setItem(getTipsStorageKey(userId), tips);
     });
     const unsub3 = subscribeToFavorites(db, userId, (favorites) => {
       rawDispatch({ type: "SET_FAVORITES", favorites });
-      storage.setItem("favorites", favorites);
+      storage.setItem(getFavoritesStorageKey(userId), favorites);
     });
     return () => {
       unsub1();
@@ -718,9 +766,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     storage.setItem("users", state.users);
     storage.setItem("trips", state.trips);
-    storage.setItem("template", state.template);
-    storage.setItem("tips", state.tips);
-    storage.setItem("favorites", state.favorites);
+    if (currentUserId) {
+      storage.setItem(getTemplateStorageKey(currentUserId), state.template);
+      storage.setItem(getTipsStorageKey(currentUserId), state.tips);
+      storage.setItem(getFavoritesStorageKey(currentUserId), state.favorites);
+    }
 
     // Sync tips/favorites to Firebase when they change
     if (firebaseConnected && dbRef.current && state.auth.currentUser) {
@@ -743,7 +793,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     state.template,
     state.tips,
     state.favorites,
-    state.auth.currentUser,
+    currentUserId,
     firebaseConnected,
   ]);
 
@@ -798,6 +848,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_TEMPLATE", template });
     if (dbRef.current && state.auth.currentUser) {
       syncTemplate(dbRef.current, state.auth.currentUser.id, template);
+      storage.setItem(
+        getTemplateStorageKey(state.auth.currentUser.id),
+        template,
+      );
     }
   }
 
