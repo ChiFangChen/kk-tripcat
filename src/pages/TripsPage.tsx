@@ -7,8 +7,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../context/AppContext";
 import { TemplateSelector } from "../components/TemplateSelector";
-import { FullScreenModal } from "../components/FullScreenModal";
-import { useDoubleTap } from "../hooks/useDoubleTap";
 import { generateId } from "../utils/id";
 import { formatDate } from "../utils/date";
 import type { Trip, TripType, ChecklistItem, Template } from "../types";
@@ -30,15 +28,12 @@ export function TripsPage({ onSelectTrip }: Props) {
   const {
     state,
     addTrip,
-    updateTrip,
     setTemplate,
     setSharedTripData,
     setUserTripData,
     getUserColor,
   } = useApp();
   const [step, setStep] = useState<Step>("list");
-  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
-  const doubleTap = useDoubleTap();
 
   // Stored from template selection step
   const [pendingChecklist, setPendingChecklist] = useState<ChecklistItem[]>([]);
@@ -126,11 +121,6 @@ export function TripsPage({ onSelectTrip }: Props) {
     setPendingNotes("");
     setStep("list");
     onSelectTrip(tripId);
-  }
-
-  function handleUpdateTrip(updatedTrip: Trip) {
-    updateTrip(updatedTrip);
-    setEditingTrip(null);
   }
 
   // === TEMPLATE SELECTION STEP ===
@@ -257,12 +247,7 @@ export function TripsPage({ onSelectTrip }: Props) {
             className="card !p-3 cursor-pointer"
             onClick={() => onSelectTrip(trip.id)}
           >
-            <div
-              className="flex items-center justify-between"
-              onClick={doubleTap(`trip-summary-${trip.id}`, () =>
-                setEditingTrip(trip),
-              )}
-            >
+            <div className="flex items-center justify-between">
               <h3 className="font-semibold text-base">{trip.name}</h3>
               <span className="text-xs text-slate-400">
                 {formatTripDateRange(trip.startDate, trip.endDate)}
@@ -301,98 +286,6 @@ export function TripsPage({ onSelectTrip }: Props) {
           </div>
         ))
       )}
-
-      {editingTrip && (
-        <FullScreenModal title="編輯旅程" onClose={() => setEditingTrip(null)}>
-          <TripEditForm
-            trip={editingTrip}
-            onSave={handleUpdateTrip}
-            onCancel={() => setEditingTrip(null)}
-          />
-        </FullScreenModal>
-      )}
-    </div>
-  );
-}
-
-function TripEditForm({
-  trip,
-  onSave,
-  onCancel,
-}: {
-  trip: Trip;
-  onSave: (trip: Trip) => void;
-  onCancel: () => void;
-}) {
-  const [form, setForm] = useState({
-    name: trip.name,
-    startDate: trip.startDate,
-    endDate: trip.endDate,
-    tags: trip.tags.join(", "),
-  });
-
-  return (
-    <div>
-      <div className="form-group">
-        <label className="form-label">旅程名稱</label>
-        <input
-          className="form-input"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-      </div>
-      <div className="form-row">
-        <div className="form-group flex-1">
-          <label className="form-label">開始日期</label>
-          <input
-            className="form-input"
-            type="date"
-            value={form.startDate}
-            onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-          />
-        </div>
-        <div className="form-group flex-1">
-          <label className="form-label">結束日期</label>
-          <input
-            className="form-input"
-            type="date"
-            value={form.endDate}
-            onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-          />
-        </div>
-      </div>
-      <div className="form-group">
-        <label className="form-label">標籤（逗號分隔）</label>
-        <input
-          className="form-input"
-          value={form.tags}
-          onChange={(e) => setForm({ ...form, tags: e.target.value })}
-        />
-      </div>
-      <div className="form-actions">
-        <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
-        </button>
-        <button
-          className="btn btn-primary"
-          onClick={() =>
-            onSave({
-              ...trip,
-              name: form.name,
-              startDate: form.startDate,
-              endDate: form.endDate || form.startDate,
-              tags: form.tags
-                ? form.tags
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter(Boolean)
-                : [],
-            })
-          }
-        >
-          儲存
-        </button>
-      </div>
     </div>
   );
 }

@@ -10,7 +10,10 @@ import { useApp } from "../context/AppContext";
 import { MemberMenu } from "../components/MemberMenu";
 import { UserMenu } from "../components/UserMenu";
 import { Modal } from "../components/Modal";
+import { FullScreenModal } from "../components/FullScreenModal";
 import { TemplateSelector } from "../components/TemplateSelector";
+import { TripEditForm } from "../components/TripEditForm";
+import { useDoubleTap } from "../hooks/useDoubleTap";
 import { PreparationTab } from "./trip/PreparationTab";
 import { FlightTab } from "./trip/FlightTab";
 import { HotelTab } from "./trip/HotelTab";
@@ -53,10 +56,12 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const [showMembers, setShowMembers] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [editingTrip, setEditingTrip] = useState(false);
   const [copied, setCopied] = useState("");
   const [setupChoice, setSetupChoice] = useState<"preparation" | "skip" | null>(
     null,
   );
+  const doubleTap = useDoubleTap();
 
   const isMember =
     !!state.auth.currentUser &&
@@ -221,6 +226,12 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     });
   }
 
+  function handleUpdateTrip(updatedTrip: typeof trip) {
+    if (!updatedTrip) return;
+    updateTrip(updatedTrip);
+    setEditingTrip(false);
+  }
+
   // Reorder tabs only when preparation tab is available.
   const orderedTabs =
     viewOnly || tripData.skipPreparation
@@ -242,7 +253,16 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
             <FontAwesomeIcon icon={faChevronLeft} />
           </button>
         )}
-        <h1>{trip.name}</h1>
+        <h1
+          className={admin && !readOnly ? "cursor-pointer" : undefined}
+          onClick={
+            admin && !readOnly
+              ? doubleTap(`trip-title-${trip.id}`, () => setEditingTrip(true))
+              : undefined
+          }
+        >
+          {trip.name}
+        </h1>
         <div className="flex items-center gap-1">
           {!viewOnly && (
             <>
@@ -284,6 +304,16 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
           {viewOnly && <span className="status-badge">唯讀</span>}
         </div>
       </div>
+
+      {editingTrip && (
+        <FullScreenModal title="編輯旅程" onClose={() => setEditingTrip(false)}>
+          <TripEditForm
+            trip={trip}
+            onSave={handleUpdateTrip}
+            onCancel={() => setEditingTrip(false)}
+          />
+        </FullScreenModal>
+      )}
 
       <div className="trip-tabs">
         {orderedTabs.map((tab) => (
