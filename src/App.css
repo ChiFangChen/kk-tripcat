@@ -704,6 +704,12 @@ textarea.form-input {
   padding: 0 14px 12px;
 }
 
+.flight-panel-body .info-row,
+.flight-panel-body .info-label,
+.flight-panel-body .info-value {
+  font-size: 0.75rem;
+}
+
 .theme-dark .flight-panel-card {
   background: rgba(51, 65, 85, 0.55);
   border-color: rgba(148, 163, 184, 0.18);
