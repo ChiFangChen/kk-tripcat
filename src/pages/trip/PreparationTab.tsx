@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleCheck,
@@ -25,11 +25,9 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null);
-  const [fabExpanded, setFabExpanded] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState("");
   const doubleTap = useDoubleTap();
-  const fabTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Add form state
   const [newItem, setNewItem] = useState("");
@@ -146,20 +144,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
 
   function handleFabClick() {
     if (viewOnly) return;
-    if (!fabExpanded) {
-      setFabExpanded(true);
-      if (fabTimer.current) clearTimeout(fabTimer.current);
-      fabTimer.current = setTimeout(() => setFabExpanded(false), 3000);
-    } else {
-      setUserTripData(tripId, { gotReady: !tripData.gotReady });
-      setFabExpanded(false);
-      if (fabTimer.current) clearTimeout(fabTimer.current);
-    }
-  }
-
-  function closeFab() {
-    setFabExpanded(false);
-    if (fabTimer.current) clearTimeout(fabTimer.current);
+    setUserTripData(tripId, { gotReady: !tripData.gotReady });
   }
 
   function openEditNotes() {
@@ -176,23 +161,13 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
 
   return (
     <div>
-      {/* Backdrop to close FAB */}
-      {fabExpanded && !viewOnly && (
-        <div className="fixed inset-0 z-30" onClick={closeFab} />
-      )}
-
       {/* Got Ready FAB */}
       {!viewOnly && (
-        <button
-          className={`got-ready-fab ${fabExpanded ? "expanded" : ""}`}
-          onClick={handleFabClick}
-        >
+        <button className="got-ready-fab" onClick={handleFabClick}>
           <FontAwesomeIcon
             icon={tripData.gotReady ? faCircleCheck : faSuitcaseRolling}
           />
-          {fabExpanded && (
-            <span>{tripData.gotReady ? "取消準備" : "Got Ready!"}</span>
-          )}
+          <span>{tripData.gotReady ? "取消準備" : "Get Ready!"}</span>
         </button>
       )}
 
@@ -331,6 +306,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
             existingCategories={existingCategories}
             getSubcategories={getSubcategories}
             onSave={updateItem}
+            onCancel={() => setEditingItem(null)}
             onDelete={() => deleteItem(editingItem.id)}
           />
         </Modal>
@@ -346,9 +322,17 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
             onChange={(e) => setNotesText(e.target.value)}
             autoFocus
           />
-          <button className="btn btn-primary w-full mt-3" onClick={saveNotes}>
-            儲存
-          </button>
+          <div className="form-actions mt-3">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditingNotes(false)}
+            >
+              取消
+            </button>
+            <button className="btn btn-primary" onClick={saveNotes}>
+              儲存
+            </button>
+          </div>
         </Modal>
       )}
 
@@ -458,9 +442,17 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
               autoFocus={!creatingCategory}
             />
           </div>
-          <button className="btn btn-primary w-full" onClick={addItem}>
-            新增
-          </button>
+          <div className="form-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowAddModal(false)}
+            >
+              取消
+            </button>
+            <button className="btn btn-primary" onClick={addItem}>
+              新增
+            </button>
+          </div>
         </FullScreenModal>
       )}
     </div>
@@ -472,12 +464,14 @@ function EditItemForm({
   existingCategories,
   getSubcategories,
   onSave,
+  onCancel,
   onDelete,
 }: {
   item: ChecklistItem;
   existingCategories: string[];
   getSubcategories: (cat: string) => string[];
   onSave: (i: ChecklistItem) => void;
+  onCancel: () => void;
   onDelete: () => void;
 }) {
   const [text, setText] = useState(item.text);
@@ -539,15 +533,28 @@ function EditItemForm({
         </div>
       )}
       <button
-        className="btn btn-primary w-full"
+        className="btn btn-primary"
         onClick={() => onSave({ ...item, text, category, subcategory })}
       >
         儲存
       </button>
-      <button className="btn btn-secondary w-full mt-2" onClick={onDelete}>
-        <FontAwesomeIcon icon={faTrash} className="mr-1" />
-        刪除
-      </button>
+      <div className="form-actions">
+        <button
+          className="btn btn-secondary"
+          onClick={onCancel}
+          type="button"
+        >
+          取消
+        </button>
+        <button
+          className="btn btn-secondary btn-danger"
+          onClick={onDelete}
+          type="button"
+        >
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />
+          刪除
+        </button>
+      </div>
     </div>
   );
 }

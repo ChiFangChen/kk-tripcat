@@ -320,7 +320,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       {showShare && (
         <Modal title="分享旅程" onClose={() => setShowShare(false)}>
           <div className="flex flex-col gap-3">
-            {admin && (
+            {admin && !completed && (
               <div>
                 <p className="text-sm font-medium mb-1">邀請加入連結</p>
                 <p className="text-xs text-slate-400 mb-2">
