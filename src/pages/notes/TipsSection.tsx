@@ -48,7 +48,11 @@ export function TipsSection() {
     setEditing(null);
   }
 
-  function remove(id: string) {
+  async function remove(id: string) {
+    const tip = state.tips.find((entry) => entry.id === id);
+    if (tip) {
+      await Promise.all(tip.images.map((image) => deleteImage(image.path)));
+    }
     dispatch({ type: "DELETE_TIP", tipId: id });
   }
 
