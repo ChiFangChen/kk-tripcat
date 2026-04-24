@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   APP_WRITE_VERSION,
   isClientVersionOutdated,
+  normalizeItems,
   normalizeSharedTripData,
+  normalizeTips,
   normalizeUserTripData,
   stripUndefinedDeep,
   shouldApplyIncomingSnapshot,
@@ -12,18 +14,41 @@ describe("normalizeSharedTripData", () => {
   it("fills missing shared trip fields when Firestore doc is partial", () => {
     expect(
       normalizeSharedTripData({
-        scheduleNotes: [
-          { id: "note-1", title: "foo", content: "bar", images: [] },
+        scheduleNotes: [{ id: "note-1", title: "foo", content: "bar" }],
+        hotels: [{ id: "hotel-1", name: "Hotel" }],
+        transport: [
+          { id: "transport-1", title: "Bus", content: "", isOpen: true },
         ],
-      }),
+        schedule: [
+          {
+            date: "2026-04-16",
+            label: "",
+            activities: [{ id: "act-1", name: "Breakfast" }],
+          },
+        ],
+      } as never),
     ).toEqual({
-      schedule: [],
+      schedule: [
+        {
+          date: "2026-04-16",
+          label: "",
+          activities: [{ id: "act-1", name: "Breakfast", images: [] }],
+        },
+      ],
       scheduleNotes: [
         { id: "note-1", title: "foo", content: "bar", images: [] },
       ],
       flights: [],
-      hotels: [],
-      transport: [],
+      hotels: [{ id: "hotel-1", name: "Hotel", images: [] }],
+      transport: [
+        {
+          id: "transport-1",
+          title: "Bus",
+          content: "",
+          isOpen: true,
+          images: [],
+        },
+      ],
     });
   });
 
@@ -44,6 +69,59 @@ describe("normalizeSharedTripData", () => {
       skipPreparation: false,
       gotReady: false,
     });
+  });
+});
+
+describe("normalizeTips", () => {
+  it("fills missing tip images", () => {
+    expect(
+      normalizeTips([
+        {
+          id: "tip-1",
+          title: "tip",
+          content: "content",
+          tags: [],
+          createdAt: "2026-04-25T00:00:00.000Z",
+          updatedAt: "2026-04-25T00:00:00.000Z",
+        },
+      ] as never),
+    ).toEqual([
+      {
+        id: "tip-1",
+        title: "tip",
+        content: "content",
+        tags: [],
+        images: [],
+        createdAt: "2026-04-25T00:00:00.000Z",
+        updatedAt: "2026-04-25T00:00:00.000Z",
+      },
+    ]);
+  });
+});
+
+describe("normalizeItems", () => {
+  it("fills missing item images and purchases", () => {
+    expect(
+      normalizeItems([
+        {
+          id: "item-1",
+          name: "dryer",
+          isFavorite: true,
+          createdAt: "2026-04-25T00:00:00.000Z",
+          updatedAt: "2026-04-25T00:00:00.000Z",
+        },
+      ] as never),
+    ).toEqual([
+      {
+        id: "item-1",
+        name: "dryer",
+        images: [],
+        purchases: [],
+        isFavorite: true,
+        createdAt: "2026-04-25T00:00:00.000Z",
+        updatedAt: "2026-04-25T00:00:00.000Z",
+      },
+    ]);
   });
 });
 

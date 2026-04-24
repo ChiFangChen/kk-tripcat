@@ -66,15 +66,34 @@ const firebaseConfig = {
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 
+function normalizeImageArray<T extends { images?: unknown }>(
+  record: T,
+): T & { images: unknown[] } {
+  return {
+    ...record,
+    images: Array.isArray(record.images) ? record.images : [],
+  };
+}
+
 export function normalizeSharedTripData(
   data: Partial<SharedTripData> | undefined,
 ): SharedTripData {
   return {
-    schedule: data?.schedule || [],
-    scheduleNotes: data?.scheduleNotes || [],
+    schedule:
+      data?.schedule?.map((day) => ({
+        ...day,
+        activities: day.activities.map((activity) =>
+          normalizeImageArray(activity),
+        ),
+      })) || [],
+    scheduleNotes:
+      data?.scheduleNotes?.map((note) => normalizeImageArray(note)) || [],
     flights: data?.flights || [],
-    hotels: data?.hotels || [],
-    transport: data?.transport || [],
+    hotels: data?.hotels?.map((hotel) => normalizeImageArray(hotel)) || [],
+    transport:
+      data?.transport?.map((transportItem) =>
+        normalizeImageArray(transportItem),
+      ) || [],
   };
 }
 
@@ -83,12 +102,25 @@ export function normalizeUserTripData(
 ): UserTripData {
   return {
     checklist: data?.checklist || [],
-    shopping: data?.shopping || [],
+    shopping: data?.shopping?.map((item) => normalizeImageArray(item)) || [],
     preparationNotes: data?.preparationNotes || "",
     setupComplete: data?.setupComplete,
     skipPreparation: data?.skipPreparation ?? false,
     gotReady: data?.gotReady ?? false,
   };
+}
+
+export function normalizeTips(tips: TipNote[] | undefined): TipNote[] {
+  return tips?.map((tip) => normalizeImageArray(tip)) || [];
+}
+
+export function normalizeItems(items: Item[] | undefined): Item[] {
+  return (
+    items?.map((item) => ({
+      ...normalizeImageArray(item),
+      purchases: item.purchases || [],
+    })) || []
+  );
 }
 
 function getDocUpdatedAt(data: unknown): string | undefined {
@@ -334,7 +366,9 @@ export async function getUserTripDataOnce(
   tripId: string,
   userId: string,
 ): Promise<UserTripSnapshot> {
-  const snapshot = await getDoc(doc(db, "tcTripUser", userTripDocId(tripId, userId)));
+  const snapshot = await getDoc(
+    doc(db, "tcTripUser", userTripDocId(tripId, userId)),
+  );
   if (!snapshot.exists()) {
     return { data: normalizeUserTripData(undefined) };
   }
@@ -390,7 +424,7 @@ export function subscribeToTips(
     if (snapshot.exists()) {
       const data = snapshot.data() as { tips?: TipNote[]; updatedAt?: string };
       callback({
-        tips: data.tips || [],
+        tips: normalizeTips(data.tips),
         updatedAt: getDocUpdatedAt(data),
       });
     } else {
@@ -419,7 +453,7 @@ export function subscribeToItems(
     if (snapshot.exists()) {
       const data = snapshot.data() as { items?: Item[]; updatedAt?: string };
       callback({
-        items: data.items || [],
+        items: normalizeItems(data.items),
         updatedAt: getDocUpdatedAt(data),
       });
     } else {
