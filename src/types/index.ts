@@ -1,3 +1,5 @@
+import type { ImageAsset } from "./images";
+
 export interface User {
   id: string;
   username: string;
@@ -102,7 +104,7 @@ export interface Hotel {
   guests?: string;
   googleMapUrl?: string;
   note?: string;
-  imageUrl?: string;
+  images: ImageAsset[];
 }
 
 export interface ScheduleDay {
@@ -120,7 +122,7 @@ export interface ScheduleActivity {
   googleMapUrl?: string;
   booking?: BookingInfo;
   note?: string;
-  imageUrl?: string;
+  images: ImageAsset[];
 }
 
 export interface TransportItem {
@@ -128,7 +130,7 @@ export interface TransportItem {
   title: string;
   content: string;
   isOpen: boolean;
-  imageUrl?: string;
+  images: ImageAsset[];
 }
 
 export interface ShoppingItem {
@@ -164,6 +166,7 @@ export interface TipNote {
   title: string;
   content: string;
   tags: string[];
+  images: ImageAsset[];
   createdAt: string;
   updatedAt: string;
 }
@@ -191,7 +194,7 @@ export interface ScheduleNote {
   content: string;
   address?: string;
   googleMapUrl?: string;
-  imageUrl?: string;
+  images: ImageAsset[];
 }
 
 export type TabType = "trips" | "notes" | "settings";

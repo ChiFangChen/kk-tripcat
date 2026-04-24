@@ -12,11 +12,15 @@ describe("normalizeSharedTripData", () => {
   it("fills missing shared trip fields when Firestore doc is partial", () => {
     expect(
       normalizeSharedTripData({
-        scheduleNotes: [{ id: "note-1", title: "foo", content: "bar" }],
+        scheduleNotes: [
+          { id: "note-1", title: "foo", content: "bar", images: [] },
+        ],
       }),
     ).toEqual({
       schedule: [],
-      scheduleNotes: [{ id: "note-1", title: "foo", content: "bar" }],
+      scheduleNotes: [
+        { id: "note-1", title: "foo", content: "bar", images: [] },
+      ],
       flights: [],
       hotels: [],
       transport: [],
@@ -38,6 +42,7 @@ describe("normalizeSharedTripData", () => {
       preparationNotes: "",
       setupComplete: undefined,
       skipPreparation: false,
+      gotReady: false,
     });
   });
 });

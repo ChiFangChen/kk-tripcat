@@ -9,10 +9,17 @@ import {
 import { useApp } from "../../context/AppContext";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
-import { ImageUpload } from "../../components/ImageUpload";
+import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { generateId } from "../../utils/id";
+import { deleteImage, uploadImage } from "../../utils/firebase";
+import {
+  createPendingImages,
+  persistImagesForRecord,
+} from "../../utils/imageUpload";
 import * as storage from "../../utils/storage";
 import type { TransportItem } from "../../types";
+import type { ImageAsset, PendingImageFile } from "../../types/images";
 
 interface Props {
   tripId: string;
@@ -43,7 +50,11 @@ export function TransportTab({ tripId, viewOnly }: Props) {
     setEditingItem(null);
   }
 
-  function removeTransport(id: string) {
+  async function removeTransport(id: string) {
+    const item = transport.find((entry) => entry.id === id);
+    if (item) {
+      await Promise.all(item.images.map((image) => deleteImage(image.path)));
+    }
     setSharedTripData(tripId, {
       transport: transport.filter((entry) => entry.id !== id),
     });
@@ -56,7 +67,13 @@ export function TransportTab({ tripId, viewOnly }: Props) {
   }
 
   function newTransport(): TransportItem {
-    return { id: generateId(), title: "", content: "", isOpen: true };
+    return {
+      id: generateId(),
+      title: "",
+      content: "",
+      isOpen: true,
+      images: [],
+    };
   }
 
   function toggleTransport(itemId: string) {
@@ -118,13 +135,7 @@ export function TransportTab({ tripId, viewOnly }: Props) {
                 <p className="text-sm whitespace-pre-wrap text-slate-600 dark:text-slate-400">
                   {item.content}
                 </p>
-                {item.imageUrl && (
-                  <img
-                    src={item.imageUrl}
-                    alt=""
-                    className="w-full rounded-lg mt-3 max-h-56 object-cover"
-                  />
-                )}
+                <ImageGalleryField images={item.images} className="mt-3" />
               </>
             )}
           </div>
@@ -137,6 +148,7 @@ export function TransportTab({ tripId, viewOnly }: Props) {
           onClose={() => setEditingItem(null)}
         >
           <TransportForm
+            tripId={tripId}
             item={editingItem}
             onSave={saveTransport}
             onCancel={() => setEditingItem(null)}
@@ -153,17 +165,42 @@ export function TransportTab({ tripId, viewOnly }: Props) {
 }
 
 function TransportForm({
+  tripId,
   item,
   onSave,
   onCancel,
   onDelete,
 }: {
+  tripId: string;
   item: TransportItem;
   onSave: (item: TransportItem) => void;
   onCancel: () => void;
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(item);
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/trips/${tripId}/transport/${item.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => {
+          onSave({ ...form, images });
+        },
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div>
@@ -188,23 +225,48 @@ function TransportForm({
       </div>
       <div className="form-group">
         <label className="form-label">圖片</label>
-        <ImageUpload
-          imageUrl={form.imageUrl}
-          storagePath="tc-images/transport"
-          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
-          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
         />
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
-        <button className="btn btn-primary" onClick={() => onSave(form)}>
-          儲存
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "儲存中..." : "儲存"}
         </button>
       </div>
       {onDelete && (
-        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除交通資訊
         </button>

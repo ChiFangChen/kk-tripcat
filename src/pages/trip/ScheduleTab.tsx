@@ -14,8 +14,14 @@ import { FullScreenModal } from "../../components/FullScreenModal";
 import { Modal } from "../../components/Modal";
 import { InfoRow } from "../../components/InfoRow";
 import { generateId } from "../../utils/id";
-import { ImageUpload } from "../../components/ImageUpload";
+import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { formatDate, isToday } from "../../utils/date";
+import { deleteImage, uploadImage } from "../../utils/firebase";
+import {
+  createPendingImages,
+  persistImagesForRecord,
+} from "../../utils/imageUpload";
 import * as storage from "../../utils/storage";
 import type {
   ScheduleDay,
@@ -23,6 +29,7 @@ import type {
   ScheduleNote,
   BookingInfo,
 } from "../../types";
+import type { ImageAsset, PendingImageFile } from "../../types/images";
 
 interface Props {
   tripId: string;
@@ -96,7 +103,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
   function addActivity(dayIndex: number) {
     setEditingActivity({
       dayIndex,
-      activity: { id: generateId(), name: "" },
+      activity: { id: generateId(), name: "", images: [] },
     });
   }
 
@@ -113,7 +120,15 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
     setEditingActivity(null);
   }
 
-  function deleteActivity(dayIndex: number, activityId: string) {
+  async function deleteActivity(dayIndex: number, activityId: string) {
+    const activity = schedule[dayIndex]?.activities.find(
+      (entry) => entry.id === activityId,
+    );
+    if (activity) {
+      await Promise.all(
+        activity.images.map((image) => deleteImage(image.path)),
+      );
+    }
     const updated = schedule.map((day, i) => {
       if (i !== dayIndex) return day;
       return {
@@ -142,7 +157,11 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
     setShowAddNote(false);
   }
 
-  function deleteNote(id: string) {
+  async function deleteNote(id: string) {
+    const note = scheduleNotes.find((entry) => entry.id === id);
+    if (note) {
+      await Promise.all(note.images.map((image) => deleteImage(image.path)));
+    }
     setSharedTripData(tripId, {
       scheduleNotes: scheduleNotes.filter((n) => n.id !== id),
     });
@@ -300,13 +319,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
                 )}
               </div>
             )}
-            {note.imageUrl && (
-              <img
-                src={note.imageUrl}
-                alt=""
-                className="w-full rounded-lg mt-2 max-h-48 object-cover"
-              />
-            )}
+            <ImageGalleryField images={note.images} className="mt-2" />
           </div>
         ))
       )}
@@ -439,13 +452,10 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
               }
             />
           )}
-          {selectedActivity.activity.imageUrl && (
-            <img
-              src={selectedActivity.activity.imageUrl}
-              alt=""
-              className="w-full rounded-lg mt-2 max-h-64 object-cover"
-            />
-          )}
+          <ImageGalleryField
+            images={selectedActivity.activity.images}
+            className="mt-2"
+          />
         </Modal>
       )}
 
@@ -456,6 +466,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           onClose={() => setEditingActivity(null)}
         >
           <ActivityForm
+            tripId={tripId}
             activity={editingActivity.activity}
             onSave={(a) => saveActivity(editingActivity.dayIndex, a)}
             onCancel={() => setEditingActivity(null)}
@@ -518,13 +529,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
               }
             />
           )}
-          {selectedNote.imageUrl && (
-            <img
-              src={selectedNote.imageUrl}
-              alt=""
-              className="w-full rounded-lg mt-2 max-h-64 object-cover"
-            />
-          )}
+          <ImageGalleryField images={selectedNote.images} className="mt-2" />
         </Modal>
       )}
 
@@ -535,7 +540,8 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           onClose={() => setShowAddNote(false)}
         >
           <NoteForm
-            note={{ id: generateId(), title: "", content: "" }}
+            tripId={tripId}
+            note={{ id: generateId(), title: "", content: "", images: [] }}
             onSave={saveNote}
             onCancel={() => setShowAddNote(false)}
           />
@@ -549,6 +555,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           onClose={() => setEditingNote(null)}
         >
           <NoteForm
+            tripId={tripId}
             note={editingNote}
             onSave={saveNote}
             onCancel={() => setEditingNote(null)}
@@ -561,11 +568,13 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 }
 
 function ActivityForm({
+  tripId,
   activity,
   onSave,
   onCancel,
   onDelete,
 }: {
+  tripId: string;
   activity: ScheduleActivity;
   onSave: (a: ScheduleActivity) => void;
   onCancel: () => void;
@@ -573,12 +582,34 @@ function ActivityForm({
 }) {
   const [form, setForm] = useState(activity);
   const [booking, setBooking] = useState<BookingInfo>(activity.booking || {});
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  function handleSave() {
-    onSave({
-      ...form,
-      booking: Object.values(booking).some((v) => v) ? booking : undefined,
-    });
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/trips/${tripId}/schedule-activities/${activity.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => {
+          onSave({
+            ...form,
+            images,
+            booking: Object.values(booking).some((value) => value)
+              ? booking
+              : undefined,
+          });
+        },
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -667,23 +698,48 @@ function ActivityForm({
       </div>
       <div className="form-group">
         <label className="form-label">圖片</label>
-        <ImageUpload
-          imageUrl={form.imageUrl}
-          storagePath="tc-images/schedule-activities"
-          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
-          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
         />
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
-        <button className="btn btn-primary" onClick={handleSave}>
-          儲存
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "儲存中..." : "儲存"}
         </button>
       </div>
       {onDelete && activity.name && (
-        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除活動
         </button>
@@ -733,7 +789,10 @@ function DayForm({
           儲存
         </button>
       </div>
-      <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+      <button
+        className="btn btn-secondary btn-danger w-full mt-2"
+        onClick={onDelete}
+      >
         <FontAwesomeIcon icon={faTrash} className="mr-1" />
         刪除此天
       </button>
@@ -742,17 +801,42 @@ function DayForm({
 }
 
 function NoteForm({
+  tripId,
   note,
   onSave,
   onCancel,
   onDelete,
 }: {
+  tripId: string;
   note: ScheduleNote;
   onSave: (n: ScheduleNote) => void;
   onCancel: () => void;
   onDelete?: () => void;
 }) {
   const [form, setForm] = useState(note);
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/trips/${tripId}/schedule-notes/${note.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => {
+          onSave({ ...form, images });
+        },
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div>
@@ -791,23 +875,48 @@ function NoteForm({
       </div>
       <div className="form-group">
         <label className="form-label">圖片</label>
-        <ImageUpload
-          imageUrl={form.imageUrl}
-          storagePath="tc-images/schedule-notes"
-          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
-          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
         />
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
-        <button className="btn btn-primary" onClick={() => onSave(form)}>
-          儲存
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "儲存中..." : "儲存"}
         </button>
       </div>
       {onDelete && note.title && (
-        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除筆記
         </button>
