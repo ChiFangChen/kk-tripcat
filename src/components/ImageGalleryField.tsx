@@ -4,14 +4,15 @@ export function ImageGalleryField({
   images,
   className = "",
 }: {
-  images: ImageAsset[];
+  images?: ImageAsset[];
   className?: string;
 }) {
-  if (images.length === 0) return null;
+  const safeImages = images || [];
+  if (safeImages.length === 0) return null;
 
   return (
     <div className={`grid grid-cols-2 gap-2 ${className}`.trim()}>
-      {images.map((image) => (
+      {safeImages.map((image) => (
         <img
           key={image.id}
           src={image.url}

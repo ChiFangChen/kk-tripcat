@@ -10,20 +10,22 @@ export function MultiImageUpload({
   onRemoveExisting,
   onRemovePending,
 }: {
-  existingImages: ImageAsset[];
-  pendingImages: PendingImageFile[];
+  existingImages?: ImageAsset[];
+  pendingImages?: PendingImageFile[];
   onAddFiles: (files: File[]) => void;
   onRemoveExisting: (imageId: string) => void;
   onRemovePending: (imageId: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const safeExistingImages = existingImages || [];
+  const safePendingImages = pendingImages || [];
   const pendingPreviews = useMemo(
     () =>
-      pendingImages.map((image) => ({
+      safePendingImages.map((image) => ({
         id: image.imageId,
         url: URL.createObjectURL(image.file),
       })),
-    [pendingImages],
+    [safePendingImages],
   );
 
   useEffect(() => {
@@ -34,9 +36,9 @@ export function MultiImageUpload({
 
   return (
     <div className="mt-2">
-      {(existingImages.length > 0 || pendingImages.length > 0) && (
+      {(safeExistingImages.length > 0 || safePendingImages.length > 0) && (
         <div className="grid grid-cols-2 gap-2 mb-3">
-          {existingImages.map((image) => (
+          {safeExistingImages.map((image) => (
             <PreviewCard
               key={image.id}
               url={image.url}

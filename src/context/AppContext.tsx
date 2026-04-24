@@ -47,6 +47,8 @@ import {
   deleteTripFromFirestore,
   deleteSharedTripData,
   deleteUserTripData,
+  normalizeItems,
+  normalizeTips,
   isClientVersionOutdated,
   shouldApplyIncomingSnapshot,
 } from "../utils/firebase";
@@ -357,11 +359,14 @@ function loadInitialState(): AppState {
       defaultTemplate
     : defaultTemplate;
   const tips = currentUser
-    ? storage.getItem<TipNote[]>(getTipsStorageKey(currentUser.id)) || []
+    ? normalizeTips(
+        storage.getItem<TipNote[]>(getTipsStorageKey(currentUser.id)) || [],
+      )
     : [];
   const items = currentUser
-    ? storage.getItem<Item[]>(getItemsStorageKey(currentUser.id)) ||
-      []
+    ? normalizeItems(
+        storage.getItem<Item[]>(getItemsStorageKey(currentUser.id)) || [],
+      )
     : [];
   const users = storage.getItem<User[]>("users") || [];
 
@@ -531,14 +536,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
     rawDispatch({
       type: "SET_TIPS",
-      tips: storage.getItem<TipNote[]>(getTipsStorageKey(currentUserId)) || [],
+      tips: normalizeTips(
+        storage.getItem<TipNote[]>(getTipsStorageKey(currentUserId)) || [],
+      ),
     });
     tipsUpdatedAtRef.current =
       storage.getItem<string>(getTipsUpdatedAtStorageKey(currentUserId)) ||
       undefined;
     rawDispatch({
       type: "SET_ITEMS",
-      items: storage.getItem<Item[]>(getItemsStorageKey(currentUserId)) || [],
+      items: normalizeItems(
+        storage.getItem<Item[]>(getItemsStorageKey(currentUserId)) || [],
+      ),
     });
     itemsUpdatedAtRef.current =
       storage.getItem<string>(getItemsUpdatedAtStorageKey(currentUserId)) ||
@@ -703,7 +712,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       storage.setItem(getItemsStorageKey(userId), snapshot.items);
       if (snapshot.updatedAt) {
         itemsUpdatedAtRef.current = snapshot.updatedAt;
-        storage.setItem(getItemsUpdatedAtStorageKey(userId), snapshot.updatedAt);
+        storage.setItem(
+          getItemsUpdatedAtStorageKey(userId),
+          snapshot.updatedAt,
+        );
       }
     });
     return () => {
@@ -1213,7 +1225,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const currentUserId = state.auth.currentUser?.id;
       if (!trip || !currentUserId || !dbRef.current) return {};
 
-      const memberIds = trip.members.filter((userId) => userId !== currentUserId);
+      const memberIds = trip.members.filter(
+        (userId) => userId !== currentUserId,
+      );
       const memberSnapshots = await Promise.all(
         memberIds.map(async (userId) => ({
           userId,
