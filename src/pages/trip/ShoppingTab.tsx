@@ -1,19 +1,33 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faStar,
-  faLink,
   faPlus,
   faTrash,
+  faBoxesStacked,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
-import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { Modal } from "../../components/Modal";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { generateId } from "../../utils/id";
 import { formatDate } from "../../utils/date";
-import { ImageUpload } from "../../components/ImageUpload";
-import type { ShoppingItem, FavoriteItem } from "../../types";
+import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { MultiImageUpload } from "../../components/MultiImageUpload";
+import { deleteImage, uploadImage } from "../../utils/firebase";
+import {
+  copyImagesToNewPaths,
+  createPendingImages,
+  persistImagesForRecord,
+} from "../../utils/imageUpload";
+import type { ImageAsset, PendingImageFile } from "../../types/images";
+import {
+  buildPoolItemFromTripShopping,
+  getPoolPromotionCandidates,
+  getTripShoppingResolvedContent,
+  isLinkedTripShoppingItem,
+  type Item,
+  type TripShoppingItem,
+} from "./shoppingTypes";
 
 interface Props {
   tripId: string;
@@ -21,123 +35,158 @@ interface Props {
 }
 
 export function ShoppingTab({ tripId, viewOnly }: Props) {
-  const { state, dispatch, setUserTripData, getTripData, isTripAdmin } =
-    useApp();
-  const trip = state.trips.find((item) => item.id === tripId);
+  const {
+    state,
+    dispatch,
+    setUserTripData,
+    setTripMemberData,
+    getTripData,
+    getUserName,
+    isTripAdmin,
+    loadTripMemberData,
+  } = useApp();
+  const trip = state.trips.find((entry) => entry.id === tripId);
   const tripData = getTripData(tripId);
   const items = tripData.shopping || [];
   const [showCompleted, setShowCompleted] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newItem, setNewItem] = useState("");
-  const [matchingFavorites, setMatchingFavorites] = useState<FavoriteItem[]>(
-    [],
-  );
-  const [pendingItem, setPendingItem] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
-  const doubleTap = useDoubleTap();
+  const [editingItem, setEditingItem] = useState<TripShoppingItem | null>(null);
+  const [showAddDraftModal, setShowAddDraftModal] = useState(false);
+  const [showPoolModal, setShowPoolModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewItems, setReviewItems] = useState<
+    Array<{ userId: string; item: TripShoppingItem }>
+  >([]);
 
-  const unchecked = items.filter((i) => !i.checked);
-  const checked = items.filter((i) => i.checked);
+  const canManageTrip = !viewOnly && !!trip && isTripAdmin(trip);
+  const unchecked = items.filter((item) => !item.checked);
+  const checked = items.filter((item) => item.checked);
   const displayed = showCompleted ? items : unchecked;
-  const canUseFavorites = !viewOnly && !!trip && isTripAdmin(trip);
+  const resolvedDisplayed = displayed.map((item) =>
+    getTripShoppingResolvedContent(item, state.items),
+  );
 
   function toggleCheck(id: string) {
     if (viewOnly) return;
-    const updated = items.map((i) =>
-      i.id === id ? { ...i, checked: !i.checked } : i,
-    );
-    setUserTripData(tripId, { shopping: updated });
-  }
-
-  function openAdd() {
-    setNewItem("");
-    setMatchingFavorites([]);
-    setPendingItem(null);
-    setShowAddModal(true);
-  }
-
-  function addItem() {
-    if (!newItem.trim()) return;
-    const text = newItem.trim();
-
-    const matches = canUseFavorites
-      ? state.favorites.filter(
-          (f) =>
-            f.name.toLowerCase().includes(text.toLowerCase()) ||
-            text.toLowerCase().includes(f.name.toLowerCase()),
-        )
-      : [];
-
-    if (matches.length > 0) {
-      setMatchingFavorites(matches);
-      setPendingItem(text);
-    } else {
-      createItem(text);
-    }
-  }
-
-  function createItem(text: string, favoriteId?: string) {
-    const item: ShoppingItem = {
-      id: generateId(),
-      text,
-      checked: false,
-      starred: !!favoriteId,
-      favoriteId,
-    };
-    setUserTripData(tripId, { shopping: [...items, item] });
-    setNewItem("");
-    setMatchingFavorites([]);
-    setPendingItem(null);
-    setShowAddModal(false);
-  }
-
-  function updateItem(updated: ShoppingItem) {
     setUserTripData(tripId, {
-      shopping: items.map((i) => (i.id === updated.id ? updated : i)),
+      shopping: items.map((item) =>
+        item.id === id ? { ...item, checked: !item.checked } : item,
+      ),
+    });
+  }
+
+  function saveDraftItem(updated: TripShoppingItem) {
+    const exists = items.find((item) => item.id === updated.id);
+    const nextItems = exists
+      ? items.map((item) => (item.id === updated.id ? updated : item))
+      : [...items, updated];
+    setUserTripData(tripId, { shopping: nextItems });
+    setEditingItem(null);
+    setShowAddDraftModal(false);
+  }
+
+  async function deleteDraftItem(id: string) {
+    const currentItem = items.find((item) => item.id === id);
+    if (currentItem && !isLinkedTripShoppingItem(currentItem)) {
+      await Promise.all(currentItem.images.map((image) => deleteImage(image.path)));
+    }
+    setUserTripData(tripId, {
+      shopping: items.filter((item) => item.id !== id),
     });
     setEditingItem(null);
   }
 
-  function deleteItem(id: string) {
-    setUserTripData(tripId, { shopping: items.filter((i) => i.id !== id) });
-    setEditingItem(null);
+  function createDraftItem(): TripShoppingItem {
+    return {
+      id: generateId(),
+      textSnapshot: "",
+      images: [],
+      checked: false,
+      createdBy: state.auth.currentUser?.id || "anonymous",
+      createdAt: new Date().toISOString(),
+    };
   }
 
-  function toggleStar(item: ShoppingItem) {
-    if (!canUseFavorites) return;
-
-    if (item.starred && item.favoriteId) {
-      const fav = state.favorites.find((f) => f.id === item.favoriteId);
-      if (fav && fav.purchases.length > 0) {
-        alert("此商品已有購買紀錄，請到筆記 > 喜歡的東西中刪除");
-        return;
-      }
-      const updated = items.map((i) =>
-        i.id === item.id ? { ...i, starred: false, favoriteId: undefined } : i,
-      );
-      setUserTripData(tripId, { shopping: updated });
-      if (fav) {
-        dispatch({ type: "DELETE_FAVORITE", favoriteId: fav.id });
-      }
-    } else {
-      const newFav: FavoriteItem = {
-        id: generateId(),
-        name: item.text,
-        purchases: [],
-      };
-      dispatch({ type: "ADD_FAVORITE", favorite: newFav });
-      const updated = items.map((i) =>
-        i.id === item.id ? { ...i, starred: true, favoriteId: newFav.id } : i,
-      );
-      setUserTripData(tripId, { shopping: updated });
-    }
+  function addPoolItemToTrip(item: Item) {
+    const tripItem: TripShoppingItem = {
+      id: generateId(),
+      itemId: item.id,
+      textSnapshot: item.name,
+      images: [],
+      checked: false,
+      createdBy: state.auth.currentUser?.id || "anonymous",
+      createdAt: new Date().toISOString(),
+    };
+    setUserTripData(tripId, { shopping: [...items, tripItem] });
+    setShowPoolModal(false);
   }
 
-  function getFavoriteHistory(favoriteId?: string) {
-    if (!favoriteId) return null;
-    const fav = state.favorites.find((f) => f.id === favoriteId);
-    if (!fav || fav.purchases.length === 0) return null;
-    return fav;
+  async function openReviewModal() {
+    if (!trip || !state.auth.currentUser) return;
+    const memberData = await loadTripMemberData(tripId);
+    const nextItems = Object.entries(memberData).flatMap(([userId, data]) =>
+      getPoolPromotionCandidates(data.shopping, state.auth.currentUser!.id).map(
+        (item) => ({ userId, item }),
+      ),
+    );
+    setReviewItems(nextItems);
+    setShowReviewModal(true);
+  }
+
+  async function promoteToPool(candidate: { userId: string; item: TripShoppingItem }) {
+    if (!state.auth.currentUser) return;
+
+    const now = new Date().toISOString();
+    const poolItemId = generateId();
+    const copiedImages = await copyImagesToNewPaths({
+      images: candidate.item.images,
+      targetBasePath: `tc-images/users/${state.auth.currentUser.id}/items/${poolItemId}`,
+      createImageId: generateId,
+      createdAt: now,
+      fetchBlob: async (url) => {
+        const response = await fetch(url);
+        return response.blob();
+      },
+      upload: uploadImage,
+      remove: deleteImage,
+    });
+
+    dispatch({
+      type: "ADD_ITEM",
+      item: buildPoolItemFromTripShopping({
+        source: candidate.item,
+        itemId: poolItemId,
+        images: copiedImages,
+        now,
+      }),
+    });
+
+    await setTripMemberData(tripId, candidate.userId, {
+      shopping: (await loadTripMemberData(tripId))[candidate.userId].shopping.map(
+        (item) =>
+          item.id === candidate.item.id
+            ? {
+                ...item,
+                promotedToPoolAt: now,
+                promotedBy: state.auth.currentUser!.id,
+              }
+            : item,
+      ),
+    });
+
+    setReviewItems((current) =>
+      current.map((entry) =>
+        entry.userId === candidate.userId && entry.item.id === candidate.item.id
+          ? {
+              ...entry,
+              item: {
+                ...entry.item,
+                promotedToPoolAt: now,
+                promotedBy: state.auth.currentUser!.id,
+              },
+            }
+          : entry,
+      ),
+    );
   }
 
   return (
@@ -160,15 +209,27 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
           </div>
         </div>
         <span className="text-xs text-slate-400 w-8 text-right">
-          {items.length ? Math.round((checked.length / items.length) * 100) : 0}
-          %
+          {items.length ? Math.round((checked.length / items.length) * 100) : 0}%
         </span>
         {!viewOnly && (
-          <button className="btn-round-add" onClick={openAdd}>
+          <button className="btn-round-add" onClick={() => setShowAddDraftModal(true)}>
             <FontAwesomeIcon icon={faPlus} className="text-xs" />
           </button>
         )}
       </div>
+
+      {canManageTrip && (
+        <div className="flex gap-2 mb-3">
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowPoolModal(true)}>
+            <FontAwesomeIcon icon={faBoxesStacked} className="mr-1" />
+            從魚池加入
+          </button>
+          <button className="btn btn-secondary btn-sm" onClick={openReviewModal}>
+            <FontAwesomeIcon icon={faUsers} className="mr-1" />
+            查看大家想買的
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-1 mb-3 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
         <button
@@ -186,15 +247,8 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       </div>
 
       <div className="card">
-        {displayed.map((item) => (
-          <div
-            key={item.id}
-            className={`checklist-item ${item.checked ? "checked" : ""}`}
-            onClick={doubleTap(
-              item.id,
-              () => !viewOnly && setEditingItem(item),
-            )}
-          >
+        {resolvedDisplayed.map((item) => (
+          <div key={item.id} className={`checklist-item ${item.checked ? "checked" : ""}`}>
             {!viewOnly && (
               <input
                 type="checkbox"
@@ -203,47 +257,29 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                 className="w-5 h-5 flex-shrink-0"
               />
             )}
-            {item.imageUrl && (
+            {item.images[0] && (
               <img
-                src={item.imageUrl}
+                src={item.images[0].url}
                 alt=""
                 className="w-8 h-8 rounded object-cover flex-shrink-0"
               />
             )}
-            <div className="flex-1">
-              <span className="text-sm">{item.text}</span>
-              {canUseFavorites &&
-                item.starred &&
-                (() => {
-                  const fav = getFavoriteHistory(item.favoriteId);
-                  if (!fav) return null;
-                  const latest = fav.purchases[0];
-                  return (
-                    <p className="text-xs text-slate-400">
-                      上次：{latest.amount}
-                      {latest.currency ? ` ${latest.currency}` : ""} (
-                      {formatDate(latest.date)})
-                    </p>
-                  );
-                })()}
-            </div>
-            {canUseFavorites && (
-              <button
-                className={`star-btn ${item.starred ? "active" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleStar(item);
-                }}
-              >
-                <FontAwesomeIcon
-                  icon={faStar}
-                  className={item.starred ? "" : "opacity-25"}
-                />
-              </button>
-            )}
+            <button
+              type="button"
+              className="flex-1 text-left"
+              onClick={() => setEditingItem(item.source)}
+            >
+              <span className="text-sm">{item.name}</span>
+              {(item.estimatedAmount || item.currency) && (
+                <p className="text-xs text-slate-400">
+                  {item.estimatedAmount || "-"}
+                  {item.currency ? ` ${item.currency}` : ""}
+                </p>
+              )}
+            </button>
           </div>
         ))}
-        {displayed.length === 0 && (
+        {resolvedDisplayed.length === 0 && (
           <div className="py-4 text-center text-sm text-slate-400">
             {showCompleted ? "購物清單是空的" : "全部買好了！"}
           </div>
@@ -251,66 +287,111 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       </div>
 
       {editingItem && (
-        <Modal title="編輯項目" onClose={() => setEditingItem(null)}>
-          <EditShoppingForm
-            item={editingItem}
-            onSave={updateItem}
-            onCancel={() => setEditingItem(null)}
-            onDelete={() => deleteItem(editingItem.id)}
-          />
+        <Modal
+          title={isLinkedTripShoppingItem(editingItem) ? "魚池項目" : "編輯項目"}
+          onClose={() => setEditingItem(null)}
+        >
+          {isLinkedTripShoppingItem(editingItem) ? (
+            <LinkedItemDetail
+              item={getTripShoppingResolvedContent(editingItem, state.items)}
+              onDelete={() => deleteDraftItem(editingItem.id)}
+              canDelete={canManageTrip}
+            />
+          ) : (
+            <DraftShoppingForm
+              tripId={tripId}
+              item={editingItem}
+              onSave={saveDraftItem}
+              onCancel={() => setEditingItem(null)}
+              onDelete={() => deleteDraftItem(editingItem.id)}
+            />
+          )}
         </Modal>
       )}
 
-      {showAddModal && (
-        <FullScreenModal
-          title="新增購物項目"
-          onClose={() => setShowAddModal(false)}
-        >
-          <div className="form-group">
-            <label className="form-label">品名</label>
-            <input
-              className="form-input"
-              value={newItem}
-              onChange={(e) => setNewItem(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addItem()}
-              autoFocus
-            />
-          </div>
+      {showAddDraftModal && (
+        <FullScreenModal title="新增本次旅程項目" onClose={() => setShowAddDraftModal(false)}>
+          <DraftShoppingForm
+            tripId={tripId}
+            item={createDraftItem()}
+            onSave={saveDraftItem}
+            onCancel={() => setShowAddDraftModal(false)}
+          />
+        </FullScreenModal>
+      )}
 
-          {matchingFavorites.length > 0 && pendingItem && (
-            <div className="card mb-4 border-amber-300">
-              <p className="text-sm mb-2">
-                找到相似的「喜歡的東西」，要連結嗎？
-              </p>
-              {matchingFavorites.map((fav) => (
+      {showPoolModal && (
+        <FullScreenModal title="從魚池加入" onClose={() => setShowPoolModal(false)}>
+          <div className="space-y-3">
+            {state.items.length === 0 ? (
+              <div className="empty-state">
+                <p>魚池目前沒有項目</p>
+              </div>
+            ) : (
+              state.items.map((item) => (
                 <button
-                  key={fav.id}
-                  className="btn btn-sm btn-primary mr-2 mb-1"
-                  onClick={() => createItem(pendingItem, fav.id)}
+                  key={item.id}
+                  type="button"
+                  className="card w-full text-left"
+                  onClick={() => addPoolItemToTrip(item)}
                 >
-                  <FontAwesomeIcon icon={faLink} className="mr-1" />
-                  {fav.name}
+                  <div className="font-semibold">{item.name}</div>
+                  {(item.estimatedAmount || item.currency) && (
+                    <div className="text-sm text-slate-500">
+                      {item.estimatedAmount || "-"}
+                      {item.currency ? ` ${item.currency}` : ""}
+                    </div>
+                  )}
                 </button>
-              ))}
-              <button
-                className="btn btn-sm btn-secondary mb-1"
-                onClick={() => createItem(pendingItem)}
-              >
-                不連結，直接新增
-              </button>
-            </div>
-          )}
+              ))
+            )}
+          </div>
+        </FullScreenModal>
+      )}
 
-          <div className="form-actions">
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowAddModal(false)}
-            >
-              取消
-            </button>
-            <button className="btn btn-primary" onClick={addItem}>
-              新增
-            </button>
+      {showReviewModal && (
+        <FullScreenModal title="大家想買的" onClose={() => setShowReviewModal(false)}>
+          <div className="space-y-3">
+            {reviewItems.length === 0 ? (
+              <div className="empty-state">
+                <p>目前沒有其他人新增的購物項目</p>
+              </div>
+            ) : (
+              reviewItems.map((entry) => (
+                <div key={`${entry.userId}-${entry.item.id}`} className="card">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div>
+                      <div className="font-semibold">{entry.item.textSnapshot}</div>
+                      <div className="text-xs text-slate-400">
+                        {getUserName(entry.userId)} 建立於 {formatDate(entry.item.createdAt)}
+                      </div>
+                    </div>
+                    {entry.item.promotedToPoolAt ? (
+                      <span className="tag">已收編</span>
+                    ) : (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => promoteToPool(entry)}
+                      >
+                        加入魚池
+                      </button>
+                    )}
+                  </div>
+                  {(entry.item.estimatedAmount || entry.item.currency) && (
+                    <div className="text-sm text-slate-500 mb-2">
+                      {entry.item.estimatedAmount || "-"}
+                      {entry.item.currency ? ` ${entry.item.currency}` : ""}
+                    </div>
+                  )}
+                  {entry.item.note && (
+                    <div className="text-sm text-slate-500 whitespace-pre-wrap mb-2">
+                      {entry.item.note}
+                    </div>
+                  )}
+                  <ImageGalleryField images={entry.item.images} />
+                </div>
+              ))
+            )}
           </div>
         </FullScreenModal>
       )}
@@ -318,18 +399,41 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   );
 }
 
-function EditShoppingForm({
+function DraftShoppingForm({
+  tripId,
   item,
   onSave,
   onCancel,
   onDelete,
 }: {
-  item: ShoppingItem;
-  onSave: (i: ShoppingItem) => void;
+  tripId: string;
+  item: TripShoppingItem;
+  onSave: (item: TripShoppingItem) => void;
   onCancel: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }) {
   const [form, setForm] = useState(item);
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/trips/${tripId}/shopping/${item.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => onSave({ ...form, images }),
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div>
@@ -337,32 +441,114 @@ function EditShoppingForm({
         <label className="form-label">品名</label>
         <input
           className="form-input"
-          value={form.text}
-          onChange={(e) => setForm({ ...form, text: e.target.value })}
+          value={form.textSnapshot}
+          onChange={(event) =>
+            setForm({ ...form, textSnapshot: event.target.value })
+          }
           autoFocus
         />
       </div>
       <div className="form-group">
+        <label className="form-label">建議售價</label>
+        <input
+          className="form-input"
+          value={form.estimatedAmount || ""}
+          onChange={(event) =>
+            setForm({ ...form, estimatedAmount: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">幣別</label>
+        <input
+          className="form-input"
+          value={form.currency || ""}
+          onChange={(event) => setForm({ ...form, currency: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">備註</label>
+        <textarea
+          className="form-input"
+          value={form.note || ""}
+          onChange={(event) => setForm({ ...form, note: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
         <label className="form-label">圖片</label>
-        <ImageUpload
-          imageUrl={form.imageUrl}
-          storagePath="tc-images/shopping"
-          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
-          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
         />
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
-        <button className="btn btn-primary" onClick={() => onSave(form)}>
-          儲存
+        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+          {saving ? "儲存中..." : "儲存"}
         </button>
       </div>
-      <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
-        <FontAwesomeIcon icon={faTrash} className="mr-1" />
-        刪除
-      </button>
+      {onDelete && (
+        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />
+          刪除
+        </button>
+      )}
+    </div>
+  );
+}
+
+function LinkedItemDetail({
+  item,
+  canDelete,
+  onDelete,
+}: {
+  item: ReturnType<typeof getTripShoppingResolvedContent>;
+  canDelete: boolean;
+  onDelete: () => void;
+}) {
+  return (
+    <div>
+      <div className="font-semibold mb-2">{item.name}</div>
+      {(item.estimatedAmount || item.currency) && (
+        <div className="text-sm text-slate-500 mb-2">
+          {item.estimatedAmount || "-"}
+          {item.currency ? ` ${item.currency}` : ""}
+        </div>
+      )}
+      {item.note && (
+        <div className="text-sm text-slate-500 whitespace-pre-wrap mb-2">
+          {item.note}
+        </div>
+      )}
+      <ImageGalleryField images={item.images} />
+      {canDelete && (
+        <button className="btn btn-secondary btn-danger w-full mt-4" onClick={onDelete}>
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />
+          從本次旅程移除
+        </button>
+      )}
     </div>
   );
 }

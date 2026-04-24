@@ -16,12 +16,14 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  getDoc,
   query,
   where,
   type Firestore,
 } from "firebase/firestore";
-import type { User, Trip, Template, TipNote, FavoriteItem } from "../types";
+import type { User, Trip, Template, TipNote } from "../types";
 import type { SharedTripData, UserTripData } from "../context/AppContext";
+import type { Item } from "../pages/trip/shoppingTypes";
 
 export interface DatedTripDoc {
   updatedAt?: string;
@@ -45,8 +47,8 @@ export interface TipsSnapshot {
   updatedAt?: string;
 }
 
-export interface FavoritesSnapshot {
-  favorites: FavoriteItem[];
+export interface ItemsSnapshot {
+  items: Item[];
   updatedAt?: string;
 }
 
@@ -327,6 +329,24 @@ export async function syncUserTripData(
   );
 }
 
+export async function getUserTripDataOnce(
+  db: Firestore,
+  tripId: string,
+  userId: string,
+): Promise<UserTripSnapshot> {
+  const snapshot = await getDoc(doc(db, "tcTripUser", userTripDocId(tripId, userId)));
+  if (!snapshot.exists()) {
+    return { data: normalizeUserTripData(undefined) };
+  }
+
+  const data = snapshot.data() as Partial<UserTripData> & DatedTripDoc;
+  return {
+    data: normalizeUserTripData(data),
+    updatedAt: getDocUpdatedAt(data),
+    appVersion: getDocAppVersion(data),
+  };
+}
+
 export async function deleteUserTripData(
   db: Firestore,
   tripId: string,
@@ -388,36 +408,33 @@ export async function syncTips(
   await setDoc(doc(db, "tcTips", userId), { tips, updatedAt });
 }
 
-// --- Favorites per user ---
+// --- Item pool per user ---
 
-export function subscribeToFavorites(
+export function subscribeToItems(
   db: Firestore,
   userId: string,
-  callback: (snapshot: FavoritesSnapshot) => void,
+  callback: (snapshot: ItemsSnapshot) => void,
 ): () => void {
-  return onSnapshot(doc(db, "tcFavorites", userId), (snapshot) => {
+  return onSnapshot(doc(db, "tcItems", userId), (snapshot) => {
     if (snapshot.exists()) {
-      const data = snapshot.data() as {
-        favorites?: FavoriteItem[];
-        updatedAt?: string;
-      };
+      const data = snapshot.data() as { items?: Item[]; updatedAt?: string };
       callback({
-        favorites: data.favorites || [],
+        items: data.items || [],
         updatedAt: getDocUpdatedAt(data),
       });
     } else {
-      callback({ favorites: [] });
+      callback({ items: [] });
     }
   });
 }
 
-export async function syncFavorites(
+export async function syncItems(
   db: Firestore,
   userId: string,
-  favorites: FavoriteItem[],
+  items: Item[],
   updatedAt: string,
 ): Promise<void> {
-  await setDoc(doc(db, "tcFavorites", userId), { favorites, updatedAt });
+  await setDoc(doc(db, "tcItems", userId), { items, updatedAt });
 }
 
 // --- Image Storage ---

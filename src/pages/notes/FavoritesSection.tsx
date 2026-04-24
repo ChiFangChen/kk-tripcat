@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faStar,
@@ -10,54 +10,65 @@ import { useApp } from "../../context/AppContext";
 import { Modal } from "../../components/Modal";
 import { generateId } from "../../utils/id";
 import { formatDate } from "../../utils/date";
-import { ImageUpload } from "../../components/ImageUpload";
-import type { FavoriteItem, Purchase } from "../../types";
+import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { MultiImageUpload } from "../../components/MultiImageUpload";
+import { deleteImage, uploadImage } from "../../utils/firebase";
+import {
+  createPendingImages,
+  persistImagesForRecord,
+} from "../../utils/imageUpload";
+import type { Purchase } from "../../types";
+import type { ImageAsset, PendingImageFile } from "../../types/images";
+import { getFavoriteItems, type Item } from "../trip/shoppingTypes";
 
 export function FavoritesSection() {
-  const { state, dispatch, setUserTripData } = useApp();
-  const [editing, setEditing] = useState<FavoriteItem | null>(null);
+  const { state, dispatch } = useApp();
+  const [editing, setEditing] = useState<Item | null>(null);
   const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null);
+  const favoriteItems = useMemo(() => getFavoriteItems(state.items), [state.items]);
 
-  function remove(id: string) {
-    dispatch({ type: "DELETE_FAVORITE", favoriteId: id });
-    // Also unstar in all shopping lists
-    Object.entries(state.userTripData).forEach(([tripId, data]) => {
-      const updated = data.shopping.map((item) =>
-        item.favoriteId === id
-          ? { ...item, starred: false, favoriteId: undefined }
-          : item,
-      );
-      if (updated.some((item, i) => item !== data.shopping[i])) {
-        setUserTripData(tripId, { shopping: updated });
-      }
-    });
+  async function remove(id: string) {
+    const item = state.items.find((entry) => entry.id === id);
+    if (item) {
+      await Promise.all(item.images.map((image) => deleteImage(image.path)));
+    }
+    dispatch({ type: "DELETE_ITEM", itemId: id });
     setEditing(null);
   }
 
-  function addPurchase(favoriteId: string, purchase: Purchase) {
-    const fav = state.favorites.find((f) => f.id === favoriteId);
-    if (!fav) return;
+  function addPurchase(itemId: string, purchase: Purchase) {
+    const item = state.items.find((entry) => entry.id === itemId);
+    if (!item) return;
     dispatch({
-      type: "UPDATE_FAVORITE",
-      favorite: { ...fav, purchases: [purchase, ...fav.purchases] },
+      type: "UPDATE_ITEM",
+      item: { ...item, purchases: [purchase, ...item.purchases] },
     });
     setAddingPurchaseTo(null);
   }
 
-  function deletePurchase(favoriteId: string, purchaseId: string) {
-    const fav = state.favorites.find((f) => f.id === favoriteId);
-    if (!fav) return;
+  function deletePurchase(itemId: string, purchaseId: string) {
+    const item = state.items.find((entry) => entry.id === itemId);
+    if (!item) return;
     dispatch({
-      type: "UPDATE_FAVORITE",
-      favorite: {
-        ...fav,
-        purchases: fav.purchases.filter((p) => p.id !== purchaseId),
+      type: "UPDATE_ITEM",
+      item: {
+        ...item,
+        purchases: item.purchases.filter((purchase) => purchase.id !== purchaseId),
       },
     });
   }
 
-  function newFavorite(): FavoriteItem {
-    return { id: generateId(), name: "", purchases: [] };
+  function newFavorite(): Item {
+    const now = new Date().toISOString();
+    return {
+      id: generateId(),
+      name: "",
+      images: [],
+      purchases: [],
+      isFavorite: true,
+      createdAt: now,
+      updatedAt: now,
+    };
   }
 
   return (
@@ -71,81 +82,87 @@ export function FavoritesSection() {
         </button>
       </div>
 
-      {state.favorites.length === 0 ? (
+      {favoriteItems.length === 0 ? (
         <div className="empty-state">
           <p>還沒有喜歡的東西</p>
         </div>
       ) : (
-        state.favorites.map((fav) => (
-          <div key={fav.id} className="card">
-            {fav.imageUrl && (
-              <img
-                src={fav.imageUrl}
-                alt=""
-                className="w-full rounded-lg max-h-48 object-cover mb-2"
-              />
-            )}
+        favoriteItems.map((item) => (
+          <div key={item.id} className="card">
+            <ImageGalleryField images={item.images} className="mb-2" />
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-semibold">
                 <FontAwesomeIcon
                   icon={faStar}
                   className="text-amber-400 mr-1"
                 />
-                {fav.name}
+                {item.name}
               </h3>
               <div className="flex gap-2">
                 <button
                   className="btn-round-add !w-6 !h-6"
-                  onClick={() => setAddingPurchaseTo(fav.id)}
+                  onClick={() => setAddingPurchaseTo(item.id)}
                 >
                   <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
                 </button>
                 <button
                   className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() => setEditing(fav)}
+                  onClick={() => setEditing(item)}
                 >
                   <FontAwesomeIcon icon={faPen} />
                 </button>
                 <button
                   className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() => remove(fav.id)}
+                  onClick={() => remove(item.id)}
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
               </div>
             </div>
 
-            {fav.purchases.length > 0 ? (
+            {(item.estimatedAmount || item.currency) && (
+              <p className="text-sm text-slate-500 mb-2">
+                建議售價：{item.estimatedAmount || "-"}
+                {item.currency ? ` ${item.currency}` : ""}
+              </p>
+            )}
+            {item.notes && (
+              <p className="text-sm text-slate-500 whitespace-pre-wrap mb-2">
+                {item.notes}
+              </p>
+            )}
+
+            {item.purchases.length > 0 ? (
               <div className="text-sm">
-                {fav.purchases.map((p) => (
+                {item.purchases.map((purchase) => (
                   <div
-                    key={p.id}
+                    key={purchase.id}
                     className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-700 last:border-0"
                   >
                     <div>
-                      <span className="font-medium">{p.amount}</span>
-                      {p.currency && (
+                      <span className="font-medium">{purchase.amount}</span>
+                      {purchase.currency && (
                         <span className="text-slate-400 ml-1">
-                          {p.currency}
+                          {purchase.currency}
                         </span>
                       )}
                       <span className="text-slate-400 ml-2">
-                        {formatDate(p.date)}
+                        {formatDate(purchase.date)}
                       </span>
-                      {p.tripName && (
+                      {purchase.tripName && (
                         <span className="text-slate-400 ml-1">
-                          ({p.tripName})
+                          ({purchase.tripName})
                         </span>
                       )}
-                      {p.note && (
+                      {purchase.note && (
                         <span className="text-slate-400 ml-1 whitespace-pre-wrap">
-                          - {p.note}
+                          - {purchase.note}
                         </span>
                       )}
                     </div>
                     <button
                       className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                      onClick={() => deletePurchase(fav.id, p.id)}
+                      onClick={() => deletePurchase(item.id, purchase.id)}
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
@@ -159,23 +176,25 @@ export function FavoritesSection() {
         ))
       )}
 
-      {/* New/Edit favorite modal */}
       {editing && (
         <Modal
           title={
-            state.favorites.find((f) => f.id === editing.id)
+            state.items.find((item) => item.id === editing.id)
               ? "編輯喜歡的東西"
               : "新增喜歡的東西"
           }
           onClose={() => setEditing(null)}
         >
-          <FavoriteForm
-            favorite={editing}
-            onSave={(fav) => {
-              const exists = state.favorites.find((f) => f.id === fav.id);
+          <ItemForm
+            item={editing}
+            onSave={(item) => {
+              const exists = state.items.find((entry) => entry.id === item.id);
               dispatch({
-                type: exists ? "UPDATE_FAVORITE" : "ADD_FAVORITE",
-                favorite: fav,
+                type: exists ? "UPDATE_ITEM" : "ADD_ITEM",
+                item: {
+                  ...item,
+                  updatedAt: new Date().toISOString(),
+                },
               });
               setEditing(null);
             }}
@@ -183,24 +202,48 @@ export function FavoritesSection() {
         </Modal>
       )}
 
-      {/* Add purchase modal */}
       {addingPurchaseTo && (
         <Modal title="新增購買紀錄" onClose={() => setAddingPurchaseTo(null)}>
-          <PurchaseForm onSave={(p) => addPurchase(addingPurchaseTo, p)} />
+          <PurchaseForm onSave={(purchase) => addPurchase(addingPurchaseTo, purchase)} />
         </Modal>
       )}
     </div>
   );
 }
 
-function FavoriteForm({
-  favorite,
+function ItemForm({
+  item,
   onSave,
 }: {
-  favorite: FavoriteItem;
-  onSave: (f: FavoriteItem) => void;
+  item: Item;
+  onSave: (item: Item) => void;
 }) {
-  const [form, setForm] = useState(favorite);
+  const { state } = useApp();
+  const [form, setForm] = useState(item);
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/users/${state.auth.currentUser?.id || "anonymous"}/items/${item.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => {
+          onSave({ ...form, images });
+        },
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div>
       <div className="form-group">
@@ -208,26 +251,70 @@ function FavoriteForm({
         <input
           className="form-input"
           value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          onChange={(event) => setForm({ ...form, name: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">建議售價</label>
+        <input
+          className="form-input"
+          value={form.estimatedAmount || ""}
+          onChange={(event) =>
+            setForm({ ...form, estimatedAmount: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">幣別</label>
+        <input
+          className="form-input"
+          value={form.currency || ""}
+          onChange={(event) => setForm({ ...form, currency: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">備註</label>
+        <textarea
+          className="form-input"
+          value={form.notes || ""}
+          onChange={(event) => setForm({ ...form, notes: event.target.value })}
         />
       </div>
       <div className="form-group">
         <label className="form-label">圖片</label>
-        <ImageUpload
-          imageUrl={form.imageUrl}
-          storagePath="tc-images/favorites"
-          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
-          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={() => onSave(form)}>
-        儲存
+      <button className="btn btn-primary w-full" onClick={handleSave} disabled={saving}>
+        {saving ? "儲存中..." : "儲存"}
       </button>
     </div>
   );
 }
 
-function PurchaseForm({ onSave }: { onSave: (p: Purchase) => void }) {
+function PurchaseForm({ onSave }: { onSave: (purchase: Purchase) => void }) {
   const [form, setForm] = useState<Omit<Purchase, "id">>({
     date: new Date().toISOString().split("T")[0],
     amount: "",
@@ -242,7 +329,7 @@ function PurchaseForm({ onSave }: { onSave: (p: Purchase) => void }) {
         <input
           className="form-input"
           value={form.amount}
-          onChange={(e) => setForm({ ...form, amount: e.target.value })}
+          onChange={(event) => setForm({ ...form, amount: event.target.value })}
         />
       </div>
       <div className="form-group">
@@ -250,7 +337,7 @@ function PurchaseForm({ onSave }: { onSave: (p: Purchase) => void }) {
         <input
           className="form-input"
           value={form.currency || ""}
-          onChange={(e) => setForm({ ...form, currency: e.target.value })}
+          onChange={(event) => setForm({ ...form, currency: event.target.value })}
         />
       </div>
       <div className="form-group">
@@ -259,7 +346,7 @@ function PurchaseForm({ onSave }: { onSave: (p: Purchase) => void }) {
           className="form-input"
           type="date"
           value={form.date}
-          onChange={(e) => setForm({ ...form, date: e.target.value })}
+          onChange={(event) => setForm({ ...form, date: event.target.value })}
         />
       </div>
       <div className="form-group">
@@ -267,12 +354,12 @@ function PurchaseForm({ onSave }: { onSave: (p: Purchase) => void }) {
         <input
           className="form-input"
           value={form.note || ""}
-          onChange={(e) => setForm({ ...form, note: e.target.value })}
+          onChange={(event) => setForm({ ...form, note: event.target.value })}
         />
       </div>
       <button
         className="btn btn-primary w-full"
-        onClick={() => onSave({ ...form, id: generateId() } as Purchase)}
+        onClick={() => onSave({ ...form, id: generateId() })}
       >
         儲存
       </button>
