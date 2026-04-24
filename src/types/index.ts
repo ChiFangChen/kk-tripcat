@@ -133,15 +133,6 @@ export interface TransportItem {
   images: ImageAsset[];
 }
 
-export interface ShoppingItem {
-  id: string;
-  text: string;
-  checked: boolean;
-  starred: boolean;
-  favoriteId?: string;
-  imageUrl?: string;
-}
-
 export interface Template {
   id: string;
   notes: string;
@@ -169,13 +160,6 @@ export interface TipNote {
   images: ImageAsset[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface FavoriteItem {
-  id: string;
-  name: string;
-  purchases: Purchase[];
-  imageUrl?: string;
 }
 
 export interface Purchase {
