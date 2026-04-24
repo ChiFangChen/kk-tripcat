@@ -5,9 +5,16 @@ import { useApp } from "../../context/AppContext";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { InfoRow } from "../../components/InfoRow";
-import { ImageUpload } from "../../components/ImageUpload";
+import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { generateId } from "../../utils/id";
+import { deleteImage, uploadImage } from "../../utils/firebase";
+import {
+  createPendingImages,
+  persistImagesForRecord,
+} from "../../utils/imageUpload";
 import type { Hotel } from "../../types";
+import type { ImageAsset, PendingImageFile } from "../../types/images";
 
 interface Props {
   tripId: string;
@@ -30,13 +37,17 @@ export function HotelTab({ tripId, viewOnly }: Props) {
     setEditing(null);
   }
 
-  function remove(id: string) {
+  async function remove(id: string) {
+    const hotel = hotels.find((entry) => entry.id === id);
+    if (hotel) {
+      await Promise.all(hotel.images.map((image) => deleteImage(image.path)));
+    }
     setSharedTripData(tripId, { hotels: hotels.filter((h) => h.id !== id) });
     setEditing(null);
   }
 
   function newHotel(): Hotel {
-    return { id: generateId(), name: "" };
+    return { id: generateId(), name: "", images: [] };
   }
 
   return (
@@ -114,13 +125,7 @@ export function HotelTab({ tripId, viewOnly }: Props) {
           <InfoRow label="房型" value={hotel.roomType} />
           <InfoRow label="人數" value={hotel.guests} />
           <InfoRow label="備註" value={hotel.booking?.note || hotel.note} />
-          {hotel.imageUrl && (
-            <img
-              src={hotel.imageUrl}
-              alt=""
-              className="w-full rounded-lg mt-3 max-h-56 object-cover"
-            />
-          )}
+          <ImageGalleryField images={hotel.images} className="mt-3" />
         </div>
       ))}
 
@@ -130,6 +135,7 @@ export function HotelTab({ tripId, viewOnly }: Props) {
           onClose={() => setEditing(null)}
         >
           <HotelForm
+            tripId={tripId}
             hotel={editing}
             onSave={save}
             onCancel={() => setEditing(null)}
@@ -142,11 +148,13 @@ export function HotelTab({ tripId, viewOnly }: Props) {
 }
 
 function HotelForm({
+  tripId,
   hotel,
   onSave,
   onCancel,
   onDelete,
 }: {
+  tripId: string;
   hotel: Hotel;
   onSave: (h: Hotel) => void;
   onCancel: () => void;
@@ -154,12 +162,34 @@ function HotelForm({
 }) {
   const [form, setForm] = useState(hotel);
   const [booking, setBooking] = useState(hotel.booking || {});
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  function handleSave() {
-    onSave({
-      ...form,
-      booking: Object.values(booking).some((v) => v) ? booking : undefined,
-    });
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/trips/${tripId}/hotels/${hotel.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => {
+          onSave({
+            ...form,
+            images,
+            booking: Object.values(booking).some((value) => value)
+              ? booking
+              : undefined,
+          });
+        },
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -272,23 +302,48 @@ function HotelForm({
       </div>
       <div className="form-group">
         <label className="form-label">圖片</label>
-        <ImageUpload
-          imageUrl={form.imageUrl}
-          storagePath="tc-images/hotels"
-          onUploaded={(url) => setForm({ ...form, imageUrl: url })}
-          onRemoved={() => setForm({ ...form, imageUrl: undefined })}
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
         />
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
-        <button className="btn btn-primary" onClick={handleSave}>
-          儲存
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "儲存中..." : "儲存"}
         </button>
       </div>
       {onDelete && (
-        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除飯店
         </button>

@@ -2,12 +2,18 @@ import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
-import { Modal } from "../../components/Modal";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { generateId } from "../../utils/id";
-import { InfoRow } from "../../components/InfoRow";
+import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { MultiImageUpload } from "../../components/MultiImageUpload";
+import { deleteImage, uploadImage } from "../../utils/firebase";
+import {
+  createPendingImages,
+  persistImagesForRecord,
+} from "../../utils/imageUpload";
 import type { TipNote } from "../../types";
+import type { ImageAsset, PendingImageFile } from "../../types/images";
 
 export function TipsSection() {
   const { state, dispatch } = useApp();
@@ -53,6 +59,7 @@ export function TipsSection() {
       title: "",
       content: "",
       tags: [],
+      images: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -116,6 +123,7 @@ export function TipsSection() {
                 </span>
               ))}
             </div>
+            <ImageGalleryField images={tip.images} className="mt-2" />
           </div>
         ))
       )}
@@ -151,17 +159,38 @@ function TipForm({
   onCancel: () => void;
   onDelete: () => void;
 }) {
+  const { state } = useApp();
   const [form, setForm] = useState(tip);
   const [tagsInput, setTagsInput] = useState(tip.tags.join(", "));
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  function handleSave() {
-    onSave({
-      ...form,
-      tags: tagsInput
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-    });
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/users/${state.auth.currentUser?.id || "anonymous"}/tips/${tip.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => {
+          onSave({
+            ...form,
+            images,
+            tags: tagsInput
+              .split(",")
+              .map((value) => value.trim())
+              .filter(Boolean),
+          });
+        },
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -191,12 +220,43 @@ function TipForm({
           onChange={(e) => setTagsInput(e.target.value)}
         />
       </div>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
+        />
+      </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
-        <button className="btn btn-primary" onClick={handleSave}>
-          儲存
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "儲存中..." : "儲存"}
         </button>
         {tip.title && (
           <button className="btn btn-danger" onClick={onDelete}>
