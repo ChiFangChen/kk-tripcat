@@ -11,6 +11,7 @@ import { Modal } from "../../components/Modal";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { generateId } from "../../utils/id";
 import { formatDate } from "../../utils/date";
+import { shoppingThumbnailClassName } from "../../utils/imageDisplayClasses";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { deleteImage, uploadImage } from "../../utils/firebase";
@@ -261,7 +262,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
               <img
                 src={item.images[0].url}
                 alt=""
-                className="w-8 h-8 rounded object-cover flex-shrink-0"
+                className={shoppingThumbnailClassName}
               />
             )}
             <button

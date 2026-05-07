@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCamera, faTrash } from "@fortawesome/free-solid-svg-icons";
 import type { ImageAsset, PendingImageFile } from "../types/images";
+import { galleryImageClassName } from "../utils/imageDisplayClasses";
 
 export function MultiImageUpload({
   existingImages,
@@ -37,7 +38,7 @@ export function MultiImageUpload({
   return (
     <div className="mt-2">
       {(safeExistingImages.length > 0 || safePendingImages.length > 0) && (
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="grid gap-2 mb-3">
           {safeExistingImages.map((image) => (
             <PreviewCard
               key={image.id}
@@ -91,11 +92,7 @@ function PreviewCard({
 }) {
   return (
     <div className="relative">
-      <img
-        src={url}
-        alt=""
-        className="w-full rounded-lg max-h-48 object-cover"
-      />
+      <img src={url} alt="" className={galleryImageClassName} />
       <button
         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center text-xs"
         onClick={onRemove}

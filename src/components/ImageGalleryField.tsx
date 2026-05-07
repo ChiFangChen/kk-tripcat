@@ -1,4 +1,5 @@
 import type { ImageAsset } from "../types/images";
+import { galleryImageClassName } from "../utils/imageDisplayClasses";
 
 export function ImageGalleryField({
   images,
@@ -11,13 +12,13 @@ export function ImageGalleryField({
   if (safeImages.length === 0) return null;
 
   return (
-    <div className={`grid grid-cols-2 gap-2 ${className}`.trim()}>
+    <div className={`grid gap-2 ${className}`.trim()}>
       {safeImages.map((image) => (
         <img
           key={image.id}
           src={image.url}
           alt=""
-          className="w-full rounded-lg max-h-56 object-cover"
+          className={galleryImageClassName}
         />
       ))}
     </div>
