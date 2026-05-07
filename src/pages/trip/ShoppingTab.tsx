@@ -22,6 +22,12 @@ import {
 } from "../../utils/imageUpload";
 import type { ImageAsset, PendingImageFile } from "../../types/images";
 import {
+  canShowShoppingModalRemoveAction,
+  getInitialShoppingModalMode,
+  getShoppingModalModeAfterTitleDoubleClick,
+  type ShoppingModalMode,
+} from "./shoppingModal";
+import {
   buildPoolItemFromTripShopping,
   getPoolPromotionCandidates,
   getTripShoppingResolvedContent,
@@ -51,6 +57,8 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const items = tripData.shopping || [];
   const [showCompleted, setShowCompleted] = useState(false);
   const [editingItem, setEditingItem] = useState<TripShoppingItem | null>(null);
+  const [shoppingModalMode, setShoppingModalMode] =
+    useState<ShoppingModalMode>("view");
   const [showAddDraftModal, setShowAddDraftModal] = useState(false);
   const [showPoolModal, setShowPoolModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -82,18 +90,27 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       : [...items, updated];
     setUserTripData(tripId, { shopping: nextItems });
     setEditingItem(null);
+    setShoppingModalMode("view");
     setShowAddDraftModal(false);
   }
 
   async function deleteDraftItem(id: string) {
     const currentItem = items.find((item) => item.id === id);
     if (currentItem && !isLinkedTripShoppingItem(currentItem)) {
-      await Promise.all(currentItem.images.map((image) => deleteImage(image.path)));
+      await Promise.all(
+        currentItem.images.map((image) => deleteImage(image.path)),
+      );
     }
     setUserTripData(tripId, {
       shopping: items.filter((item) => item.id !== id),
     });
     setEditingItem(null);
+    setShoppingModalMode("view");
+  }
+
+  function openShoppingItemModal(item: TripShoppingItem) {
+    setEditingItem(item);
+    setShoppingModalMode(getInitialShoppingModalMode());
   }
 
   function createDraftItem(): TripShoppingItem {
@@ -133,7 +150,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     setShowReviewModal(true);
   }
 
-  async function promoteToPool(candidate: { userId: string; item: TripShoppingItem }) {
+  async function promoteToPool(candidate: {
+    userId: string;
+    item: TripShoppingItem;
+  }) {
     if (!state.auth.currentUser) return;
 
     const now = new Date().toISOString();
@@ -162,15 +182,16 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     });
 
     await setTripMemberData(tripId, candidate.userId, {
-      shopping: (await loadTripMemberData(tripId))[candidate.userId].shopping.map(
-        (item) =>
-          item.id === candidate.item.id
-            ? {
-                ...item,
-                promotedToPoolAt: now,
-                promotedBy: state.auth.currentUser!.id,
-              }
-            : item,
+      shopping: (await loadTripMemberData(tripId))[
+        candidate.userId
+      ].shopping.map((item) =>
+        item.id === candidate.item.id
+          ? {
+              ...item,
+              promotedToPoolAt: now,
+              promotedBy: state.auth.currentUser!.id,
+            }
+          : item,
       ),
     });
 
@@ -210,10 +231,14 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
           </div>
         </div>
         <span className="text-xs text-slate-400 w-8 text-right">
-          {items.length ? Math.round((checked.length / items.length) * 100) : 0}%
+          {items.length ? Math.round((checked.length / items.length) * 100) : 0}
+          %
         </span>
         {!viewOnly && (
-          <button className="btn-round-add" onClick={() => setShowAddDraftModal(true)}>
+          <button
+            className="btn-round-add"
+            onClick={() => setShowAddDraftModal(true)}
+          >
             <FontAwesomeIcon icon={faPlus} className="text-xs" />
           </button>
         )}
@@ -221,11 +246,17 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
 
       {canManageTrip && (
         <div className="flex gap-2 mb-3">
-          <button className="btn btn-secondary btn-sm" onClick={() => setShowPoolModal(true)}>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowPoolModal(true)}
+          >
             <FontAwesomeIcon icon={faBoxesStacked} className="mr-1" />
             從魚池加入
           </button>
-          <button className="btn btn-secondary btn-sm" onClick={openReviewModal}>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={openReviewModal}
+          >
             <FontAwesomeIcon icon={faUsers} className="mr-1" />
             查看大家想買的
           </button>
@@ -249,7 +280,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
 
       <div className="card">
         {resolvedDisplayed.map((item) => (
-          <div key={item.id} className={`checklist-item ${item.checked ? "checked" : ""}`}>
+          <div
+            key={item.id}
+            className={`checklist-item ${item.checked ? "checked" : ""}`}
+          >
             {!viewOnly && (
               <input
                 type="checkbox"
@@ -268,7 +302,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             <button
               type="button"
               className="flex-1 text-left"
-              onClick={() => setEditingItem(item.source)}
+              onClick={() => openShoppingItemModal(item.source)}
             >
               <span className="text-sm">{item.name}</span>
               {(item.estimatedAmount || item.currency) && (
@@ -289,29 +323,55 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
 
       {editingItem && (
         <Modal
-          title={isLinkedTripShoppingItem(editingItem) ? "魚池項目" : "編輯項目"}
-          onClose={() => setEditingItem(null)}
+          title={
+            isLinkedTripShoppingItem(editingItem)
+              ? "魚池項目"
+              : shoppingModalMode === "edit"
+                ? "編輯項目"
+                : "購物項目"
+          }
+          onClose={() => {
+            setEditingItem(null);
+            setShoppingModalMode("view");
+          }}
         >
-          {isLinkedTripShoppingItem(editingItem) ? (
-            <LinkedItemDetail
-              item={getTripShoppingResolvedContent(editingItem, state.items)}
-              onDelete={() => deleteDraftItem(editingItem.id)}
-              canDelete={canManageTrip}
-            />
-          ) : (
+          {shoppingModalMode === "edit" &&
+          !isLinkedTripShoppingItem(editingItem) ? (
             <DraftShoppingForm
               tripId={tripId}
               item={editingItem}
               onSave={saveDraftItem}
-              onCancel={() => setEditingItem(null)}
-              onDelete={() => deleteDraftItem(editingItem.id)}
+              onCancel={() => setShoppingModalMode("view")}
+              onDelete={
+                canShowShoppingModalRemoveAction(
+                  shoppingModalMode,
+                  canManageTrip,
+                )
+                  ? () => deleteDraftItem(editingItem.id)
+                  : undefined
+              }
+            />
+          ) : (
+            <ShoppingItemDetail
+              item={getTripShoppingResolvedContent(editingItem, state.items)}
+              onTitleDoubleClick={() =>
+                setShoppingModalMode((current) =>
+                  getShoppingModalModeAfterTitleDoubleClick(
+                    editingItem,
+                    current,
+                  ),
+                )
+              }
             />
           )}
         </Modal>
       )}
 
       {showAddDraftModal && (
-        <FullScreenModal title="新增本次旅程項目" onClose={() => setShowAddDraftModal(false)}>
+        <FullScreenModal
+          title="新增本次旅程項目"
+          onClose={() => setShowAddDraftModal(false)}
+        >
           <DraftShoppingForm
             tripId={tripId}
             item={createDraftItem()}
@@ -322,7 +382,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       )}
 
       {showPoolModal && (
-        <FullScreenModal title="從魚池加入" onClose={() => setShowPoolModal(false)}>
+        <FullScreenModal
+          title="從魚池加入"
+          onClose={() => setShowPoolModal(false)}
+        >
           <div className="space-y-3">
             {state.items.length === 0 ? (
               <div className="empty-state">
@@ -351,7 +414,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       )}
 
       {showReviewModal && (
-        <FullScreenModal title="大家想買的" onClose={() => setShowReviewModal(false)}>
+        <FullScreenModal
+          title="大家想買的"
+          onClose={() => setShowReviewModal(false)}
+        >
           <div className="space-y-3">
             {reviewItems.length === 0 ? (
               <div className="empty-state">
@@ -362,9 +428,12 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                 <div key={`${entry.userId}-${entry.item.id}`} className="card">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div>
-                      <div className="font-semibold">{entry.item.textSnapshot}</div>
+                      <div className="font-semibold">
+                        {entry.item.textSnapshot}
+                      </div>
                       <div className="text-xs text-slate-400">
-                        {getUserName(entry.userId)} 建立於 {formatDate(entry.item.createdAt)}
+                        {getUserName(entry.userId)} 建立於{" "}
+                        {formatDate(entry.item.createdAt)}
                       </div>
                     </div>
                     {entry.item.promotedToPoolAt ? (
@@ -464,7 +533,9 @@ function DraftShoppingForm({
         <input
           className="form-input"
           value={form.currency || ""}
-          onChange={(event) => setForm({ ...form, currency: event.target.value })}
+          onChange={(event) =>
+            setForm({ ...form, currency: event.target.value })
+          }
         />
       </div>
       <div className="form-group">
@@ -506,12 +577,19 @@ function DraftShoppingForm({
         <button className="btn btn-secondary" onClick={onCancel} type="button">
           取消
         </button>
-        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
           {saving ? "儲存中..." : "儲存"}
         </button>
       </div>
       {onDelete && (
-        <button className="btn btn-secondary btn-danger w-full mt-2" onClick={onDelete}>
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
           刪除
         </button>
@@ -520,18 +598,22 @@ function DraftShoppingForm({
   );
 }
 
-function LinkedItemDetail({
+function ShoppingItemDetail({
   item,
-  canDelete,
-  onDelete,
+  onTitleDoubleClick,
 }: {
   item: ReturnType<typeof getTripShoppingResolvedContent>;
-  canDelete: boolean;
-  onDelete: () => void;
+  onTitleDoubleClick: () => void;
 }) {
   return (
     <div>
-      <div className="font-semibold mb-2">{item.name}</div>
+      <button
+        type="button"
+        className="block w-full p-0 bg-transparent border-0 font-semibold mb-2 text-left text-inherit cursor-pointer"
+        onDoubleClick={onTitleDoubleClick}
+      >
+        {item.name}
+      </button>
       {(item.estimatedAmount || item.currency) && (
         <div className="text-sm text-slate-500 mb-2">
           {item.estimatedAmount || "-"}
@@ -544,12 +626,6 @@ function LinkedItemDetail({
         </div>
       )}
       <ImageGalleryField images={item.images} />
-      {canDelete && (
-        <button className="btn btn-secondary btn-danger w-full mt-4" onClick={onDelete}>
-          <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          從本次旅程移除
-        </button>
-      )}
     </div>
   );
 }
