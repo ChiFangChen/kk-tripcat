@@ -4,6 +4,10 @@ import { faCamera, faTrash } from "@fortawesome/free-solid-svg-icons";
 import type { ImageAsset, PendingImageFile } from "../types/images";
 import { galleryImageClassName } from "../utils/imageDisplayClasses";
 
+function getPreviewBlob(file: PendingImageFile["file"]): Blob {
+  return "blob" in file ? file.blob : file;
+}
+
 export function MultiImageUpload({
   existingImages,
   pendingImages,
@@ -24,7 +28,7 @@ export function MultiImageUpload({
     () =>
       safePendingImages.map((image) => ({
         id: image.imageId,
-        url: URL.createObjectURL(image.file),
+        url: URL.createObjectURL(getPreviewBlob(image.file)),
       })),
     [safePendingImages],
   );

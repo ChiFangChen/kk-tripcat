@@ -3,3 +3,14 @@ export const galleryImageClassName =
 
 export const shoppingThumbnailClassName =
   "w-8 h-auto rounded object-contain flex-shrink-0";
+
+export function getImageAspectRatio({
+  width,
+  height,
+}: {
+  width?: number;
+  height?: number;
+}): string {
+  if (!width || !height) return "4 / 3";
+  return `${width} / ${height}`;
+}

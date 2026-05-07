@@ -26,8 +26,14 @@ describe("uploadPendingImagesBatch", () => {
     const remove = vi.fn<(path: string) => Promise<void>>().mockResolvedValue();
 
     const pendingImages: UploadPendingImage[] = [
-      { file: new Blob(["a"]), imageId: "img-1" },
-      { file: new Blob(["b"]), imageId: "img-2" },
+      {
+        file: { blob: new Blob(["a"]), width: 320, height: 240 },
+        imageId: "img-1",
+      },
+      {
+        file: { blob: new Blob(["b"]), width: 640, height: 480 },
+        imageId: "img-2",
+      },
     ];
 
     const uploaded = await uploadPendingImagesBatch({
@@ -44,12 +50,16 @@ describe("uploadPendingImagesBatch", () => {
         url: "https://files.local/tc-images/trips/trip-1/hotels/hotel-1/img-1.jpg",
         path: "tc-images/trips/trip-1/hotels/hotel-1/img-1.jpg",
         createdAt: "2026-04-25T10:00:00.000Z",
+        width: 320,
+        height: 240,
       },
       {
         id: "img-2",
         url: "https://files.local/tc-images/trips/trip-1/hotels/hotel-1/img-2.jpg",
         path: "tc-images/trips/trip-1/hotels/hotel-1/img-2.jpg",
         createdAt: "2026-04-25T10:00:00.000Z",
+        width: 640,
+        height: 480,
       },
     ]);
     expect(remove).not.toHaveBeenCalled();
@@ -69,8 +79,14 @@ describe("uploadPendingImagesBatch", () => {
     await expect(
       uploadPendingImagesBatch({
         pendingImages: [
-          { file: new Blob(["a"]), imageId: "img-1" },
-          { file: new Blob(["b"]), imageId: "img-2" },
+          {
+            file: { blob: new Blob(["a"]), width: 320, height: 240 },
+            imageId: "img-1",
+          },
+          {
+            file: { blob: new Blob(["b"]), width: 640, height: 480 },
+            imageId: "img-2",
+          },
         ],
         basePath: "tc-images/trips/trip-1/hotels/hotel-1",
         createdAt: "2026-04-25T10:00:00.000Z",
@@ -103,6 +119,8 @@ describe("copyImagesToNewPaths", () => {
           url: "https://files.local/source.jpg",
           path: "tc-images/trips/trip-1/shopping/item-1/source.jpg",
           createdAt: "2026-04-24T10:00:00.000Z",
+          width: 320,
+          height: 240,
         },
       ],
       targetBasePath: "tc-images/users/admin-1/items/item-1",
@@ -119,6 +137,8 @@ describe("copyImagesToNewPaths", () => {
         url: "https://files.local/tc-images/users/admin-1/items/item-1/img-new.jpg",
         path: "tc-images/users/admin-1/items/item-1/img-new.jpg",
         createdAt: "2026-04-25T10:00:00.000Z",
+        width: 320,
+        height: 240,
       },
     ]);
   });
@@ -141,15 +161,24 @@ describe("persistImagesForRecord", () => {
           url: "https://files.local/existing.jpg",
           path: "tc-images/trips/trip-1/hotels/hotel-1/img-existing.jpg",
           createdAt: "2026-04-24T10:00:00.000Z",
+          width: 320,
+          height: 240,
         },
       ],
-      pendingImages: [{ file: new Blob(["a"]), imageId: "img-new" }],
+      pendingImages: [
+        {
+          file: { blob: new Blob(["a"]), width: 320, height: 240 },
+          imageId: "img-new",
+        },
+      ],
       removedImages: [
         {
           id: "img-removed",
           url: "https://files.local/removed.jpg",
           path: "tc-images/trips/trip-1/hotels/hotel-1/img-removed.jpg",
           createdAt: "2026-04-24T10:00:00.000Z",
+          width: 320,
+          height: 240,
         },
       ],
       basePath: "tc-images/trips/trip-1/hotels/hotel-1",
@@ -165,12 +194,16 @@ describe("persistImagesForRecord", () => {
         url: "https://files.local/existing.jpg",
         path: "tc-images/trips/trip-1/hotels/hotel-1/img-existing.jpg",
         createdAt: "2026-04-24T10:00:00.000Z",
+        width: 320,
+        height: 240,
       },
       {
         id: "img-new",
         url: "https://files.local/tc-images/trips/trip-1/hotels/hotel-1/img-new.jpg",
         path: "tc-images/trips/trip-1/hotels/hotel-1/img-new.jpg",
         createdAt: "2026-04-25T10:00:00.000Z",
+        width: 320,
+        height: 240,
       },
     ]);
     expect(remove).toHaveBeenCalledWith(

@@ -1,4 +1,8 @@
-import type { ImageAsset, PendingImageFile } from "../types/images";
+import type {
+  ImageAsset,
+  PendingImageFile,
+  PreparedImageFile,
+} from "../types/images";
 
 export type UploadPendingImage = PendingImageFile;
 
@@ -16,7 +20,7 @@ export async function compressImageFile(
   file: File,
   maxWidth = 800,
   quality = 0.8,
-): Promise<Blob> {
+): Promise<PreparedImageFile> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     const objectUrl = URL.createObjectURL(file);
@@ -40,7 +44,11 @@ export async function compressImageFile(
             reject(new Error("Image compression failed"));
             return;
           }
-          resolve(blob);
+          resolve({
+            blob,
+            width: canvas.width,
+            height: canvas.height,
+          });
         },
         "image/jpeg",
         quality,
@@ -52,6 +60,23 @@ export async function compressImageFile(
     };
     image.src = objectUrl;
   });
+}
+
+function isPreparedImageFile(
+  file: Blob | PreparedImageFile,
+): file is PreparedImageFile {
+  return "blob" in file;
+}
+
+function prepareImageForUpload(
+  file: Blob | PreparedImageFile,
+): PreparedImageFile {
+  if (isPreparedImageFile(file)) return file;
+  return {
+    blob: file,
+    width: 0,
+    height: 0,
+  };
 }
 
 export function createStorageImagePath({
@@ -86,17 +111,20 @@ export async function uploadPendingImagesBatch({
         basePath,
         imageId: pendingImage.imageId,
       });
-      const file =
+      const file = prepareImageForUpload(
         pendingImage.file instanceof File
           ? await compressImageFile(pendingImage.file)
-          : pendingImage.file;
-      const url = await upload(path, file);
+          : pendingImage.file,
+      );
+      const url = await upload(path, file.blob);
       uploadedPaths.push(path);
       assets.push({
         id: pendingImage.imageId,
         url,
         path,
         createdAt,
+        width: file.width,
+        height: file.height,
       });
     }
 
@@ -126,7 +154,11 @@ export async function copyImagesToNewPaths({
 }): Promise<ImageAsset[]> {
   const pendingImages = await Promise.all(
     images.map(async (image) => ({
-      file: await fetchBlob(image.url),
+      file: {
+        blob: await fetchBlob(image.url),
+        width: image.width,
+        height: image.height,
+      },
       imageId: createImageId(),
     })),
   );

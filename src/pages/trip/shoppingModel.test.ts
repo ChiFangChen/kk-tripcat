@@ -48,9 +48,7 @@ describe("shoppingTypes", () => {
       createdAt: "2026-04-25T00:00:00.000Z",
     };
 
-    expect(
-      getTripShoppingResolvedContent(tripItem, [poolItem]),
-    ).toMatchObject({
+    expect(getTripShoppingResolvedContent(tripItem, [poolItem])).toMatchObject({
       id: "trip-1",
       name: "吹風機",
       estimatedAmount: "3000",
@@ -137,6 +135,8 @@ describe("shoppingTypes", () => {
           url: "https://files.local/old.jpg",
           path: "tc-images/trips/trip-1/shopping/trip-2/img-1.jpg",
           createdAt: "2026-04-25T00:00:00.000Z",
+          width: 320,
+          height: 240,
         },
       ],
       estimatedAmount: "250",
@@ -157,6 +157,8 @@ describe("shoppingTypes", () => {
             url: "https://files.local/new.jpg",
             path: "tc-images/users/admin-1/items/pool-new/img-new.jpg",
             createdAt: "2026-04-25T01:00:00.000Z",
+            width: 640,
+            height: 480,
           },
         ],
         now: "2026-04-25T01:00:00.000Z",
@@ -170,6 +172,8 @@ describe("shoppingTypes", () => {
           url: "https://files.local/new.jpg",
           path: "tc-images/users/admin-1/items/pool-new/img-new.jpg",
           createdAt: "2026-04-25T01:00:00.000Z",
+          width: 640,
+          height: 480,
         },
       ],
       estimatedAmount: "250",
