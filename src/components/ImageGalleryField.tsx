@@ -1,5 +1,6 @@
 import type { ImageAsset } from "../types/images";
 import { galleryImageClassName } from "../utils/imageDisplayClasses";
+import { LoadingImage } from "./LoadingImage";
 
 export function ImageGalleryField({
   images,
@@ -12,13 +13,15 @@ export function ImageGalleryField({
   if (safeImages.length === 0) return null;
 
   return (
-    <div className={`grid gap-2 ${className}`.trim()}>
+    <div className={`flex flex-col gap-3 ${className}`.trim()}>
       {safeImages.map((image) => (
-        <img
+        <LoadingImage
           key={image.id}
           src={image.url}
           alt=""
-          className={galleryImageClassName}
+          width={image.width}
+          height={image.height}
+          imageClassName={galleryImageClassName}
         />
       ))}
     </div>

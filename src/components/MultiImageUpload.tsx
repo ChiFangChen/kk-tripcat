@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCamera, faTrash } from "@fortawesome/free-solid-svg-icons";
 import type { ImageAsset, PendingImageFile } from "../types/images";
 import { galleryImageClassName } from "../utils/imageDisplayClasses";
+import { LoadingImage } from "./LoadingImage";
 
 function getPreviewBlob(file: PendingImageFile["file"]): Blob {
   return "blob" in file ? file.blob : file;
@@ -29,6 +30,8 @@ export function MultiImageUpload({
       safePendingImages.map((image) => ({
         id: image.imageId,
         url: URL.createObjectURL(getPreviewBlob(image.file)),
+        width: "blob" in image.file ? image.file.width : undefined,
+        height: "blob" in image.file ? image.file.height : undefined,
       })),
     [safePendingImages],
   );
@@ -42,11 +45,13 @@ export function MultiImageUpload({
   return (
     <div className="mt-2">
       {(safeExistingImages.length > 0 || safePendingImages.length > 0) && (
-        <div className="grid gap-2 mb-3">
+        <div className="flex flex-col gap-3 mb-3">
           {safeExistingImages.map((image) => (
             <PreviewCard
               key={image.id}
               url={image.url}
+              width={image.width}
+              height={image.height}
               onRemove={() => onRemoveExisting(image.id)}
             />
           ))}
@@ -54,6 +59,8 @@ export function MultiImageUpload({
             <PreviewCard
               key={image.id}
               url={image.url}
+              width={image.width}
+              height={image.height}
               pending
               onRemove={() => onRemovePending(image.id)}
             />
@@ -87,16 +94,26 @@ export function MultiImageUpload({
 
 function PreviewCard({
   url,
+  width,
+  height,
   pending = false,
   onRemove,
 }: {
   url: string;
+  width?: number;
+  height?: number;
   pending?: boolean;
   onRemove: () => void;
 }) {
   return (
     <div className="relative">
-      <img src={url} alt="" className={galleryImageClassName} />
+      <LoadingImage
+        src={url}
+        alt=""
+        width={width}
+        height={height}
+        imageClassName={galleryImageClassName}
+      />
       <button
         className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center text-xs"
         onClick={onRemove}

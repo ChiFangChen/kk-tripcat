@@ -13,6 +13,7 @@ import { generateId } from "../../utils/id";
 import { formatDate } from "../../utils/date";
 import { shoppingThumbnailClassName } from "../../utils/imageDisplayClasses";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { LoadingImage } from "../../components/LoadingImage";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
@@ -293,10 +294,13 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
               />
             )}
             {item.images[0] && (
-              <img
+              <LoadingImage
                 src={item.images[0].url}
                 alt=""
-                className={shoppingThumbnailClassName}
+                width={item.images[0].width}
+                height={item.images[0].height}
+                frameClassName="w-8 flex-shrink-0"
+                imageClassName={shoppingThumbnailClassName}
               />
             )}
             <button

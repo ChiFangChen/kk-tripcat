@@ -1033,3 +1033,61 @@ textarea.form-input {
   display: inline-block;
   font-size: 32px;
 }
+
+/* Image loading skeleton */
+.loading-image-wrapper {
+  display: block;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.loading-image-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 1px;
+  border-radius: 8px;
+}
+
+.loading-image-skeleton {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  background: linear-gradient(
+    100deg,
+    rgba(148, 163, 184, 0.16) 20%,
+    rgba(148, 163, 184, 0.3) 40%,
+    rgba(148, 163, 184, 0.16) 60%
+  );
+  background-size: 200% 100%;
+  animation: imageSkeletonShimmer 1.2s ease-in-out infinite;
+}
+
+.loading-image-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  transition: opacity 0.2s ease;
+}
+
+.loading-image-img--hidden {
+  opacity: 0;
+  position: absolute;
+  inset: 0;
+}
+
+.loading-image-img--loaded {
+  opacity: 1;
+}
+
+@keyframes imageSkeletonShimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}

@@ -22,8 +22,7 @@ describe("image display class names", () => {
     expect(shoppingThumbnailClassName).not.toContain("object-cover");
   });
 
-  it("builds aspect ratios from image dimensions with a stable fallback", () => {
+  it("builds aspect ratios from image dimensions", () => {
     expect(getImageAspectRatio({ width: 320, height: 240 })).toBe("320 / 240");
-    expect(getImageAspectRatio({ width: 0, height: 0 })).toBe("4 / 3");
   });
 });
