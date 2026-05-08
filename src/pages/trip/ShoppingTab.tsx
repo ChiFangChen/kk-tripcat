@@ -15,6 +15,7 @@ import { shoppingThumbnailClassName } from "../../utils/imageDisplayClasses";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { LoadingImage } from "../../components/LoadingImage";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
+import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
   copyImagesToNewPaths,
@@ -606,19 +607,21 @@ function DraftShoppingForm({
   );
 }
 
-function ShoppingItemDetail({
+export function ShoppingItemDetail({
   item,
   onTitleDoubleClick,
 }: {
   item: ReturnType<typeof getTripShoppingResolvedContent>;
   onTitleDoubleClick: () => void;
 }) {
+  const doubleTap = useDoubleTap();
+
   return (
     <div>
       <button
         type="button"
         className="block w-full p-0 bg-transparent border-0 font-semibold mb-2 text-left text-inherit cursor-pointer"
-        onDoubleClick={onTitleDoubleClick}
+        onClick={doubleTap(`shopping-title-${item.id}`, onTitleDoubleClick)}
       >
         {item.name}
       </button>
