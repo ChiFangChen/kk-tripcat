@@ -1042,6 +1042,10 @@ textarea.form-input {
   margin-right: auto;
 }
 
+.shopping-thumbnail-frame {
+  margin: 0;
+}
+
 .loading-image-frame {
   position: relative;
   display: block;

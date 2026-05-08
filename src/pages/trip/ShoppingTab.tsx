@@ -293,30 +293,32 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                 className="w-5 h-5"
               />
             )}
-            {item.images[0] && (
-              <LoadingImage
-                src={item.images[0].url}
-                alt=""
-                width={40}
-                height={40}
-                fit="cover"
-                frameClassName="w-10 h-10 flex-shrink-0"
-                frameContentClassName="h-full"
-                imageClassName={shoppingThumbnailClassName}
-              />
-            )}
             <button
               type="button"
-              className="flex-1 text-left"
+              className="flex flex-1 items-center gap-2 text-left min-w-0"
               onClick={() => openShoppingItemModal(item.source)}
             >
-              <span className="text-sm">{item.name}</span>
-              {(item.estimatedAmount || item.currency) && (
-                <p className="text-xs text-slate-400">
-                  {item.estimatedAmount || "-"}
-                  {item.currency ? ` ${item.currency}` : ""}
-                </p>
+              {item.images[0] && (
+                <LoadingImage
+                  src={item.images[0].url}
+                  alt=""
+                  width={40}
+                  height={40}
+                  fit="cover"
+                  frameClassName="shopping-thumbnail-frame w-10 h-10 flex-shrink-0"
+                  frameContentClassName="h-full"
+                  imageClassName={shoppingThumbnailClassName}
+                />
               )}
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm">{item.name}</span>
+                {(item.estimatedAmount || item.currency) && (
+                  <span className="block text-xs text-slate-400">
+                    {item.estimatedAmount || "-"}
+                    {item.currency ? ` ${item.currency}` : ""}
+                  </span>
+                )}
+              </span>
             </button>
           </div>
         ))}
