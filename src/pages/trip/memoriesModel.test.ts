@@ -5,6 +5,7 @@ import {
   canEditMemoryEntry,
   canSaveMemoryEntry,
   getMemoryPostImagePaths,
+  sortMemoryComments,
   sortMemoryPosts,
 } from "./memoriesModel";
 
@@ -57,6 +58,29 @@ describe("memoriesModel", () => {
     ]);
   });
 
+  it("sorts comments oldest first", () => {
+    expect(
+      sortMemoryComments([
+        {
+          id: "comment-b",
+          content: "new",
+          images: [],
+          authorId: "user-2",
+          createdAt: "2026-05-08T10:00:00.000Z",
+          updatedAt: "2026-05-08T10:00:00.000Z",
+        },
+        {
+          id: "comment-a",
+          content: "old",
+          images: [],
+          authorId: "user-1",
+          createdAt: "2026-05-07T10:00:00.000Z",
+          updatedAt: "2026-05-07T10:00:00.000Z",
+        },
+      ]).map((comment) => comment.id),
+    ).toEqual(["comment-a", "comment-b"]);
+  });
+
   it("allows authors to edit only their own entries", () => {
     expect(canEditMemoryEntry({ authorId: "user-1" }, "user-1")).toBe(true);
     expect(canEditMemoryEntry({ authorId: "user-1" }, "user-2")).toBe(false);
@@ -75,7 +99,7 @@ describe("memoriesModel", () => {
     ).toBe(false);
   });
 
-  it("collects post image paths for deletion", () => {
+  it("collects post and comment image paths for deletion", () => {
     expect(
       getMemoryPostImagePaths({
         ...postA,
@@ -89,7 +113,26 @@ describe("memoriesModel", () => {
             height: 240,
           },
         ],
+        comments: [
+          {
+            id: "comment-1",
+            content: "Agree",
+            images: [
+              {
+                id: "comment-image-1",
+                url: "https://files.local/comment.jpg",
+                path: "images/comment.jpg",
+                createdAt: "2026-05-08T00:00:00.000Z",
+                width: 320,
+                height: 240,
+              },
+            ],
+            authorId: "user-2",
+            createdAt: "2026-05-08T01:00:00.000Z",
+            updatedAt: "2026-05-08T01:00:00.000Z",
+          },
+        ],
       }),
-    ).toEqual(["images/image.jpg"]);
+    ).toEqual(["images/image.jpg", "images/comment.jpg"]);
   });
 });

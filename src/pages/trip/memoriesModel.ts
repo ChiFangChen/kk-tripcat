@@ -1,4 +1,4 @@
-import type { MemoryPost } from "../../types";
+import type { MemoryComment, MemoryPost } from "../../types";
 
 export function canSaveMemoryEntry({
   content,
@@ -12,6 +12,12 @@ export function canSaveMemoryEntry({
 
 export function sortMemoryPosts(posts: MemoryPost[]): MemoryPost[] {
   return [...posts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function sortMemoryComments(
+  comments: MemoryComment[],
+): MemoryComment[] {
+  return [...comments].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
 export function canEditMemoryEntry(
@@ -30,5 +36,10 @@ export function canDeleteMemoryEntry(
 }
 
 export function getMemoryPostImagePaths(post: MemoryPost): string[] {
-  return post.images.map((image) => image.path);
+  return [
+    ...post.images.map((image) => image.path),
+    ...post.comments.flatMap((comment) =>
+      comment.images.map((image) => image.path),
+    ),
+  ];
 }
