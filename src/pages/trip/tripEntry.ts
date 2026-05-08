@@ -74,12 +74,39 @@ export function getOrderedTripTabs({
   gotReady?: boolean;
   completed?: boolean;
 }): Array<{ key: TripTabType; label: string }> {
-  const tabs = getEditableTabs(skipPreparation);
-  if (completed) return tabs.filter((tab) => tab.key !== "preparation");
-  if (!gotReady || skipPreparation) return tabs;
+  return getTripTabGroups({ skipPreparation, gotReady, completed }).mainTabs;
+}
 
-  return [
-    ...tabs.filter((tab) => tab.key !== "preparation"),
-    tabs.find((tab) => tab.key === "preparation")!,
-  ];
+export function getTripTabGroups({
+  skipPreparation,
+  gotReady,
+  completed,
+}: {
+  skipPreparation?: boolean;
+  gotReady?: boolean;
+  completed?: boolean;
+}): {
+  mainTabs: Array<{ key: TripTabType; label: string }>;
+  menuTabs: Array<{ key: TripTabType; label: string }>;
+} {
+  const tabs = getEditableTabs(skipPreparation);
+
+  if (completed || skipPreparation) {
+    return {
+      mainTabs: tabs.filter((tab) => tab.key !== "preparation"),
+      menuTabs: [],
+    };
+  }
+
+  if (!gotReady) {
+    return {
+      mainTabs: tabs,
+      menuTabs: [],
+    };
+  }
+
+  return {
+    mainTabs: tabs.filter((tab) => tab.key !== "preparation"),
+    menuTabs: tabs.filter((tab) => tab.key === "preparation"),
+  };
 }

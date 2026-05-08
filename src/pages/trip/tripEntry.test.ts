@@ -3,6 +3,7 @@ import {
   getFirstEntryMode,
   getEditableTabs,
   getOrderedTripTabs,
+  getTripTabGroups,
   getViewerTabs,
   type SetupState,
 } from "./tripEntry";
@@ -42,7 +43,7 @@ describe("tripEntry", () => {
     ]);
   });
 
-  it("moves preparation to the end after the user got ready", () => {
+  it("moves preparation out of the main tabs after the user got ready", () => {
     expect(
       getOrderedTripTabs({
         skipPreparation: false,
@@ -56,8 +57,25 @@ describe("tripEntry", () => {
       "transport",
       "shopping",
       "memories",
-      "preparation",
     ]);
+  });
+
+  it("places preparation in the hidden tab group after the user got ready", () => {
+    const groups = getTripTabGroups({
+      skipPreparation: false,
+      gotReady: true,
+      completed: false,
+    });
+
+    expect(groups.mainTabs.map((tab) => tab.key)).toEqual([
+      "flight",
+      "hotel",
+      "schedule",
+      "transport",
+      "shopping",
+      "memories",
+    ]);
+    expect(groups.menuTabs.map((tab) => tab.key)).toEqual(["preparation"]);
   });
 
   it("hides preparation after the trip is completed", () => {

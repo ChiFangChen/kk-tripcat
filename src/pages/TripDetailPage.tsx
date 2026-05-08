@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronLeft,
+  faEllipsisVertical,
   faUsers,
   faShareNodes,
   faCircleCheck,
@@ -25,7 +26,7 @@ import type { TripTabType, ChecklistItem, Template } from "../types";
 import * as storage from "../utils/storage";
 import {
   getFirstEntryMode,
-  getOrderedTripTabs,
+  getTripTabGroups,
   getViewerTabs,
 } from "./trip/tripEntry";
 
@@ -54,6 +55,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [editingTrip, setEditingTrip] = useState(false);
+  const [showTabMenu, setShowTabMenu] = useState(false);
   const [copied, setCopied] = useState("");
   const [setupChoice, setSetupChoice] = useState<"preparation" | "skip" | null>(
     null,
@@ -71,13 +73,14 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     setupChoice: setupChoice || undefined,
   });
   const viewerTabs = getViewerTabs(trip?.memoriesVisibleToViewers);
-  const tabs = viewOnly
-    ? viewerTabs
-    : getOrderedTripTabs({
-        skipPreparation: tripData.skipPreparation,
-        gotReady: tripData.gotReady,
-        completed,
-      });
+  const tabGroups = getTripTabGroups({
+    skipPreparation: tripData.skipPreparation,
+    gotReady: tripData.gotReady,
+    completed,
+  });
+  const tabs = viewOnly ? viewerTabs : tabGroups.mainTabs;
+  const menuTabs = viewOnly ? [] : tabGroups.menuTabs;
+  const allTabs = [...tabs, ...menuTabs];
   const defaultTab = viewOnly
     ? viewerTabs[0].key
     : completed || tripData.skipPreparation
@@ -98,9 +101,9 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   }, [activeTab, storageKey, viewOnly]);
 
   useEffect(() => {
-    if (tabs.some((tab) => tab.key === activeTab)) return;
+    if (allTabs.some((tab) => tab.key === activeTab)) return;
     setActiveTab(defaultTab);
-  }, [activeTab, defaultTab, tabs]);
+  }, [activeTab, allTabs, defaultTab]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -308,15 +311,50 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       )}
 
       <div className="trip-tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            className={`trip-tab ${activeTab === tab.key ? "active" : ""}${tab.key === "preparation" && tripData.gotReady ? " ready" : ""}`}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <div className="trip-tabs-main">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              className={`trip-tab ${activeTab === tab.key ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {menuTabs.length > 0 && (
+          <div className="trip-tabs-menu">
+            <button
+              className={`trip-tab-menu-btn ${menuTabs.some((tab) => tab.key === activeTab) ? "active" : ""}`}
+              onClick={() => setShowTabMenu((current) => !current)}
+              title="更多分頁"
+            >
+              <FontAwesomeIcon icon={faEllipsisVertical} />
+            </button>
+            {showTabMenu && (
+              <>
+                <div
+                  className="trip-tab-menu-popover-wrapper"
+                  onClick={() => setShowTabMenu(false)}
+                ></div>
+                <div className="trip-tab-menu-popover">
+                  {menuTabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      className={`trip-tab-menu-item ${activeTab === tab.key ? "active" : ""}`}
+                      onClick={() => {
+                        setActiveTab(tab.key);
+                        setShowTabMenu(false);
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="page-container">
