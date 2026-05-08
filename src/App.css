@@ -1103,3 +1103,45 @@ textarea.form-input {
     background-position: -120% 0;
   }
 }
+
+/* Global toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(72px + var(--safe-bottom));
+  z-index: 80;
+  max-width: calc(100vw - 32px);
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+  animation: toastSlideIn 0.18s ease-out;
+}
+
+.toast--info {
+  background: var(--color-text);
+}
+
+.toast--success {
+  background: #16a34a;
+}
+
+.toast--error {
+  background: #ef4444;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

@@ -55,6 +55,7 @@ import {
 import { defaultTemplate } from "../data/seed";
 import type { Firestore } from "firebase/firestore";
 import type { Item, TripShoppingItem } from "../pages/trip/shoppingTypes";
+import type { ToastMessage, ToastType } from "../types/toast";
 
 // Shared data (visible to all trip members)
 export interface SharedTripData {
@@ -322,6 +323,9 @@ interface AppContextType {
   loading: boolean;
   viewTripId: string | null;
   firebaseConnected: boolean;
+  toast: ToastMessage | null;
+  showToast: (toast: { type?: ToastType; message: string }) => void;
+  dismissToast: () => void;
   login: (user: User) => void;
   logout: () => void;
   register: (
@@ -413,6 +417,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, rawDispatch] = useReducer(reducer, null, loadInitialState);
   const currentUserId = state.auth.currentUser?.id;
   const [loading, setLoading] = useState(isFirebaseConfigured());
+  const [toast, setToast] = useState<ToastMessage | null>(null);
   const [dbReady, setDbReady] = useState(false);
   const [isOnline, setIsOnline] = useState(() => window.navigator.onLine);
   const dbRef = useRef<Firestore | null>(null);
@@ -450,6 +455,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const pendingTipsUpdatedAtRef = useRef<string | undefined>(undefined);
   const pendingItemsUpdatedAtRef = useRef<string | undefined>(undefined);
   const versionBlockedTripIdsRef = useRef<Set<string>>(new Set());
+  const toastTimerRef = useRef<number | null>(null);
 
   // Parse viewTripId from URL once
   const viewTripId = useMemo(() => {
@@ -458,6 +464,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const firebaseConnected = dbReady && isOnline;
+
+  const dismissToast = useCallback(() => {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+    setToast(null);
+  }, []);
+
+  const showToast = useCallback(
+    ({ type = "info", message }: { type?: ToastType; message: string }) => {
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+
+      setToast({
+        id: generateId(),
+        type,
+        message,
+      });
+      toastTimerRef.current = window.setTimeout(() => {
+        setToast(null);
+        toastTimerRef.current = null;
+      }, 3000);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const dispatch = useCallback(
     (action: Action) => {
@@ -1250,6 +1291,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         loading,
         viewTripId,
         firebaseConnected,
+        toast,
+        showToast,
+        dismissToast,
         login,
         logout,
         register,

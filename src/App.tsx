@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AppProvider, useApp } from "./context/AppContext";
 import * as storage from "./utils/storage";
 import { UpdatePrompt } from "./components/UpdatePrompt";
+import { ConnectedToastViewport } from "./components/ToastViewport";
 import { BottomTabBar } from "./components/BottomTabBar";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -276,6 +277,7 @@ export default function App() {
   return (
     <AppProvider>
       <AppContent />
+      <ConnectedToastViewport />
       <UpdatePrompt />
     </AppProvider>
   );
