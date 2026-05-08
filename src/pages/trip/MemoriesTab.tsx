@@ -23,6 +23,7 @@ import {
   canDeleteMemoryEntry,
   canEditMemoryEntry,
   canSaveMemoryEntry,
+  formatMemoryTimestamp,
   getMemoryPostImagePaths,
   sortMemoryComments,
   sortMemoryPosts,
@@ -38,6 +39,7 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
     state,
     getTripData,
     setSharedTripData,
+    updateTrip,
     getUserName,
     getUserColor,
     isTripAdmin,
@@ -60,6 +62,9 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
     postId: string;
     comment: MemoryComment;
   } | null>(null);
+  const [pendingVisibility, setPendingVisibility] = useState<boolean | null>(
+    null,
+  );
 
   function newPost(): MemoryPost {
     const now = new Date().toISOString();
@@ -165,17 +170,40 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
         />
         <div className="min-w-0 text-xs text-slate-400">
           <span>{getUserName(authorId)}</span>
-          <span> · {new Date(createdAt).toLocaleString()}</span>
+          <span> · {formatMemoryTimestamp(createdAt)}</span>
         </div>
       </div>
     );
   }
 
+  function confirmVisibilityChange(visible: boolean) {
+    if (!trip) return;
+    updateTrip(trip, { memoriesVisibleToViewers: visible });
+    setPendingVisibility(null);
+  }
+
   return (
     <div>
-      <div className="flex justify-end items-center mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          {admin && !viewOnly && (
+            <label className="flex items-center gap-2 text-sm text-slate-500">
+              <span>公開</span>
+              <input
+                type="checkbox"
+                checked={!!trip?.memoriesVisibleToViewers}
+                onChange={(event) =>
+                  setPendingVisibility(event.currentTarget.checked)
+                }
+              />
+            </label>
+          )}
+        </div>
         {canWrite && (
-          <button className="btn-round-add" onClick={() => setEditingPost(newPost())}>
+          <button
+            className="btn-round-add"
+            onClick={() => setEditingPost(newPost())}
+          >
             <FontAwesomeIcon icon={faPlus} className="text-xs" />
           </button>
         )}
@@ -386,6 +414,30 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
               }
             >
               刪除
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {pendingVisibility !== null && (
+        <Modal title="公開回憶" onClose={() => setPendingVisibility(null)}>
+          <p className="text-sm mb-4">
+            {pendingVisibility
+              ? "開啟後，拿到唯讀分享連結的人可以看到回憶內容。確定開啟嗎？"
+              : "關閉後，唯讀分享連結將看不到回憶內容。確定關閉嗎？"}
+          </p>
+          <div className="flex gap-2">
+            <button
+              className="btn btn-secondary flex-1"
+              onClick={() => setPendingVisibility(null)}
+            >
+              取消
+            </button>
+            <button
+              className="btn btn-primary flex-1"
+              onClick={() => confirmVisibilityChange(pendingVisibility)}
+            >
+              確定
             </button>
           </div>
         </Modal>

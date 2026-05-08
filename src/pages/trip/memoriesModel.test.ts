@@ -4,6 +4,7 @@ import {
   canDeleteMemoryEntry,
   canEditMemoryEntry,
   canSaveMemoryEntry,
+  formatMemoryTimestamp,
   getMemoryPostImagePaths,
   sortMemoryComments,
   sortMemoryPosts,
@@ -134,5 +135,16 @@ describe("memoriesModel", () => {
         ],
       }),
     ).toEqual(["images/image.jpg", "images/comment.jpg"]);
+  });
+
+  it("formats timestamps without year only for the current year", () => {
+    const now = new Date(2026, 4, 8, 12, 0);
+
+    expect(
+      formatMemoryTimestamp(new Date(2026, 4, 8, 6, 30).toISOString(), now),
+    ).toBe("5/8 06:30");
+    expect(
+      formatMemoryTimestamp(new Date(2025, 4, 8, 6, 30).toISOString(), now),
+    ).toBe("2025/5/8 06:30");
   });
 });

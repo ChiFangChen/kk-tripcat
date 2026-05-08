@@ -43,3 +43,19 @@ export function getMemoryPostImagePaths(post: MemoryPost): string[] {
     ),
   ];
 }
+
+export function formatMemoryTimestamp(
+  value: string,
+  now = new Date(),
+): string {
+  const date = new Date(value);
+  const datePart =
+    date.getFullYear() === now.getFullYear()
+      ? `${date.getMonth() + 1}/${date.getDate()}`
+      : `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+  const timePart = `${String(date.getHours()).padStart(2, "0")}:${String(
+    date.getMinutes(),
+  ).padStart(2, "0")}`;
+
+  return `${datePart} ${timePart}`;
+}
