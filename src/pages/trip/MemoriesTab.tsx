@@ -1,17 +1,309 @@
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPen, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { useApp } from "../../context/AppContext";
+import { FullScreenModal } from "../../components/FullScreenModal";
+import { Modal } from "../../components/Modal";
+import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { MultiImageUpload } from "../../components/MultiImageUpload";
+import { deleteImage, uploadImage } from "../../utils/firebase";
+import {
+  createPendingImages,
+  persistImagesForRecord,
+} from "../../utils/imageUpload";
+import { generateId } from "../../utils/id";
+import type { ImageAsset, PendingImageFile } from "../../types/images";
+import type { MemoryPost } from "../../types";
+import {
+  canDeleteMemoryEntry,
+  canEditMemoryEntry,
+  canSaveMemoryEntry,
+  getMemoryPostImagePaths,
+  sortMemoryPosts,
+} from "./memoriesModel";
+
 interface Props {
   tripId: string;
   viewOnly?: boolean;
 }
 
-export function MemoriesTab({ tripId: _tripId, viewOnly: _viewOnly }: Props) {
-  void _tripId;
-  void _viewOnly;
+export function MemoriesTab({ tripId, viewOnly }: Props) {
+  const {
+    state,
+    getTripData,
+    setSharedTripData,
+    getUserName,
+    getUserColor,
+    isTripAdmin,
+  } = useApp();
+  const trip = state.trips.find((entry) => entry.id === tripId);
+  const tripData = getTripData(tripId);
+  const posts = sortMemoryPosts(tripData.memories || []);
+  const currentUserId = state.auth.currentUser?.id || null;
+  const admin = !!trip && isTripAdmin(trip);
+  const canWrite = !viewOnly && !!currentUserId;
+
+  const [editingPost, setEditingPost] = useState<MemoryPost | null>(null);
+  const [confirmDeletePost, setConfirmDeletePost] =
+    useState<MemoryPost | null>(null);
+
+  function newPost(): MemoryPost {
+    const now = new Date().toISOString();
+    return {
+      id: generateId(),
+      title: "",
+      content: "",
+      images: [],
+      authorId: currentUserId || "anonymous",
+      comments: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
+  function savePost(post: MemoryPost) {
+    const normalizedPost = {
+      ...post,
+      title: post.title?.trim() || undefined,
+      content: post.content.trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    const exists = posts.some((entry) => entry.id === normalizedPost.id);
+    const nextPosts = exists
+      ? posts.map((entry) =>
+          entry.id === normalizedPost.id ? normalizedPost : entry,
+        )
+      : [normalizedPost, ...posts];
+    setSharedTripData(tripId, { memories: nextPosts });
+    setEditingPost(null);
+  }
+
+  async function deletePost(post: MemoryPost) {
+    await Promise.all(getMemoryPostImagePaths(post).map(deleteImage));
+    setSharedTripData(tripId, {
+      memories: posts.filter((entry) => entry.id !== post.id),
+    });
+    setEditingPost(null);
+    setConfirmDeletePost(null);
+  }
 
   return (
     <div>
-      <div className="empty-state">
-        <p>還沒有回憶</p>
+      <div className="flex justify-end items-center mb-4">
+        {canWrite && (
+          <button className="btn-round-add" onClick={() => setEditingPost(newPost())}>
+            <FontAwesomeIcon icon={faPlus} className="text-xs" />
+          </button>
+        )}
       </div>
+
+      {posts.length === 0 ? (
+        <div className="empty-state">
+          <p>還沒有回憶</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {posts.map((post) => {
+            const canEdit = canEditMemoryEntry(post, currentUserId);
+            const canDelete = canDeleteMemoryEntry(post, currentUserId, admin);
+
+            return (
+              <div key={post.id} className="card">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-6 h-6 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: getUserColor(post.authorId) }}
+                    />
+                    <div className="min-w-0 text-xs text-slate-400">
+                      <span>{getUserName(post.authorId)}</span>
+                      <span> · {new Date(post.createdAt).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  {canWrite && (canEdit || canDelete) && (
+                    <button
+                      className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
+                      onClick={() =>
+                        canEdit
+                          ? setEditingPost(post)
+                          : setConfirmDeletePost(post)
+                      }
+                    >
+                      <FontAwesomeIcon icon={canEdit ? faPen : faTrash} />
+                    </button>
+                  )}
+                </div>
+
+                {post.title && (
+                  <h3 className="font-semibold mb-2">{post.title}</h3>
+                )}
+                {post.content && (
+                  <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap mb-2">
+                    {post.content}
+                  </p>
+                )}
+                <ImageGalleryField images={post.images} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {editingPost && (
+        <FullScreenModal
+          title={posts.some((post) => post.id === editingPost.id) ? "編輯回憶" : "新增回憶"}
+          onClose={() => setEditingPost(null)}
+        >
+          <MemoryPostForm
+            tripId={tripId}
+            post={editingPost}
+            onSave={savePost}
+            onCancel={() => setEditingPost(null)}
+            onDelete={
+              posts.some((post) => post.id === editingPost.id)
+                ? () => setConfirmDeletePost(editingPost)
+                : undefined
+            }
+          />
+        </FullScreenModal>
+      )}
+
+      {confirmDeletePost && (
+        <Modal title="刪除回憶" onClose={() => setConfirmDeletePost(null)}>
+          <p className="text-sm mb-4">
+            確定要刪除這則回憶嗎？留言和圖片也會一起刪除。
+          </p>
+          <div className="flex gap-2">
+            <button
+              className="btn btn-secondary flex-1"
+              onClick={() => setConfirmDeletePost(null)}
+            >
+              取消
+            </button>
+            <button
+              className="btn btn-secondary btn-danger flex-1"
+              onClick={() => deletePost(confirmDeletePost)}
+            >
+              刪除
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function MemoryPostForm({
+  tripId,
+  post,
+  onSave,
+  onCancel,
+  onDelete,
+}: {
+  tripId: string;
+  post: MemoryPost;
+  onSave: (post: MemoryPost) => void;
+  onCancel: () => void;
+  onDelete?: () => void;
+}) {
+  const [form, setForm] = useState(post);
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const canSave = canSaveMemoryEntry({
+    content: form.content,
+    images: [...form.images, ...pendingImages],
+  });
+
+  async function handleSave() {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/trips/${tripId}/memories/posts/${post.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => onSave({ ...form, images }),
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="form-group">
+        <label className="form-label">標題</label>
+        <input
+          className="form-input"
+          value={form.title || ""}
+          onChange={(event) => setForm({ ...form, title: event.target.value })}
+          autoFocus
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">內容</label>
+        <textarea
+          className="form-input"
+          value={form.content}
+          onChange={(event) =>
+            setForm({ ...form, content: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
+        />
+      </div>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving || !canSave}
+        >
+          {saving ? "儲存中..." : "儲存"}
+        </button>
+      </div>
+      {onDelete && (
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />
+          刪除
+        </button>
+      )}
     </div>
   );
 }
