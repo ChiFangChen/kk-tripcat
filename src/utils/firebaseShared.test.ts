@@ -19,6 +19,24 @@ describe("normalizeSharedTripData", () => {
         transport: [
           { id: "transport-1", title: "Bus", content: "", isOpen: true },
         ],
+        memories: [
+          {
+            id: "memory-1",
+            content: "Nice trip",
+            authorId: "user-1",
+            createdAt: "2026-05-08T00:00:00.000Z",
+            updatedAt: "2026-05-08T00:00:00.000Z",
+            comments: [
+              {
+                id: "comment-1",
+                content: "Agree",
+                authorId: "user-2",
+                createdAt: "2026-05-08T01:00:00.000Z",
+                updatedAt: "2026-05-08T01:00:00.000Z",
+              },
+            ],
+          },
+        ],
         schedule: [
           {
             date: "2026-04-16",
@@ -47,6 +65,26 @@ describe("normalizeSharedTripData", () => {
           content: "",
           isOpen: true,
           images: [],
+        },
+      ],
+      memories: [
+        {
+          id: "memory-1",
+          content: "Nice trip",
+          images: [],
+          authorId: "user-1",
+          createdAt: "2026-05-08T00:00:00.000Z",
+          updatedAt: "2026-05-08T00:00:00.000Z",
+          comments: [
+            {
+              id: "comment-1",
+              content: "Agree",
+              images: [],
+              authorId: "user-2",
+              createdAt: "2026-05-08T01:00:00.000Z",
+              updatedAt: "2026-05-08T01:00:00.000Z",
+            },
+          ],
         },
       ],
     });

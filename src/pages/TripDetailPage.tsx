@@ -20,23 +20,20 @@ import { HotelTab } from "./trip/HotelTab";
 import { ScheduleTab } from "./trip/ScheduleTab";
 import { TransportTab } from "./trip/TransportTab";
 import { ShoppingTab } from "./trip/ShoppingTab";
+import { MemoriesTab } from "./trip/MemoriesTab";
 import type { TripTabType, ChecklistItem, Template } from "../types";
 import * as storage from "../utils/storage";
-import { getEditableTabs, getFirstEntryMode } from "./trip/tripEntry";
+import {
+  getFirstEntryMode,
+  getOrderedTripTabs,
+  getViewerTabs,
+} from "./trip/tripEntry";
 
 interface Props {
   tripId: string;
   onBack: () => void;
   viewOnly?: boolean;
 }
-
-// Viewer mode: only show shared tabs
-const viewerTabs: { key: TripTabType; label: string }[] = [
-  { key: "flight", label: "飛機" },
-  { key: "hotel", label: "飯店" },
-  { key: "schedule", label: "行程表" },
-  { key: "transport", label: "交通" },
-];
 
 export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const {
@@ -73,11 +70,17 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     skipPreparation: tripData.skipPreparation,
     setupChoice: setupChoice || undefined,
   });
-  const editableTabs = getEditableTabs(tripData.skipPreparation);
-  const tabs = viewOnly ? viewerTabs : editableTabs;
+  const viewerTabs = getViewerTabs(trip?.memoriesVisibleToViewers);
+  const tabs = viewOnly
+    ? viewerTabs
+    : getOrderedTripTabs({
+        skipPreparation: tripData.skipPreparation,
+        gotReady: tripData.gotReady,
+        completed,
+      });
   const defaultTab = viewOnly
     ? viewerTabs[0].key
-    : tripData.skipPreparation
+    : completed || tripData.skipPreparation
       ? "flight"
       : "preparation";
   const tabStorageUserKey = viewOnly
@@ -232,17 +235,6 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     setEditingTrip(false);
   }
 
-  // Reorder tabs only when preparation tab is available.
-  const orderedTabs =
-    viewOnly || tripData.skipPreparation
-      ? tabs
-      : tripData.gotReady
-        ? [
-            ...tabs.filter((tab) => tab.key !== "preparation"),
-            tabs.find((tab) => tab.key === "preparation")!,
-          ]
-        : tabs;
-
   return (
     <div>
       <div className="page-header">
@@ -316,7 +308,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       )}
 
       <div className="trip-tabs">
-        {orderedTabs.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
             className={`trip-tab ${activeTab === tab.key ? "active" : ""}${tab.key === "preparation" && tripData.gotReady ? " ready" : ""}`}
@@ -345,6 +337,9 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         )}
         {activeTab === "shopping" && !viewOnly && (
           <ShoppingTab tripId={tripId} viewOnly={readOnly} />
+        )}
+        {activeTab === "memories" && (
+          <MemoriesTab tripId={tripId} viewOnly={viewOnly} />
         )}
       </div>
 

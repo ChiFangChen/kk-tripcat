@@ -37,6 +37,7 @@ export function getEditableTabs(skipPreparation?: boolean): Array<{
     { key: "schedule", label: "行程表" },
     { key: "transport", label: "交通" },
     { key: "shopping", label: "購物" },
+    { key: "memories", label: "回憶" },
   ];
 
   if (skipPreparation) {
@@ -44,4 +45,41 @@ export function getEditableTabs(skipPreparation?: boolean): Array<{
   }
 
   return [{ key: "preparation", label: "準備" }, ...sharedTabs];
+}
+
+export function getViewerTabs(memoriesVisibleToViewers?: boolean): Array<{
+  key: TripTabType;
+  label: string;
+}> {
+  const tabs: Array<{ key: TripTabType; label: string }> = [
+    { key: "flight", label: "飛機" },
+    { key: "hotel", label: "飯店" },
+    { key: "schedule", label: "行程表" },
+    { key: "transport", label: "交通" },
+  ];
+
+  if (memoriesVisibleToViewers) {
+    tabs.push({ key: "memories", label: "回憶" });
+  }
+
+  return tabs;
+}
+
+export function getOrderedTripTabs({
+  skipPreparation,
+  gotReady,
+  completed,
+}: {
+  skipPreparation?: boolean;
+  gotReady?: boolean;
+  completed?: boolean;
+}): Array<{ key: TripTabType; label: string }> {
+  const tabs = getEditableTabs(skipPreparation);
+  if (completed) return tabs.filter((tab) => tab.key !== "preparation");
+  if (!gotReady || skipPreparation) return tabs;
+
+  return [
+    ...tabs.filter((tab) => tab.key !== "preparation"),
+    tabs.find((tab) => tab.key === "preparation")!,
+  ];
 }

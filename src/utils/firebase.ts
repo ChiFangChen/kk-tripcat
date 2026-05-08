@@ -80,6 +80,18 @@ function normalizeImageArray<T extends { images?: unknown }>(
   };
 }
 
+function normalizeMemoryPost<T extends { images?: unknown; comments?: unknown }>(
+  post: T,
+): T & { images: unknown[]; comments: unknown[] } {
+  return {
+    ...post,
+    images: Array.isArray(post.images) ? post.images : [],
+    comments: Array.isArray(post.comments)
+      ? post.comments.map((comment) => normalizeImageArray(comment))
+      : [],
+  };
+}
+
 export function normalizeSharedTripData(
   data: Partial<SharedTripData> | undefined,
 ): SharedTripData {
@@ -99,6 +111,7 @@ export function normalizeSharedTripData(
       data?.transport?.map((transportItem) =>
         normalizeImageArray(transportItem),
       ) || [],
+    memories: data?.memories?.map((post) => normalizeMemoryPost(post)) || [],
   };
 }
 

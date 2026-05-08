@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   getFirstEntryMode,
   getEditableTabs,
+  getOrderedTripTabs,
+  getViewerTabs,
   type SetupState,
 } from "./tripEntry";
 
@@ -36,6 +38,58 @@ describe("tripEntry", () => {
       "schedule",
       "transport",
       "shopping",
+      "memories",
+    ]);
+  });
+
+  it("moves preparation to the end after the user got ready", () => {
+    expect(
+      getOrderedTripTabs({
+        skipPreparation: false,
+        gotReady: true,
+        completed: false,
+      }).map((tab) => tab.key),
+    ).toEqual([
+      "flight",
+      "hotel",
+      "schedule",
+      "transport",
+      "shopping",
+      "memories",
+      "preparation",
+    ]);
+  });
+
+  it("hides preparation after the trip is completed", () => {
+    expect(
+      getOrderedTripTabs({
+        skipPreparation: false,
+        gotReady: true,
+        completed: true,
+      }).map((tab) => tab.key),
+    ).toEqual([
+      "flight",
+      "hotel",
+      "schedule",
+      "transport",
+      "shopping",
+      "memories",
+    ]);
+  });
+
+  it("shows memories in viewer mode only when enabled", () => {
+    expect(getViewerTabs(false).map((tab) => tab.key)).toEqual([
+      "flight",
+      "hotel",
+      "schedule",
+      "transport",
+    ]);
+    expect(getViewerTabs(true).map((tab) => tab.key)).toEqual([
+      "flight",
+      "hotel",
+      "schedule",
+      "transport",
+      "memories",
     ]);
   });
 });

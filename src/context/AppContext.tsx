@@ -21,6 +21,7 @@ import type {
   ScheduleDay,
   ScheduleNote,
   TransportItem,
+  MemoryPost,
 } from "../types";
 import { USER_COLORS } from "../types";
 import * as storage from "../utils/storage";
@@ -65,6 +66,7 @@ export interface SharedTripData {
   flights: FlightInfo[];
   hotels: Hotel[];
   transport: TransportItem[];
+  memories: MemoryPost[];
 }
 
 // Per-user data (private to each user)
@@ -131,6 +133,7 @@ const emptyShared: SharedTripData = {
   flights: [],
   hotels: [],
   transport: [],
+  memories: [],
 };
 const emptyUser: UserTripData = {
   checklist: [],

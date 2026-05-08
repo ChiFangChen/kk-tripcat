@@ -41,6 +41,7 @@ export interface Trip {
   isCompleted?: boolean;
   completedAt?: string;
   completedBy?: string;
+  memoriesVisibleToViewers?: boolean;
 }
 
 export interface ChecklistItem {
@@ -181,6 +182,26 @@ export interface ScheduleNote {
   images: ImageAsset[];
 }
 
+export interface MemoryComment {
+  id: string;
+  content: string;
+  images: ImageAsset[];
+  authorId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemoryPost {
+  id: string;
+  title?: string;
+  content: string;
+  images: ImageAsset[];
+  authorId: string;
+  comments: MemoryComment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type TabType = "trips" | "notes" | "settings";
 export type TripTabType =
   | "preparation"
@@ -188,5 +209,6 @@ export type TripTabType =
   | "hotel"
   | "schedule"
   | "transport"
-  | "shopping";
+  | "shopping"
+  | "memories";
 export type NoteTabType = "tips" | "favorites";
