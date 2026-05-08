@@ -5,6 +5,7 @@ import type {
 } from "../types/images";
 
 export type UploadPendingImage = PendingImageFile;
+type ImageExtension = NonNullable<PreparedImageFile["extension"]>;
 
 export function createPendingImages(
   files: File[],
@@ -24,7 +25,7 @@ export async function compressImageFile(
   return new Promise((resolve, reject) => {
     const image = new Image();
     const objectUrl = URL.createObjectURL(file);
-    image.onload = () => {
+    image.onload = async () => {
       const canvas = document.createElement("canvas");
       const ratio = Math.min(maxWidth / image.width, 1);
       canvas.width = image.width * ratio;
@@ -37,28 +38,53 @@ export async function compressImageFile(
       }
 
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(
-        (blob) => {
+
+      try {
+        const webpBlob = await canvasToBlob(canvas, "image/webp", quality);
+        if (webpBlob?.type === "image/webp") {
           URL.revokeObjectURL(objectUrl);
-          if (!blob) {
-            reject(new Error("Image compression failed"));
-            return;
-          }
           resolve({
-            blob,
+            blob: webpBlob,
             width: canvas.width,
             height: canvas.height,
+            extension: "webp",
           });
-        },
-        "image/jpeg",
-        quality,
-      );
+          return;
+        }
+
+        const jpegBlob = await canvasToBlob(canvas, "image/jpeg", quality);
+        URL.revokeObjectURL(objectUrl);
+        if (!jpegBlob) {
+          reject(new Error("Image compression failed"));
+          return;
+        }
+
+        resolve({
+          blob: jpegBlob,
+          width: canvas.width,
+          height: canvas.height,
+          extension: "jpg",
+        });
+      } catch (error) {
+        URL.revokeObjectURL(objectUrl);
+        reject(error);
+      }
     };
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
       reject(new Error("Image load failed"));
     };
     image.src = objectUrl;
+  });
+}
+
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: "image/jpeg" | "image/webp",
+  quality: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob(resolve, type, quality);
   });
 }
 
@@ -82,11 +108,13 @@ function prepareImageForUpload(
 export function createStorageImagePath({
   basePath,
   imageId,
+  extension = "jpg",
 }: {
   basePath: string;
   imageId: string;
+  extension?: ImageExtension;
 }): string {
-  return `${basePath}/${imageId}.jpg`;
+  return `${basePath}/${imageId}.${extension}`;
 }
 
 export async function uploadPendingImagesBatch({
@@ -107,15 +135,16 @@ export async function uploadPendingImagesBatch({
 
   try {
     for (const pendingImage of pendingImages) {
-      const path = createStorageImagePath({
-        basePath,
-        imageId: pendingImage.imageId,
-      });
       const file = prepareImageForUpload(
         pendingImage.file instanceof File
           ? await compressImageFile(pendingImage.file)
           : pendingImage.file,
       );
+      const path = createStorageImagePath({
+        basePath,
+        imageId: pendingImage.imageId,
+        extension: file.extension,
+      });
       const url = await upload(path, file.blob);
       uploadedPaths.push(path);
       assets.push({

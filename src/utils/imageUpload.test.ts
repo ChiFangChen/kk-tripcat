@@ -13,8 +13,19 @@ describe("createStorageImagePath", () => {
       createStorageImagePath({
         basePath: "tc-images/trips/trip-1/hotels/hotel-1",
         imageId: "img-1",
+        extension: "jpg",
       }),
     ).toBe("tc-images/trips/trip-1/hotels/hotel-1/img-1.jpg");
+  });
+
+  it("builds deterministic webp storage paths", () => {
+    expect(
+      createStorageImagePath({
+        basePath: "tc-images/trips/trip-1/hotels/hotel-1",
+        imageId: "img-1",
+        extension: "webp",
+      }),
+    ).toBe("tc-images/trips/trip-1/hotels/hotel-1/img-1.webp");
   });
 });
 
@@ -27,7 +38,12 @@ describe("uploadPendingImagesBatch", () => {
 
     const pendingImages: UploadPendingImage[] = [
       {
-        file: { blob: new Blob(["a"]), width: 320, height: 240 },
+        file: {
+          blob: new Blob(["a"], { type: "image/webp" }),
+          width: 320,
+          height: 240,
+          extension: "webp",
+        },
         imageId: "img-1",
       },
       {
@@ -47,8 +63,8 @@ describe("uploadPendingImagesBatch", () => {
     expect(uploaded).toEqual([
       {
         id: "img-1",
-        url: "https://files.local/tc-images/trips/trip-1/hotels/hotel-1/img-1.jpg",
-        path: "tc-images/trips/trip-1/hotels/hotel-1/img-1.jpg",
+        url: "https://files.local/tc-images/trips/trip-1/hotels/hotel-1/img-1.webp",
+        path: "tc-images/trips/trip-1/hotels/hotel-1/img-1.webp",
         createdAt: "2026-04-25T10:00:00.000Z",
         width: 320,
         height: 240,

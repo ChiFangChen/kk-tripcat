@@ -16,4 +16,5 @@ export interface PreparedImageFile {
   blob: Blob;
   width: number;
   height: number;
+  extension?: "jpg" | "webp";
 }
