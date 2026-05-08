@@ -7,6 +7,8 @@ export function LoadingImage({
   width,
   height,
   frameClassName = "",
+  frameContentClassName = "",
+  fit = "contain",
   imageClassName = "",
 }: {
   src: string;
@@ -14,6 +16,8 @@ export function LoadingImage({
   width?: number;
   height?: number;
   frameClassName?: string;
+  frameContentClassName?: string;
+  fit?: "contain" | "cover";
   imageClassName?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
@@ -27,7 +31,7 @@ export function LoadingImage({
       }}
     >
       <span
-        className="loading-image-frame"
+        className={`loading-image-frame ${frameContentClassName}`.trim()}
         style={{
           aspectRatio: hasDimensions
             ? getImageAspectRatio({ width, height })
@@ -42,6 +46,10 @@ export function LoadingImage({
           alt={alt}
           className={`loading-image-img ${
             loaded ? "loading-image-img--loaded" : "loading-image-img--hidden"
+          } ${
+            fit === "cover"
+              ? "loading-image-img--cover"
+              : "loading-image-img--contain"
           } ${imageClassName}`.trim()}
           onLoad={() => setLoaded(true)}
           onError={() => setLoaded(true)}

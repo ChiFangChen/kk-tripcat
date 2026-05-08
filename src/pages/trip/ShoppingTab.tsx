@@ -290,16 +290,18 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                 type="checkbox"
                 checked={item.checked}
                 onChange={() => toggleCheck(item.id)}
-                className="w-5 h-5 flex-shrink-0"
+                className="w-5 h-5"
               />
             )}
             {item.images[0] && (
               <LoadingImage
                 src={item.images[0].url}
                 alt=""
-                width={item.images[0].width}
-                height={item.images[0].height}
-                frameClassName="w-8 flex-shrink-0"
+                width={40}
+                height={40}
+                fit="cover"
+                frameClassName="w-10 h-10 flex-shrink-0"
+                frameContentClassName="h-full"
                 imageClassName={shoppingThumbnailClassName}
               />
             )}

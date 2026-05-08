@@ -1069,8 +1069,16 @@ textarea.form-input {
   display: block;
   width: 100%;
   height: auto;
-  object-fit: contain;
   transition: opacity 0.2s ease;
+}
+
+.loading-image-img--contain {
+  object-fit: contain;
+}
+
+.loading-image-img--cover {
+  height: 100%;
+  object-fit: cover;
 }
 
 .loading-image-img--hidden {

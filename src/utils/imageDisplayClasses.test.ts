@@ -15,11 +15,9 @@ describe("image display class names", () => {
     expect(galleryImageClassName).not.toContain("object-cover");
   });
 
-  it("uses fixed-width proportional thumbnails for shopping rows", () => {
-    expect(shoppingThumbnailClassName).toContain("w-8");
-    expect(shoppingThumbnailClassName).toContain("h-auto");
-    expect(shoppingThumbnailClassName).not.toContain("h-8");
-    expect(shoppingThumbnailClassName).not.toContain("object-cover");
+  it("uses cover thumbnails for shopping rows", () => {
+    expect(shoppingThumbnailClassName).toContain("object-cover");
+    expect(shoppingThumbnailClassName).not.toContain("object-contain");
   });
 
   it("builds aspect ratios from image dimensions", () => {

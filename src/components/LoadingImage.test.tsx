@@ -57,7 +57,7 @@ describe("LoadingImage", () => {
     const skeleton = container!.querySelector(".loading-image-skeleton");
     const image = container!.querySelector("img");
 
-    expect(wrapper).toHaveProperty("style.maxWidth", "320px");
+    expect(wrapper).toHaveProperty("style.width", "320px");
     expect(frame).toBeTruthy();
     expect(frame).toHaveProperty("style.aspectRatio", "320 / 240");
     expect(skeleton).toBeTruthy();
@@ -88,6 +88,38 @@ describe("LoadingImage", () => {
       container!.querySelector<HTMLElement>(".loading-image-frame")!.style
         .aspectRatio,
     ).toBe("");
+
+    act(() => root.unmount());
+  });
+
+  it("can render a cover image for fixed-size thumbnails", () => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <LoadingImage
+          src="https://files.local/image.jpg"
+          alt=""
+          width={40}
+          height={40}
+          fit="cover"
+          frameClassName="w-10 h-10"
+          frameContentClassName="h-full"
+        />,
+      );
+    });
+
+    expect(
+      container!.querySelector(".loading-image-wrapper")!.className,
+    ).toContain("w-10 h-10");
+    expect(
+      container!.querySelector(".loading-image-frame")!.className,
+    ).toContain("h-full");
+    expect(container!.querySelector("img")!.className).toContain(
+      "loading-image-img--cover",
+    );
 
     act(() => root.unmount());
   });

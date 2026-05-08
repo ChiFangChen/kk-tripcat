@@ -1,8 +1,7 @@
 export const galleryImageClassName =
   "max-w-full w-auto h-auto mx-auto object-contain";
 
-export const shoppingThumbnailClassName =
-  "w-8 h-auto object-contain flex-shrink-0";
+export const shoppingThumbnailClassName = "w-full h-full object-cover";
 
 export function getImageAspectRatio({
   width,
