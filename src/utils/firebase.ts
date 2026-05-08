@@ -8,6 +8,11 @@ import {
   deleteObject,
 } from "firebase/storage";
 import {
+  deleteImagePathWithRetry,
+  IMAGE_DELETE_FAILURE_MESSAGE,
+} from "./imageDelete";
+import { emitGlobalToast } from "./toastBus";
+import {
   getFirestore,
   collection,
   doc,
@@ -491,9 +496,28 @@ export async function deleteImage(path: string): Promise<void> {
   if (!app) throw new Error("Firebase not initialized");
   const storage = getStorage(app);
   const storageRef = ref(storage, path);
-  try {
-    await deleteObject(storageRef);
-  } catch {
-    // ignore if not found
+  const deleted = await deleteImagePathWithRetry(path, async () => {
+    try {
+      await deleteObject(storageRef);
+    } catch (error) {
+      if (isStorageObjectNotFound(error)) return;
+      throw error;
+    }
+  });
+
+  if (!deleted) {
+    emitGlobalToast({
+      type: "error",
+      message: IMAGE_DELETE_FAILURE_MESSAGE,
+    });
   }
+}
+
+function isStorageObjectNotFound(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "storage/object-not-found"
+  );
 }

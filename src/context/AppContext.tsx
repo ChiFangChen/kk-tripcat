@@ -56,6 +56,7 @@ import { defaultTemplate } from "../data/seed";
 import type { Firestore } from "firebase/firestore";
 import type { Item, TripShoppingItem } from "../pages/trip/shoppingTypes";
 import type { ToastMessage, ToastType } from "../types/toast";
+import { subscribeGlobalToast } from "../utils/toastBus";
 
 // Shared data (visible to all trip members)
 export interface SharedTripData {
@@ -499,6 +500,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     };
   }, []);
+
+  useEffect(() => subscribeGlobalToast(showToast), [showToast]);
 
   const dispatch = useCallback(
     (action: Action) => {
