@@ -16,7 +16,7 @@ import { InfoRow } from "../../components/InfoRow";
 import { generateId } from "../../utils/id";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
-import { formatDate, isToday } from "../../utils/date";
+import { formatDateWithWeekday, isToday } from "../../utils/date";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
   createPendingImages,
@@ -204,7 +204,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
                         () => !viewOnly && setEditingDayIndex(dayIndex),
                       )}
                     >
-                      {day.label || formatDate(day.date)}
+                      {day.label || formatDateWithWeekday(day.date)}
                       {isToday(day.date) && (
                         <FontAwesomeIcon
                           icon={faLocationDot}
@@ -337,7 +337,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             />
           </div>
           <div className="form-group">
-            <label className="form-label">標籤（如：2026/04/09（四））</label>
+            <label className="form-label">顯示標籤</label>
             <input
               className="form-input"
               value={newDay.label}

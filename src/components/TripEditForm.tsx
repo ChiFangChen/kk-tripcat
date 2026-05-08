@@ -1,19 +1,7 @@
 import { useState } from "react";
 import type { Trip, TripType } from "../types";
-import { formatDate } from "../utils/date";
 
 const tripTypes: TripType[] = ["情侶", "朋友", "家人", "獨旅"];
-
-function toIsoDate(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-
-  const match = trimmed.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
-  if (!match) return value;
-
-  const [, year, month, day] = match;
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-}
 
 interface Props {
   trip: Trip;
@@ -24,8 +12,8 @@ interface Props {
 export function TripEditForm({ trip, onSave, onCancel }: Props) {
   const [form, setForm] = useState({
     name: trip.name,
-    startDate: formatDate(trip.startDate),
-    endDate: formatDate(trip.endDate),
+    startDate: trip.startDate,
+    endDate: trip.endDate,
     country: trip.country,
     tripType: trip.tripType,
     tags: trip.tags.join(", "),
@@ -46,18 +34,18 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
           <label className="form-label">開始日期</label>
           <input
             className="form-input"
+            type="date"
             value={form.startDate}
             onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-            placeholder="2026/4/9"
           />
         </div>
         <div className="form-group flex-1">
           <label className="form-label">結束日期</label>
           <input
             className="form-input"
+            type="date"
             value={form.endDate}
             onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-            placeholder="2026/4/9"
           />
         </div>
       </div>
@@ -107,8 +95,8 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
             onSave({
               ...trip,
               name: form.name,
-              startDate: toIsoDate(form.startDate),
-              endDate: toIsoDate(form.endDate) || toIsoDate(form.startDate),
+              startDate: form.startDate,
+              endDate: form.endDate || form.startDate,
               country: form.country,
               tripType: form.tripType,
               tags: form.tags

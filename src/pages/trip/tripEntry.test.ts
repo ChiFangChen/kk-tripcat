@@ -92,4 +92,13 @@ describe("tripEntry", () => {
       "memories",
     ]);
   });
+
+  it("labels the memories tab as records", () => {
+    expect(
+      getEditableTabs(true).find((tab) => tab.key === "memories")?.label,
+    ).toBe("記錄");
+    expect(
+      getViewerTabs(true).find((tab) => tab.key === "memories")?.label,
+    ).toBe("記錄");
+  });
 });

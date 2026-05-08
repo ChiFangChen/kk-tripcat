@@ -37,7 +37,7 @@ export function getEditableTabs(skipPreparation?: boolean): Array<{
     { key: "schedule", label: "行程表" },
     { key: "transport", label: "交通" },
     { key: "shopping", label: "購物" },
-    { key: "memories", label: "回憶" },
+    { key: "memories", label: "記錄" },
   ];
 
   if (skipPreparation) {
@@ -59,7 +59,7 @@ export function getViewerTabs(memoriesVisibleToViewers?: boolean): Array<{
   ];
 
   if (memoriesVisibleToViewers) {
-    tabs.push({ key: "memories", label: "回憶" });
+    tabs.push({ key: "memories", label: "記錄" });
   }
 
   return tabs;
