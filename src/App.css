@@ -555,6 +555,47 @@ body {
   background: var(--color-primary-dark);
 }
 
+.inline-action-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.inline-action-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+}
+
+.inline-action-menu-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 104px;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--color-card);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+
+.inline-action-menu-item {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.inline-action-menu-item:active {
+  color: var(--color-primary-dark);
+  background: rgba(126, 200, 227, 0.18);
+}
+
 /* Modal - bottom sheet */
 .modal-overlay {
   position: fixed;

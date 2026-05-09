@@ -10,6 +10,10 @@ import { Accordion } from "../../components/Accordion";
 import { generateId } from "../../utils/id";
 import type { FlightInfo, FlightLeg } from "../../types";
 import { getAirportDisplay, getFlightNumberLabel } from "./flightDisplay";
+import {
+  createFlightLegFromTemplate,
+  shouldShowAddLegMenu,
+} from "./flightModel";
 import * as storage from "../../utils/storage";
 
 interface Props {
@@ -28,6 +32,9 @@ export function FlightTab({ tripId, viewOnly }: Props) {
   const [editingFlight, setEditingFlight] = useState<FlightInfo | null>(null);
   const [editingLeg, setEditingLeg] = useState<FlightLeg | null>(null);
   const [editingFlightId, setEditingFlightId] = useState<string | null>(null);
+  const [addLegMenuFlightId, setAddLegMenuFlightId] = useState<string | null>(
+    null,
+  );
   const doubleTap = useDoubleTap();
 
   useEffect(() => {
@@ -89,6 +96,20 @@ export function FlightTab({ tripId, viewOnly }: Props) {
       arrivalAirportCode: "",
       arrivalAirport: "",
     };
+  }
+
+  function openBlankLeg(flightId: string) {
+    setEditingLeg(newLeg());
+    setEditingFlightId(flightId);
+    setAddLegMenuFlightId(null);
+  }
+
+  function openLegFromTemplate(flight: FlightInfo) {
+    const template = flight.legs.at(-1);
+    if (!template) return;
+    setEditingLeg(createFlightLegFromTemplate(template, generateId));
+    setEditingFlightId(flight.id);
+    setAddLegMenuFlightId(null);
   }
 
   function getSectionCollapseKey(
@@ -286,15 +307,45 @@ export function FlightTab({ tripId, viewOnly }: Props) {
           })}
 
           {!viewOnly && (
-            <button
-              className="btn-round-add mt-3"
-              onClick={() => {
-                setEditingLeg(newLeg());
-                setEditingFlightId(flight.id);
-              }}
-            >
-              <FontAwesomeIcon icon={faPlus} className="text-xs" />
-            </button>
+            <div className="inline-action-menu mt-3">
+              <button
+                className="btn-round-add"
+                onClick={() => {
+                  if (!shouldShowAddLegMenu(flight.legs.length)) {
+                    openBlankLeg(flight.id);
+                    return;
+                  }
+                  setAddLegMenuFlightId((current) =>
+                    current === flight.id ? null : flight.id,
+                  );
+                }}
+                title="新增航段"
+              >
+                <FontAwesomeIcon icon={faPlus} className="text-xs" />
+              </button>
+              {addLegMenuFlightId === flight.id && (
+                <>
+                  <div
+                    className="inline-action-menu-backdrop"
+                    onClick={() => setAddLegMenuFlightId(null)}
+                  />
+                  <div className="inline-action-menu-popover">
+                    <button
+                      className="inline-action-menu-item"
+                      onClick={() => openBlankLeg(flight.id)}
+                    >
+                      新增
+                    </button>
+                    <button
+                      className="inline-action-menu-item"
+                      onClick={() => openLegFromTemplate(flight)}
+                    >
+                      從模板新增
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
       ))}
