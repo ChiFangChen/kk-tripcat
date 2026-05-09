@@ -9,6 +9,7 @@ import {
 import { useApp } from "../../context/AppContext";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
+import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { generateId } from "../../utils/id";
@@ -31,6 +32,7 @@ export function TransportTab({ tripId, viewOnly }: Props) {
   const tripData = getTripData(tripId);
   const transport = tripData.transport || [];
   const [editingItem, setEditingItem] = useState<TransportItem | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const collapsedStorageKey = `transport-collapsed-${tripId}`;
   const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>(
     () => storage.getItem<Record<string, boolean>>(collapsedStorageKey) || {},
@@ -154,11 +156,22 @@ export function TransportTab({ tripId, viewOnly }: Props) {
             onCancel={() => setEditingItem(null)}
             onDelete={
               editingItem.title || editingItem.content
-                ? () => removeTransport(editingItem.id)
+                ? () => setConfirmDeleteId(editingItem.id)
                 : undefined
             }
           />
         </FullScreenModal>
+      )}
+      {confirmDeleteId && (
+        <ConfirmDeleteModal
+          title="刪除交通資訊"
+          message="確定要刪除這筆交通資訊嗎？圖片也會一起刪除。"
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={() => {
+            removeTransport(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }}
+        />
       )}
     </div>
   );

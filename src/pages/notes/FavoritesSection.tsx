@@ -8,6 +8,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
 import { Modal } from "../../components/Modal";
+import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { generateId } from "../../utils/id";
 import { formatDate } from "../../utils/date";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
@@ -25,7 +26,15 @@ export function FavoritesSection() {
   const { state, dispatch } = useApp();
   const [editing, setEditing] = useState<Item | null>(null);
   const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null);
-  const favoriteItems = useMemo(() => getFavoriteItems(state.items), [state.items]);
+  const [confirmDelete, setConfirmDelete] = useState<
+    | { type: "item"; itemId: string }
+    | { type: "purchase"; itemId: string; purchaseId: string }
+    | null
+  >(null);
+  const favoriteItems = useMemo(
+    () => getFavoriteItems(state.items),
+    [state.items],
+  );
 
   async function remove(id: string) {
     const item = state.items.find((entry) => entry.id === id);
@@ -53,7 +62,9 @@ export function FavoritesSection() {
       type: "UPDATE_ITEM",
       item: {
         ...item,
-        purchases: item.purchases.filter((purchase) => purchase.id !== purchaseId),
+        purchases: item.purchases.filter(
+          (purchase) => purchase.id !== purchaseId,
+        ),
       },
     });
   }
@@ -113,7 +124,9 @@ export function FavoritesSection() {
                 </button>
                 <button
                   className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() => remove(item.id)}
+                  onClick={() =>
+                    setConfirmDelete({ type: "item", itemId: item.id })
+                  }
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
@@ -162,7 +175,13 @@ export function FavoritesSection() {
                     </div>
                     <button
                       className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                      onClick={() => deletePurchase(item.id, purchase.id)}
+                      onClick={() =>
+                        setConfirmDelete({
+                          type: "purchase",
+                          itemId: item.id,
+                          purchaseId: purchase.id,
+                        })
+                      }
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
@@ -204,8 +223,31 @@ export function FavoritesSection() {
 
       {addingPurchaseTo && (
         <Modal title="新增購買紀錄" onClose={() => setAddingPurchaseTo(null)}>
-          <PurchaseForm onSave={(purchase) => addPurchase(addingPurchaseTo, purchase)} />
+          <PurchaseForm
+            onSave={(purchase) => addPurchase(addingPurchaseTo, purchase)}
+          />
         </Modal>
+      )}
+      {confirmDelete && (
+        <ConfirmDeleteModal
+          title={
+            confirmDelete.type === "item" ? "刪除喜歡的東西" : "刪除購買紀錄"
+          }
+          message={
+            confirmDelete.type === "item"
+              ? "確定要刪除這個喜歡的東西嗎？圖片也會一起刪除。"
+              : "確定要刪除這筆購買紀錄嗎？"
+          }
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => {
+            if (confirmDelete.type === "item") {
+              remove(confirmDelete.itemId);
+            } else {
+              deletePurchase(confirmDelete.itemId, confirmDelete.purchaseId);
+            }
+            setConfirmDelete(null);
+          }}
+        />
       )}
     </div>
   );
@@ -269,7 +311,9 @@ function ItemForm({
         <input
           className="form-input"
           value={form.currency || ""}
-          onChange={(event) => setForm({ ...form, currency: event.target.value })}
+          onChange={(event) =>
+            setForm({ ...form, currency: event.target.value })
+          }
         />
       </div>
       <div className="form-group">
@@ -307,7 +351,11 @@ function ItemForm({
           }
         />
       </div>
-      <button className="btn btn-primary w-full" onClick={handleSave} disabled={saving}>
+      <button
+        className="btn btn-primary w-full"
+        onClick={handleSave}
+        disabled={saving}
+      >
         {saving ? "儲存中..." : "儲存"}
       </button>
     </div>
@@ -337,7 +385,9 @@ function PurchaseForm({ onSave }: { onSave: (purchase: Purchase) => void }) {
         <input
           className="form-input"
           value={form.currency || ""}
-          onChange={(event) => setForm({ ...form, currency: event.target.value })}
+          onChange={(event) =>
+            setForm({ ...form, currency: event.target.value })
+          }
         />
       </div>
       <div className="form-group">

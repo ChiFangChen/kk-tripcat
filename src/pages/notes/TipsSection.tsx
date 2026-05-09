@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
 import { FullScreenModal } from "../../components/FullScreenModal";
+import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { generateId } from "../../utils/id";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
@@ -18,6 +19,7 @@ import type { ImageAsset, PendingImageFile } from "../../types/images";
 export function TipsSection() {
   const { state, dispatch } = useApp();
   const [editing, setEditing] = useState<TipNote | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [searchText, setSearchText] = useState("");
   const detailDoubleTap = useDoubleTap();
@@ -141,12 +143,21 @@ export function TipsSection() {
             tip={editing}
             onSave={save}
             onCancel={() => setEditing(null)}
-            onDelete={() => {
-              remove(editing.id);
-              setEditing(null);
-            }}
+            onDelete={() => setConfirmDeleteId(editing.id)}
           />
         </FullScreenModal>
+      )}
+      {confirmDeleteId && (
+        <ConfirmDeleteModal
+          title="刪除筆記"
+          message="確定要刪除這則筆記嗎？圖片也會一起刪除。"
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={() => {
+            remove(confirmDeleteId);
+            setConfirmDeleteId(null);
+            setEditing(null);
+          }}
+        />
       )}
     </div>
   );

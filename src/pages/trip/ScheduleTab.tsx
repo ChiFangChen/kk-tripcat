@@ -12,6 +12,7 @@ import { useApp } from "../../context/AppContext";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { Modal } from "../../components/Modal";
+import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { InfoRow } from "../../components/InfoRow";
 import { generateId } from "../../utils/id";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
@@ -58,6 +59,12 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 
   // Edit day state
   const [editingDayIndex, setEditingDayIndex] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<
+    | { type: "day"; dayIndex: number }
+    | { type: "activity"; dayIndex: number; activityId: string }
+    | { type: "note"; noteId: string }
+    | null
+  >(null);
   const doubleTap = useDoubleTap();
 
   // Schedule notes state
@@ -365,7 +372,9 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             day={schedule[editingDayIndex]}
             onSave={(date, label) => updateDay(editingDayIndex, date, label)}
             onCancel={() => setEditingDayIndex(null)}
-            onDelete={() => deleteDay(editingDayIndex)}
+            onDelete={() =>
+              setConfirmDelete({ type: "day", dayIndex: editingDayIndex })
+            }
           />
         </Modal>
       )}
@@ -471,10 +480,11 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             onSave={(a) => saveActivity(editingActivity.dayIndex, a)}
             onCancel={() => setEditingActivity(null)}
             onDelete={() =>
-              deleteActivity(
-                editingActivity.dayIndex,
-                editingActivity.activity.id,
-              )
+              setConfirmDelete({
+                type: "activity",
+                dayIndex: editingActivity.dayIndex,
+                activityId: editingActivity.activity.id,
+              })
             }
           />
         </FullScreenModal>
@@ -559,9 +569,40 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             note={editingNote}
             onSave={saveNote}
             onCancel={() => setEditingNote(null)}
-            onDelete={() => deleteNote(editingNote.id)}
+            onDelete={() =>
+              setConfirmDelete({ type: "note", noteId: editingNote.id })
+            }
           />
         </FullScreenModal>
+      )}
+      {confirmDelete && (
+        <ConfirmDeleteModal
+          title={
+            confirmDelete.type === "day"
+              ? "刪除此天"
+              : confirmDelete.type === "activity"
+                ? "刪除活動"
+                : "刪除行程筆記"
+          }
+          message={
+            confirmDelete.type === "day"
+              ? "確定要刪除這一天嗎？這天的活動也會一起刪除。"
+              : confirmDelete.type === "activity"
+                ? "確定要刪除這個活動嗎？圖片也會一起刪除。"
+                : "確定要刪除這則行程筆記嗎？圖片也會一起刪除。"
+          }
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => {
+            if (confirmDelete.type === "day") {
+              deleteDay(confirmDelete.dayIndex);
+            } else if (confirmDelete.type === "activity") {
+              deleteActivity(confirmDelete.dayIndex, confirmDelete.activityId);
+            } else {
+              deleteNote(confirmDelete.noteId);
+            }
+            setConfirmDelete(null);
+          }}
+        />
       )}
     </div>
   );

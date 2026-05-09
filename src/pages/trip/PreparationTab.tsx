@@ -11,6 +11,7 @@ import { useApp } from "../../context/AppContext";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { Modal } from "../../components/Modal";
+import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { generateId } from "../../utils/id";
 import type { ChecklistItem } from "../../types";
 
@@ -25,6 +26,9 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null);
+  const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(
+    null,
+  );
   const [fabExpanded, setFabExpanded] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState("");
@@ -344,9 +348,20 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
             getSubcategories={getSubcategories}
             onSave={updateItem}
             onCancel={() => setEditingItem(null)}
-            onDelete={() => deleteItem(editingItem.id)}
+            onDelete={() => setConfirmDeleteItemId(editingItem.id)}
           />
         </Modal>
+      )}
+      {confirmDeleteItemId && (
+        <ConfirmDeleteModal
+          title="刪除準備項目"
+          message="確定要刪除這個準備項目嗎？"
+          onCancel={() => setConfirmDeleteItemId(null)}
+          onConfirm={() => {
+            deleteItem(confirmDeleteItemId);
+            setConfirmDeleteItemId(null);
+          }}
+        />
       )}
 
       {/* Edit notes modal */}

@@ -5,6 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { formatDate } from "../../utils/date";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
+import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { InfoRow } from "../../components/InfoRow";
 import { Accordion } from "../../components/Accordion";
 import { generateId } from "../../utils/id";
@@ -32,6 +33,11 @@ export function FlightTab({ tripId, viewOnly }: Props) {
   const [editingFlight, setEditingFlight] = useState<FlightInfo | null>(null);
   const [editingLeg, setEditingLeg] = useState<FlightLeg | null>(null);
   const [editingFlightId, setEditingFlightId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<
+    | { type: "flight"; flightId: string }
+    | { type: "leg"; flightId: string; legId: string }
+    | null
+  >(null);
   const [addLegMenuFlightId, setAddLegMenuFlightId] = useState<string | null>(
     null,
   );
@@ -361,7 +367,11 @@ export function FlightTab({ tripId, viewOnly }: Props) {
             onCancel={() => setEditingFlight(null)}
             onDelete={
               editingFlight.airline
-                ? () => deleteFlight(editingFlight.id)
+                ? () =>
+                    setConfirmDelete({
+                      type: "flight",
+                      flightId: editingFlight.id,
+                    })
                 : undefined
             }
           />
@@ -385,11 +395,35 @@ export function FlightTab({ tripId, viewOnly }: Props) {
             }}
             onDelete={
               editingLeg.direction
-                ? () => deleteLeg(editingFlightId, editingLeg.id)
+                ? () =>
+                    setConfirmDelete({
+                      type: "leg",
+                      flightId: editingFlightId,
+                      legId: editingLeg.id,
+                    })
                 : undefined
             }
           />
         </FullScreenModal>
+      )}
+      {confirmDelete && (
+        <ConfirmDeleteModal
+          title={confirmDelete.type === "flight" ? "刪除航班" : "刪除航段"}
+          message={
+            confirmDelete.type === "flight"
+              ? "確定要刪除這筆航班嗎？航段也會一起刪除。"
+              : "確定要刪除這筆航段嗎？"
+          }
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={() => {
+            if (confirmDelete.type === "flight") {
+              deleteFlight(confirmDelete.flightId);
+            } else {
+              deleteLeg(confirmDelete.flightId, confirmDelete.legId);
+            }
+            setConfirmDelete(null);
+          }}
+        />
       )}
     </div>
   );

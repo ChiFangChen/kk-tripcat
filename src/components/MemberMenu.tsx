@@ -8,6 +8,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../context/AppContext";
 import { Modal } from "./Modal";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
 interface Props {
   tripId: string;
@@ -21,6 +22,9 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
   const trip = state.trips.find((t) => t.id === tripId);
   const [showAddMember, setShowAddMember] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [confirmRemoveMemberId, setConfirmRemoveMemberId] = useState<
+    string | null
+  >(null);
   const admin = trip ? isTripAdmin(trip) : false;
   const canEdit = admin && !readOnly;
 
@@ -67,7 +71,7 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
               {canEdit && userId !== trip.creatorId && (
                 <button
                   className="text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() => removeMember(userId)}
+                  onClick={() => setConfirmRemoveMemberId(userId)}
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
@@ -119,6 +123,18 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
           </div>
         )}
       </div>
+      {confirmRemoveMemberId && (
+        <ConfirmDeleteModal
+          title="移除旅伴"
+          message={`確定要移除「${getUserName(confirmRemoveMemberId)}」嗎？`}
+          confirmLabel="移除"
+          onCancel={() => setConfirmRemoveMemberId(null)}
+          onConfirm={() => {
+            removeMember(confirmRemoveMemberId);
+            setConfirmRemoveMemberId(null);
+          }}
+        />
+      )}
     </Modal>
   );
 }

@@ -4,6 +4,7 @@ import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
+import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { InfoRow } from "../../components/InfoRow";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
@@ -26,6 +27,7 @@ export function HotelTab({ tripId, viewOnly }: Props) {
   const tripData = getTripData(tripId);
   const hotels = tripData.hotels;
   const [editing, setEditing] = useState<Hotel | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const doubleTap = useDoubleTap();
 
   function save(hotel: Hotel) {
@@ -139,9 +141,22 @@ export function HotelTab({ tripId, viewOnly }: Props) {
             hotel={editing}
             onSave={save}
             onCancel={() => setEditing(null)}
-            onDelete={editing.name ? () => remove(editing.id) : undefined}
+            onDelete={
+              editing.name ? () => setConfirmDeleteId(editing.id) : undefined
+            }
           />
         </FullScreenModal>
+      )}
+      {confirmDeleteId && (
+        <ConfirmDeleteModal
+          title="刪除飯店"
+          message="確定要刪除這筆飯店資訊嗎？圖片也會一起刪除。"
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={() => {
+            remove(confirmDeleteId);
+            setConfirmDeleteId(null);
+          }}
+        />
       )}
     </div>
   );

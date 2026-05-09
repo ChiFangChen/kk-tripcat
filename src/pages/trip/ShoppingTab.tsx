@@ -9,6 +9,7 @@ import {
 import { useApp } from "../../context/AppContext";
 import { Modal } from "../../components/Modal";
 import { FullScreenModal } from "../../components/FullScreenModal";
+import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { generateId } from "../../utils/id";
 import { formatDate } from "../../utils/date";
 import { shoppingThumbnailClassName } from "../../utils/imageDisplayClasses";
@@ -64,6 +65,9 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const [showAddDraftModal, setShowAddDraftModal] = useState(false);
   const [showPoolModal, setShowPoolModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(
+    null,
+  );
   const [reviewItems, setReviewItems] = useState<
     Array<{ userId: string; item: TripShoppingItem }>
   >([]);
@@ -356,7 +360,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                   shoppingModalMode,
                   canManageTrip,
                 )
-                  ? () => deleteDraftItem(editingItem.id)
+                  ? () => setConfirmDeleteItemId(editingItem.id)
                   : undefined
               }
             />
@@ -473,6 +477,17 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             )}
           </div>
         </FullScreenModal>
+      )}
+      {confirmDeleteItemId && (
+        <ConfirmDeleteModal
+          title="刪除購物項目"
+          message="確定要刪除這個購物項目嗎？圖片也會一起刪除。"
+          onCancel={() => setConfirmDeleteItemId(null)}
+          onConfirm={() => {
+            deleteDraftItem(confirmDeleteItemId);
+            setConfirmDeleteItemId(null);
+          }}
+        />
       )}
     </div>
   );
