@@ -90,7 +90,6 @@ input[type="checkbox"]:checked::after {
   height: 28px;
   border-radius: 999px;
   background: #e5e7eb;
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24);
   transition:
     background 0.2s ease,
     box-shadow 0.2s ease;
@@ -104,9 +103,6 @@ input[type="checkbox"]:checked::after {
   height: 22px;
   border-radius: 999px;
   background: #ffffff;
-  box-shadow:
-    0 2px 6px rgba(15, 23, 42, 0.2),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   transition: transform 0.2s ease;
 }
 
