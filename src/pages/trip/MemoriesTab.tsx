@@ -11,6 +11,7 @@ import { FullScreenModal } from "../../components/FullScreenModal";
 import { Modal } from "../../components/Modal";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
+import { SwitchControl } from "../../components/SwitchControl";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
   createPendingImages,
@@ -56,8 +57,9 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
     postId: string;
     comment: MemoryComment;
   } | null>(null);
-  const [confirmDeletePost, setConfirmDeletePost] =
-    useState<MemoryPost | null>(null);
+  const [confirmDeletePost, setConfirmDeletePost] = useState<MemoryPost | null>(
+    null,
+  );
   const [confirmDeleteComment, setConfirmDeleteComment] = useState<{
     postId: string;
     comment: MemoryComment;
@@ -187,16 +189,12 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
       <div className="flex justify-between items-center mb-4">
         <div>
           {admin && !viewOnly && (
-            <label className="flex items-center gap-2 text-sm text-slate-500">
-              <span>公開</span>
-              <input
-                type="checkbox"
-                checked={!!trip?.memoriesVisibleToViewers}
-                onChange={(event) =>
-                  setPendingVisibility(event.currentTarget.checked)
-                }
-              />
-            </label>
+            <SwitchControl
+              checked={!!trip?.memoriesVisibleToViewers}
+              onChange={setPendingVisibility}
+              ariaLabel="公開記錄"
+              title="公開記錄"
+            />
           )}
         </div>
         {canWrite && (
@@ -260,7 +258,10 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
                       );
 
                       return (
-                        <div key={comment.id} className="pl-3 border-l border-slate-200 dark:border-slate-700">
+                        <div
+                          key={comment.id}
+                          className="pl-3 border-l border-slate-200 dark:border-slate-700"
+                        >
                           <div className="flex items-start justify-between gap-3 mb-2">
                             {renderAuthorMeta(
                               comment.authorId,
@@ -321,7 +322,11 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
 
       {editingPost && (
         <FullScreenModal
-          title={posts.some((post) => post.id === editingPost.id) ? "編輯回憶" : "新增回憶"}
+          title={
+            posts.some((post) => post.id === editingPost.id)
+              ? "編輯回憶"
+              : "新增回憶"
+          }
           onClose={() => setEditingPost(null)}
         >
           <MemoryPostForm
@@ -420,12 +425,20 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
       )}
 
       {pendingVisibility !== null && (
-        <Modal title="公開回憶" onClose={() => setPendingVisibility(null)}>
-          <p className="text-sm mb-4">
-            {pendingVisibility
-              ? "開啟後，拿到唯讀分享連結的人可以看到回憶內容。確定開啟嗎？"
-              : "關閉後，唯讀分享連結將看不到回憶內容。確定關閉嗎？"}
-          </p>
+        <Modal title="公開記錄" onClose={() => setPendingVisibility(null)}>
+          <div className="text-sm mb-4">
+            {pendingVisibility ? (
+              <div>
+                <p>開啟後，拿到唯讀分享連結的人可以看到記錄內容。</p>
+                <p>確定開啟嗎？</p>
+              </div>
+            ) : (
+              <div>
+                <p>關閉後，唯讀分享連結將看不到記錄內容。</p>
+                <p>確定關閉嗎？</p>
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <button
               className="btn btn-secondary flex-1"
