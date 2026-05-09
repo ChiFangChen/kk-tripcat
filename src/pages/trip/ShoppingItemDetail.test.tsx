@@ -3,7 +3,7 @@
  */
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ShoppingItemDetail } from "./ShoppingTab";
 import type { ResolvedTripShoppingItem } from "./shoppingTypes";
 
@@ -18,7 +18,7 @@ afterEach(() => {
   container = null;
 });
 
-function renderShoppingItemDetail(onTitleDoubleClick: () => void) {
+function renderShoppingItemDetail() {
   container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
@@ -36,32 +36,24 @@ function renderShoppingItemDetail(onTitleDoubleClick: () => void) {
     images: [],
     checked: false,
     isLinked: false,
+    estimatedAmount: "100",
+    currency: "JPY",
   };
 
   act(() => {
-    root.render(
-      <ShoppingItemDetail
-        item={item}
-        onTitleDoubleClick={onTitleDoubleClick}
-      />,
-    );
+    root.render(<ShoppingItemDetail item={item} />);
   });
 
   return { root };
 }
 
 describe("ShoppingItemDetail", () => {
-  it("uses the app double-tap click behavior for editing the title", () => {
-    const onTitleDoubleClick = vi.fn();
-    const { root } = renderShoppingItemDetail(onTitleDoubleClick);
-    const title = container!.querySelector("button")!;
+  it("omits the item name because the modal title already shows it", () => {
+    const { root } = renderShoppingItemDetail();
 
-    act(() => {
-      title.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      title.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    });
-
-    expect(onTitleDoubleClick).toHaveBeenCalledTimes(1);
+    expect(container!.textContent).not.toContain("襪子");
+    expect(container!.textContent).toContain("100 JPY");
+    expect(container!.querySelector("button")).toBeNull();
 
     act(() => root.unmount());
   });

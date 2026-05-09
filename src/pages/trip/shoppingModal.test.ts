@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canShowShoppingModalRemoveAction,
   getInitialShoppingModalMode,
+  getShoppingModalTitle,
   getShoppingModalModeAfterTitleDoubleClick,
 } from "./shoppingModal";
 import type { TripShoppingItem } from "./shoppingTypes";
@@ -45,5 +46,13 @@ describe("shopping modal mode", () => {
   it("shows the remove action only in edit mode when deletion is allowed", () => {
     expect(canShowShoppingModalRemoveAction("edit", true)).toBe(true);
     expect(canShowShoppingModalRemoveAction("edit", false)).toBe(false);
+  });
+
+  it("uses the item name as the view modal title", () => {
+    expect(getShoppingModalTitle("view", draftItem, "Socks")).toBe("Socks");
+  });
+
+  it("keeps the edit modal title in edit mode", () => {
+    expect(getShoppingModalTitle("edit", draftItem, "Socks")).toBe("編輯項目");
   });
 });

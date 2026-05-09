@@ -27,6 +27,7 @@ import type { ImageAsset, PendingImageFile } from "../../types/images";
 import {
   canShowShoppingModalRemoveAction,
   getInitialShoppingModalMode,
+  getShoppingModalTitle,
   getShoppingModalModeAfterTitleDoubleClick,
   type ShoppingModalMode,
 } from "./shoppingModal";
@@ -68,6 +69,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(
     null,
   );
+  const modalTitleDoubleTap = useDoubleTap();
   const [reviewItems, setReviewItems] = useState<
     Array<{ userId: string; item: TripShoppingItem }>
   >([]);
@@ -334,51 +336,67 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         )}
       </div>
 
-      {editingItem && (
-        <Modal
-          title={
-            isLinkedTripShoppingItem(editingItem)
-              ? "魚池項目"
-              : shoppingModalMode === "edit"
-                ? "編輯項目"
-                : "購物項目"
-          }
-          onClose={() => {
-            setEditingItem(null);
-            setShoppingModalMode("view");
-          }}
-        >
-          {shoppingModalMode === "edit" &&
-          !isLinkedTripShoppingItem(editingItem) ? (
-            <DraftShoppingForm
-              tripId={tripId}
-              item={editingItem}
-              onSave={saveDraftItem}
-              onCancel={() => setShoppingModalMode("view")}
-              onDelete={
-                canShowShoppingModalRemoveAction(
-                  shoppingModalMode,
-                  canManageTrip,
-                )
-                  ? () => setConfirmDeleteItemId(editingItem.id)
-                  : undefined
-              }
-            />
-          ) : (
-            <ShoppingItemDetail
-              item={getTripShoppingResolvedContent(editingItem, state.items)}
-              onTitleDoubleClick={() =>
-                setShoppingModalMode((current) =>
-                  getShoppingModalModeAfterTitleDoubleClick(
-                    editingItem,
-                    current,
-                  ),
+      {editingItem &&
+        (() => {
+          const resolvedItem = getTripShoppingResolvedContent(
+            editingItem,
+            state.items,
+          );
+          const titleText = getShoppingModalTitle(
+            shoppingModalMode,
+            editingItem,
+            resolvedItem.name,
+          );
+          const handleTitleDoubleClick = () =>
+            setShoppingModalMode((current) =>
+              getShoppingModalModeAfterTitleDoubleClick(editingItem, current),
+            );
+
+          return (
+            <Modal
+              title={
+                shoppingModalMode === "view" ? (
+                  <button
+                    type="button"
+                    className="modal-title-action"
+                    onClick={modalTitleDoubleTap(
+                      `shopping-modal-title-${editingItem.id}`,
+                      handleTitleDoubleClick,
+                    )}
+                  >
+                    {titleText}
+                  </button>
+                ) : (
+                  titleText
                 )
               }
-            />
-          )}
-        </Modal>
-      )}
+              onClose={() => {
+                setEditingItem(null);
+                setShoppingModalMode("view");
+              }}
+            >
+              {shoppingModalMode === "edit" &&
+              !isLinkedTripShoppingItem(editingItem) ? (
+                <DraftShoppingForm
+                  tripId={tripId}
+                  item={editingItem}
+                  onSave={saveDraftItem}
+                  onCancel={() => setShoppingModalMode("view")}
+                  onDelete={
+                    canShowShoppingModalRemoveAction(
+                      shoppingModalMode,
+                      canManageTrip,
+                    )
+                      ? () => setConfirmDeleteItemId(editingItem.id)
+                      : undefined
+                  }
+                />
+              ) : (
+                <ShoppingItemDetail item={resolvedItem} />
+              )}
+            </Modal>
+          );
+        })()}
 
       {showAddDraftModal && (
         <FullScreenModal
@@ -624,22 +642,11 @@ function DraftShoppingForm({
 
 export function ShoppingItemDetail({
   item,
-  onTitleDoubleClick,
 }: {
   item: ReturnType<typeof getTripShoppingResolvedContent>;
-  onTitleDoubleClick: () => void;
 }) {
-  const doubleTap = useDoubleTap();
-
   return (
     <div>
-      <button
-        type="button"
-        className="block w-full p-0 bg-transparent border-0 font-semibold mb-2 text-left text-inherit cursor-pointer"
-        onClick={doubleTap(`shopping-title-${item.id}`, onTitleDoubleClick)}
-      >
-        {item.name}
-      </button>
       {(item.estimatedAmount || item.currency) && (
         <div className="text-sm text-slate-500 mb-2">
           {item.estimatedAmount || "-"}

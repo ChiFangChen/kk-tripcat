@@ -23,3 +23,13 @@ export function canShowShoppingModalRemoveAction(
 ): boolean {
   return mode === "edit" && canDelete;
 }
+
+export function getShoppingModalTitle(
+  mode: ShoppingModalMode,
+  item: TripShoppingItem,
+  itemName: string,
+): string {
+  if (mode === "edit" && !isLinkedTripShoppingItem(item)) return "編輯項目";
+  if (isLinkedTripShoppingItem(item)) return itemName || "魚池項目";
+  return itemName || "購物項目";
+}
