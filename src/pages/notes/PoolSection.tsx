@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faStar,
+  faChevronDown,
+  faChevronUp,
   faPlus,
-  faTrash,
   faPen,
+  faReceipt,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
 import { Modal } from "../../components/Modal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { generateId } from "../../utils/id";
 import { formatDate } from "../../utils/date";
-import { ImageGalleryField } from "../../components/ImageGalleryField";
+import { LoadingImage } from "../../components/LoadingImage";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
@@ -19,6 +21,7 @@ import {
   createPendingImages,
   persistImagesForRecord,
 } from "../../utils/imageUpload";
+import { shoppingThumbnailClassName } from "../../utils/imageDisplayClasses";
 import type { Purchase } from "../../types";
 import type { ImageAsset, PendingImageFile } from "../../types/images";
 import {
@@ -38,12 +41,27 @@ export function PoolSection() {
   } = useApp();
   const [editing, setEditing] = useState<Item | null>(null);
   const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null);
+  const [expandedPurchaseIds, setExpandedPurchaseIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [confirmDelete, setConfirmDelete] = useState<
     | { type: "item"; itemId: string }
     | { type: "purchase"; itemId: string; purchaseId: string }
     | null
   >(null);
   const poolItems = state.items;
+
+  function togglePurchaseHistory(itemId: string) {
+    setExpandedPurchaseIds((current) => {
+      const next = new Set(current);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  }
 
   async function detachShoppingItemsFromPoolItem({
     tripId,
@@ -184,101 +202,150 @@ export function PoolSection() {
           <p>魚池目前沒有項目</p>
         </div>
       ) : (
-        poolItems.map((item) => (
-          <div key={item.id} className="card">
-            <ImageGalleryField images={item.images} className="mb-2" />
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold">
-                <FontAwesomeIcon
-                  icon={faStar}
-                  className="text-amber-400 mr-1"
-                />
-                {item.name}
-              </h3>
-              <div className="flex gap-2">
-                <button
-                  className="btn-round-add !w-6 !h-6"
-                  onClick={() => setAddingPurchaseTo(item.id)}
-                >
-                  <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
-                </button>
-                <button
-                  className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() => setEditing(item)}
-                >
-                  <FontAwesomeIcon icon={faPen} />
-                </button>
-                <button
-                  className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() =>
-                    setConfirmDelete({ type: "item", itemId: item.id })
-                  }
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
-              </div>
-            </div>
+        <div className="pool-item-list">
+          {poolItems.map((item) => {
+            const purchaseSummary = getPurchaseSummary(item.purchases);
+            const purchaseHistoryExpanded = expandedPurchaseIds.has(item.id);
 
-            {(item.estimatedAmount || item.currency) && (
-              <p className="text-sm text-slate-500 mb-2">
-                建議售價：{item.estimatedAmount || "-"}
-                {item.currency ? ` ${item.currency}` : ""}
-              </p>
-            )}
-            {item.notes && (
-              <p className="text-sm text-slate-500 whitespace-pre-wrap mb-2">
-                {item.notes}
-              </p>
-            )}
-
-            {item.purchases.length > 0 ? (
-              <div className="text-sm">
-                {item.purchases.map((purchase) => (
-                  <div
-                    key={purchase.id}
-                    className="flex justify-between items-center py-1 border-b border-slate-100 dark:border-slate-700 last:border-0"
-                  >
-                    <div>
-                      <span className="font-medium">{purchase.amount}</span>
-                      {purchase.currency && (
-                        <span className="text-slate-400 ml-1">
-                          {purchase.currency}
-                        </span>
-                      )}
-                      <span className="text-slate-400 ml-2">
-                        {formatDate(purchase.date)}
-                      </span>
-                      {purchase.tripName && (
-                        <span className="text-slate-400 ml-1">
-                          ({purchase.tripName})
-                        </span>
-                      )}
-                      {purchase.note && (
-                        <span className="text-slate-400 ml-1 whitespace-pre-wrap">
-                          - {purchase.note}
-                        </span>
+            return (
+              <div key={item.id} className="pool-item-row">
+                <div className="pool-item-main">
+                  <div className="pool-item-body">
+                    {item.images[0] ? (
+                      <LoadingImage
+                        src={item.images[0].url}
+                        alt=""
+                        width={56}
+                        height={56}
+                        fit="cover"
+                        frameClassName="shopping-thumbnail-frame pool-item-thumbnail"
+                        frameContentClassName="h-full"
+                        imageClassName={shoppingThumbnailClassName}
+                      />
+                    ) : (
+                      <div className="pool-item-thumbnail-placeholder" />
+                    )}
+                    <div className="pool-item-content">
+                      <div className="pool-item-title-row">
+                        <h3 className="pool-item-title">{item.name}</h3>
+                      </div>
+                      <div className="pool-item-meta">
+                        {(item.estimatedAmount || item.currency) && (
+                          <span>
+                            建議：{item.estimatedAmount || "-"}
+                            {item.currency ? ` ${item.currency}` : ""}
+                          </span>
+                        )}
+                        {purchaseSummary.lowest && (
+                          <span>最低：{purchaseSummary.lowest}</span>
+                        )}
+                        {purchaseSummary.latest && (
+                          <span>最後：{purchaseSummary.latest}</span>
+                        )}
+                      </div>
+                      {item.notes && (
+                        <p className="pool-item-note">{item.notes}</p>
                       )}
                     </div>
-                    <button
-                      className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                      onClick={() =>
-                        setConfirmDelete({
-                          type: "purchase",
-                          itemId: item.id,
-                          purchaseId: purchase.id,
-                        })
-                      }
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
+                    <div className="pool-item-actions">
+                      <button
+                        className="pool-item-icon-button"
+                        onClick={() => setEditing(item)}
+                        aria-label="編輯魚池項目"
+                        title="編輯魚池項目"
+                      >
+                        <FontAwesomeIcon icon={faPen} />
+                      </button>
+                      <button
+                        className="pool-item-icon-button"
+                        onClick={() =>
+                          setConfirmDelete({ type: "item", itemId: item.id })
+                        }
+                        aria-label="刪除魚池項目"
+                        title="刪除魚池項目"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
                   </div>
-                ))}
+                  <div className="pool-item-history">
+                    <button
+                      className="btn-round-add !w-7 !h-7"
+                      onClick={() => setAddingPurchaseTo(item.id)}
+                      aria-label="新增購買紀錄"
+                      title="新增購買紀錄"
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
+                    </button>
+                    {item.purchases.length > 0 && (
+                      <button
+                        className="pool-item-history-button"
+                        onClick={() => togglePurchaseHistory(item.id)}
+                        aria-label={
+                          purchaseHistoryExpanded
+                            ? "收合購買紀錄"
+                            : "展開購買紀錄"
+                        }
+                        title={
+                          purchaseHistoryExpanded
+                            ? "收合購買紀錄"
+                            : "展開購買紀錄"
+                        }
+                      >
+                        <FontAwesomeIcon icon={faReceipt} />
+                        <FontAwesomeIcon
+                          icon={
+                            purchaseHistoryExpanded
+                              ? faChevronUp
+                              : faChevronDown
+                          }
+                          className="text-[10px]"
+                        />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {purchaseHistoryExpanded && (
+                  <div className="pool-purchase-history">
+                    {item.purchases.map((purchase) => (
+                      <div key={purchase.id} className="pool-purchase-row">
+                        <div className="pool-purchase-content">
+                          <span>{formatDate(purchase.date)}</span>
+                          <span className="font-medium">
+                            {formatPurchaseAmount(purchase)}
+                          </span>
+                          {purchase.tripName && (
+                            <span>{purchase.tripName}</span>
+                          )}
+                          {purchase.note && (
+                            <span className="pool-purchase-note">
+                              {purchase.note}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          className="pool-item-icon-button"
+                          onClick={() =>
+                            setConfirmDelete({
+                              type: "purchase",
+                              itemId: item.id,
+                              purchaseId: purchase.id,
+                            })
+                          }
+                          aria-label="刪除購買紀錄"
+                          title="刪除購買紀錄"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-slate-400">尚無購買紀錄</p>
-            )}
-          </div>
-        ))
+            );
+          })}
+        </div>
       )}
 
       {editing && (
@@ -337,6 +404,59 @@ export function PoolSection() {
       )}
     </div>
   );
+}
+
+function getPurchaseSummary(purchases: Purchase[]): {
+  lowest?: string;
+  latest?: string;
+} {
+  const purchasesWithAmount = purchases
+    .map((purchase) => ({
+      purchase,
+      numericAmount: parsePurchaseAmount(purchase.amount),
+    }))
+    .filter(
+      (entry): entry is { purchase: Purchase; numericAmount: number } =>
+        entry.numericAmount !== null,
+    );
+
+  const lowestPurchase = purchasesWithAmount.reduce<Purchase | null>(
+    (currentLowest, entry) => {
+      if (!currentLowest) return entry.purchase;
+      const currentAmount = parsePurchaseAmount(currentLowest.amount);
+      if (currentAmount === null) return entry.purchase;
+      return entry.numericAmount < currentAmount
+        ? entry.purchase
+        : currentLowest;
+    },
+    null,
+  );
+
+  const latestPurchase = purchasesWithAmount.reduce<Purchase | null>(
+    (currentLatest, entry) => {
+      if (!currentLatest) return entry.purchase;
+      return entry.purchase.date > currentLatest.date
+        ? entry.purchase
+        : currentLatest;
+    },
+    null,
+  );
+
+  return {
+    lowest: lowestPurchase ? formatPurchaseAmount(lowestPurchase) : undefined,
+    latest: latestPurchase ? formatPurchaseAmount(latestPurchase) : undefined,
+  };
+}
+
+function parsePurchaseAmount(amount: string): number | null {
+  const normalizedAmount = amount.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+  if (!normalizedAmount) return null;
+  const numericAmount = Number(normalizedAmount[0]);
+  return Number.isFinite(numericAmount) ? numericAmount : null;
+}
+
+function formatPurchaseAmount(purchase: Purchase): string {
+  return [purchase.amount, purchase.currency].filter(Boolean).join(" ");
 }
 
 function ItemForm({

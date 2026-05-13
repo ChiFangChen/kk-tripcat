@@ -64,7 +64,24 @@ vi.mock("../../context/AppContext", () => ({
           estimatedAmount: "3500",
           currency: "JPY",
           notes: "最新備註",
-          purchases: [],
+          purchases: [
+            {
+              id: "purchase-1",
+              date: "2026-04-20",
+              amount: "4200",
+              currency: "JPY",
+              tripName: "大阪",
+              note: "百貨購入",
+            },
+            {
+              id: "purchase-2",
+              date: "2026-04-22",
+              amount: "$3,100",
+              currency: "JPY",
+              tripName: "東京",
+              note: "特價購入",
+            },
+          ],
           createdAt: "2026-04-25T00:00:00.000Z",
           updatedAt: "2026-04-25T00:00:00.000Z",
         },
@@ -111,6 +128,35 @@ describe("PoolSection", () => {
     expect(document.body.textContent).toContain("最新吹風機");
   });
 
+  it("shows compact purchase price summaries and expands purchase history on demand", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<PoolSection />);
+    });
+
+    expect(document.body.textContent).toContain("最低：$3,100 JPY");
+    expect(document.body.textContent).toContain("最後：$3,100 JPY");
+    expect(document.body.textContent).not.toContain("特價購入");
+
+    const toggleButton = document.querySelector(
+      'button[aria-label="展開購買紀錄"]',
+    );
+    expect(toggleButton).not.toBeNull();
+
+    await act(async () => {
+      toggleButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(document.body.textContent).toContain("特價購入");
+    expect(document.body.textContent).toContain("東京");
+    expect(
+      document.querySelector('button[aria-label="收合購買紀錄"]'),
+    ).not.toBeNull();
+  });
+
   it("detaches trip shopping references before deleting a pool item", async () => {
     mocks.copyImagesToNewPaths.mockResolvedValue(copiedImages);
     mocks.loadTripMemberData.mockResolvedValue({
@@ -139,7 +185,9 @@ describe("PoolSection", () => {
 
     const buttons = Array.from(document.querySelectorAll("button"));
     await act(async () => {
-      buttons[3].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      buttons
+        .find((button) => button.getAttribute("aria-label") === "刪除魚池項目")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
     await act(async () => {
