@@ -144,7 +144,6 @@ describe("normalizeItems", () => {
         {
           id: "item-1",
           name: "dryer",
-          isFavorite: true,
           createdAt: "2026-04-25T00:00:00.000Z",
           updatedAt: "2026-04-25T00:00:00.000Z",
         },
@@ -155,7 +154,6 @@ describe("normalizeItems", () => {
         name: "dryer",
         images: [],
         purchases: [],
-        isFavorite: true,
         createdAt: "2026-04-25T00:00:00.000Z",
         updatedAt: "2026-04-25T00:00:00.000Z",
       },

@@ -9,7 +9,6 @@ export interface Item {
   currency?: string;
   notes?: string;
   purchases: Purchase[];
-  isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -99,10 +98,6 @@ export function getOwnPoolPromotionCandidates(
   );
 }
 
-export function getFavoriteItems(items: Item[]): Item[] {
-  return items.filter((item) => item.isFavorite);
-}
-
 export function buildPoolItemFromTripShopping({
   source,
   itemId,
@@ -122,7 +117,6 @@ export function buildPoolItemFromTripShopping({
     currency: source.currency,
     notes: source.note,
     purchases: [],
-    isFavorite: false,
     createdAt: now,
     updatedAt: now,
   };

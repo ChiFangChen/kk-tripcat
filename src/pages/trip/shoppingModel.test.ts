@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   buildPoolItemFromTripShopping,
   detachTripShoppingItemFromPoolItem,
-  getFavoriteItems,
   getOwnPoolPromotionCandidates,
   getPoolPromotionCandidates,
   getTripShoppingResolvedContent,
@@ -20,7 +19,6 @@ const poolItem: Item = {
   currency: "JPY",
   notes: "輕量款",
   purchases: [],
-  isFavorite: true,
   createdAt: "2026-04-25T00:00:00.000Z",
   updatedAt: "2026-04-25T00:00:00.000Z",
 };
@@ -163,15 +161,6 @@ describe("shoppingTypes", () => {
     ]);
   });
 
-  it("derives favorite items from the pool", () => {
-    expect(
-      getFavoriteItems([
-        poolItem,
-        { ...poolItem, id: "pool-2", isFavorite: false, name: "雨傘" },
-      ]),
-    ).toEqual([poolItem]);
-  });
-
   it("builds a detached pool item from a trip draft snapshot", () => {
     const tripItem: TripShoppingItem = {
       id: "trip-2",
@@ -227,7 +216,6 @@ describe("shoppingTypes", () => {
       currency: "TWD",
       notes: "伴手禮",
       purchases: [],
-      isFavorite: false,
       createdAt: "2026-04-25T01:00:00.000Z",
       updatedAt: "2026-04-25T01:00:00.000Z",
     });

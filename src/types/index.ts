@@ -211,4 +211,4 @@ export type TripTabType =
   | "transport"
   | "shopping"
   | "memories";
-export type NoteTabType = "tips" | "favorites";
+export type NoteTabType = "tips" | "pool";

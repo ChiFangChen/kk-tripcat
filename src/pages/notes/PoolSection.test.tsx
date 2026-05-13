@@ -3,7 +3,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FavoritesSection } from "./FavoritesSection";
+import { PoolSection } from "./PoolSection";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -65,7 +65,6 @@ vi.mock("../../context/AppContext", () => ({
           currency: "JPY",
           notes: "最新備註",
           purchases: [],
-          isFavorite: true,
           createdAt: "2026-04-25T00:00:00.000Z",
           updatedAt: "2026-04-25T00:00:00.000Z",
         },
@@ -94,10 +93,22 @@ vi.mock("../../context/AppContext", () => ({
   }),
 }));
 
-describe("FavoritesSection", () => {
+describe("PoolSection", () => {
   afterEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = "";
+  });
+
+  it("renders every pool item", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<PoolSection />);
+    });
+
+    expect(document.body.textContent).toContain("最新吹風機");
   });
 
   it("detaches trip shopping references before deleting a pool item", async () => {
@@ -123,7 +134,7 @@ describe("FavoritesSection", () => {
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<FavoritesSection />);
+      root.render(<PoolSection />);
     });
 
     const buttons = Array.from(document.querySelectorAll("button"));

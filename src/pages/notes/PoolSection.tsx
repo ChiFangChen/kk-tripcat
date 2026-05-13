@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faStar,
@@ -23,12 +23,11 @@ import type { Purchase } from "../../types";
 import type { ImageAsset, PendingImageFile } from "../../types/images";
 import {
   detachTripShoppingItemFromPoolItem,
-  getFavoriteItems,
   type Item,
   type TripShoppingItem,
 } from "../trip/shoppingTypes";
 
-export function FavoritesSection() {
+export function PoolSection() {
   const {
     state,
     dispatch,
@@ -44,10 +43,7 @@ export function FavoritesSection() {
     | { type: "purchase"; itemId: string; purchaseId: string }
     | null
   >(null);
-  const favoriteItems = useMemo(
-    () => getFavoriteItems(state.items),
-    [state.items],
-  );
+  const poolItems = state.items;
 
   async function detachShoppingItemsFromPoolItem({
     tripId,
@@ -160,14 +156,13 @@ export function FavoritesSection() {
     });
   }
 
-  function newFavorite(): Item {
+  function newPoolItem(): Item {
     const now = new Date().toISOString();
     return {
       id: generateId(),
       name: "",
       images: [],
       purchases: [],
-      isFavorite: true,
       createdAt: now,
       updatedAt: now,
     };
@@ -178,18 +173,18 @@ export function FavoritesSection() {
       <div className="flex justify-end items-center mb-4">
         <button
           className="btn-round-add"
-          onClick={() => setEditing(newFavorite())}
+          onClick={() => setEditing(newPoolItem())}
         >
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
 
-      {favoriteItems.length === 0 ? (
+      {poolItems.length === 0 ? (
         <div className="empty-state">
-          <p>還沒有喜歡的東西</p>
+          <p>魚池目前沒有項目</p>
         </div>
       ) : (
-        favoriteItems.map((item) => (
+        poolItems.map((item) => (
           <div key={item.id} className="card">
             <ImageGalleryField images={item.images} className="mb-2" />
             <div className="flex justify-between items-center mb-2">
@@ -290,8 +285,8 @@ export function FavoritesSection() {
         <Modal
           title={
             state.items.find((item) => item.id === editing.id)
-              ? "編輯喜歡的東西"
-              : "新增喜歡的東西"
+              ? "編輯魚池項目"
+              : "新增魚池項目"
           }
           onClose={() => setEditing(null)}
         >
@@ -322,11 +317,11 @@ export function FavoritesSection() {
       {confirmDelete && (
         <ConfirmDeleteModal
           title={
-            confirmDelete.type === "item" ? "刪除喜歡的東西" : "刪除購買紀錄"
+            confirmDelete.type === "item" ? "刪除魚池項目" : "刪除購買紀錄"
           }
           message={
             confirmDelete.type === "item"
-              ? "確定要刪除這個喜歡的東西嗎？圖片也會一起刪除。"
+              ? "確定要刪除這個魚池項目嗎？圖片也會一起刪除。"
               : "確定要刪除這筆購買紀錄嗎？"
           }
           onCancel={() => setConfirmDelete(null)}

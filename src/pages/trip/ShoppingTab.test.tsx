@@ -49,7 +49,6 @@ const mocks = vi.hoisted(() => ({
       currency?: string;
       notes?: string;
       purchases: [];
-      isFavorite: boolean;
       createdAt: string;
       updatedAt: string;
     }>,
@@ -180,7 +179,6 @@ describe("ShoppingTab", () => {
         name: "已加入的魚池項目",
         images: [],
         purchases: [],
-        isFavorite: false,
         createdAt: "2026-04-25T00:00:00.000Z",
         updatedAt: "2026-04-25T00:00:00.000Z",
       },
@@ -198,7 +196,6 @@ describe("ShoppingTab", () => {
           },
         ],
         purchases: [],
-        isFavorite: false,
         createdAt: "2026-04-25T00:00:00.000Z",
         updatedAt: "2026-04-25T00:00:00.000Z",
       },
@@ -249,7 +246,6 @@ describe("ShoppingTab", () => {
         currency: "JPY",
         notes: "輕量款",
         purchases: [],
-        isFavorite: false,
         createdAt: "2026-04-25T00:00:00.000Z",
         updatedAt: "2026-04-25T00:00:00.000Z",
       },

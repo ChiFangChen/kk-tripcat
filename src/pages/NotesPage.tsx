@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { NoteTabType } from "../types";
 import { TipsSection } from "./notes/TipsSection";
-import { FavoritesSection } from "./notes/FavoritesSection";
+import { PoolSection } from "./notes/PoolSection";
 
 export function NotesPage() {
   const [activeTab, setActiveTab] = useState<NoteTabType>("tips");
@@ -16,15 +16,15 @@ export function NotesPage() {
           Experiences & Tips
         </button>
         <button
-          className={`trip-tab ${activeTab === "favorites" ? "active" : ""}`}
-          onClick={() => setActiveTab("favorites")}
+          className={`trip-tab ${activeTab === "pool" ? "active" : ""}`}
+          onClick={() => setActiveTab("pool")}
         >
-          Liked
+          Pool
         </button>
       </div>
       <div className="page-container">
         {activeTab === "tips" && <TipsSection />}
-        {activeTab === "favorites" && <FavoritesSection />}
+        {activeTab === "pool" && <PoolSection />}
       </div>
     </div>
   );
