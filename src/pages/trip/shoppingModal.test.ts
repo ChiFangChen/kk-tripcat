@@ -33,9 +33,9 @@ describe("shopping modal mode", () => {
     );
   });
 
-  it("keeps linked pool items in view mode after a title double click", () => {
+  it("switches linked pool items to edit mode after a title double click", () => {
     expect(getShoppingModalModeAfterTitleDoubleClick(linkedItem, "view")).toBe(
-      "view",
+      "edit",
     );
   });
 

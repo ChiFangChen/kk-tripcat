@@ -361,12 +361,20 @@ body {
 
 /* Star button */
 .star-btn {
-  color: var(--color-text-secondary);
+  color: #e2e2e2;
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .star-btn.active {
+  color: var(--color-star);
+}
+
+.star-btn:disabled {
+  cursor: default;
+}
+
+.star-btn.active:disabled {
   color: var(--color-star);
 }
 

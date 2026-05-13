@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPoolItemFromTripShopping,
+  detachTripShoppingItemFromPoolItem,
   getFavoriteItems,
+  getOwnPoolPromotionCandidates,
   getPoolPromotionCandidates,
   getTripShoppingResolvedContent,
   isLinkedTripShoppingItem,
+  linkTripShoppingItemToPoolItem,
   type Item,
   type TripShoppingItem,
 } from "./shoppingTypes";
@@ -116,6 +119,50 @@ describe("shoppingTypes", () => {
     ]);
   });
 
+  it("filters unpromoted draft items created by the admin for inline pool promotion", () => {
+    const shoppingItems: TripShoppingItem[] = [
+      {
+        id: "mine-open",
+        textSnapshot: "我自己的",
+        images: [],
+        checked: false,
+        createdBy: "admin-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+      },
+      {
+        id: "mine-linked",
+        itemId: "pool-1",
+        textSnapshot: "已經來自魚池",
+        images: [],
+        checked: false,
+        createdBy: "admin-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+      },
+      {
+        id: "mine-promoted",
+        textSnapshot: "已收編",
+        images: [],
+        checked: false,
+        createdBy: "admin-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+        promotedToPoolAt: "2026-04-25T01:00:00.000Z",
+        promotedBy: "admin-1",
+      },
+      {
+        id: "other-open",
+        textSnapshot: "別人的",
+        images: [],
+        checked: false,
+        createdBy: "user-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+      },
+    ];
+
+    expect(getOwnPoolPromotionCandidates(shoppingItems, "admin-1")).toEqual([
+      shoppingItems[0],
+    ]);
+  });
+
   it("derives favorite items from the pool", () => {
     expect(
       getFavoriteItems([
@@ -183,6 +230,91 @@ describe("shoppingTypes", () => {
       isFavorite: false,
       createdAt: "2026-04-25T01:00:00.000Z",
       updatedAt: "2026-04-25T01:00:00.000Z",
+    });
+  });
+
+  it("detaches a linked trip shopping item using the latest pool item snapshot", () => {
+    const linkedTripItem: TripShoppingItem = {
+      id: "trip-1",
+      itemId: "pool-1",
+      textSnapshot: "舊名稱",
+      images: [],
+      checked: true,
+      createdBy: "admin-1",
+      createdAt: "2026-04-25T00:00:00.000Z",
+    };
+    const copiedImages = [
+      {
+        id: "copied-img-1",
+        url: "https://files.local/trip-copy.jpg",
+        path: "tc-images/trips/trip-1/shopping/trip-1/copied-img-1.jpg",
+        createdAt: "2026-04-25T01:00:00.000Z",
+        width: 320,
+        height: 240,
+      },
+    ];
+
+    expect(
+      detachTripShoppingItemFromPoolItem({
+        tripItem: linkedTripItem,
+        poolItem: {
+          ...poolItem,
+          name: "最新吹風機",
+          images: copiedImages,
+          estimatedAmount: "3500",
+          notes: "最新備註",
+        },
+      }),
+    ).toEqual({
+      id: "trip-1",
+      textSnapshot: "最新吹風機",
+      images: copiedImages,
+      estimatedAmount: "3500",
+      currency: "JPY",
+      note: "最新備註",
+      checked: true,
+      createdBy: "admin-1",
+      createdAt: "2026-04-25T00:00:00.000Z",
+    });
+  });
+
+  it("links a promoted trip shopping item to the new pool item and clears local content", () => {
+    const draftTripItem: TripShoppingItem = {
+      id: "trip-1",
+      textSnapshot: "草莓巧克力",
+      images: [
+        {
+          id: "img-1",
+          url: "https://files.local/old.jpg",
+          path: "tc-images/trips/trip-1/shopping/trip-1/img-1.jpg",
+          createdAt: "2026-04-25T00:00:00.000Z",
+          width: 320,
+          height: 240,
+        },
+      ],
+      estimatedAmount: "250",
+      currency: "TWD",
+      note: "伴手禮",
+      checked: true,
+      createdBy: "admin-1",
+      createdAt: "2026-04-25T00:00:00.000Z",
+      promotedToPoolAt: "2026-04-25T01:00:00.000Z",
+      promotedBy: "admin-1",
+    };
+
+    expect(
+      linkTripShoppingItemToPoolItem({
+        tripItem: draftTripItem,
+        poolItemId: "pool-new",
+      }),
+    ).toEqual({
+      id: "trip-1",
+      itemId: "pool-new",
+      textSnapshot: "草莓巧克力",
+      images: [],
+      checked: true,
+      createdBy: "admin-1",
+      createdAt: "2026-04-25T00:00:00.000Z",
     });
   });
 });

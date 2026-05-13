@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
+  faStar,
   faTrash,
   faBoxesStacked,
   faUsers,
@@ -33,9 +34,11 @@ import {
 } from "./shoppingModal";
 import {
   buildPoolItemFromTripShopping,
+  getOwnPoolPromotionCandidates,
   getPoolPromotionCandidates,
   getTripShoppingResolvedContent,
   isLinkedTripShoppingItem,
+  linkTripShoppingItemToPoolItem,
   type Item,
   type TripShoppingItem,
 } from "./shoppingTypes";
@@ -55,6 +58,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     getUserName,
     isTripAdmin,
     loadTripMemberData,
+    showToast,
   } = useApp();
   const trip = state.trips.find((entry) => entry.id === tripId);
   const tripData = getTripData(tripId);
@@ -73,6 +77,9 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const [reviewItems, setReviewItems] = useState<
     Array<{ userId: string; item: TripShoppingItem }>
   >([]);
+  const [promotingItemIds, setPromotingItemIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const canManageTrip = !viewOnly && !!trip && isTripAdmin(trip);
   const unchecked = items.filter((item) => !item.checked);
@@ -80,6 +87,21 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const displayed = showCompleted ? items : unchecked;
   const resolvedDisplayed = displayed.map((item) =>
     getTripShoppingResolvedContent(item, state.items),
+  );
+  const linkedPoolItemIds = new Set(
+    items
+      .map((item) => item.itemId)
+      .filter((itemId): itemId is string => Boolean(itemId)),
+  );
+  const availablePoolItems = state.items.filter(
+    (item) => !linkedPoolItemIds.has(item.id),
+  );
+  const ownPromotionCandidateIds = new Set(
+    state.auth.currentUser
+      ? getOwnPoolPromotionCandidates(items, state.auth.currentUser.id).map(
+          (item) => item.id,
+        )
+      : [],
   );
 
   function toggleCheck(id: string) {
@@ -100,6 +122,18 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     setEditingItem(null);
     setShoppingModalMode("view");
     setShowAddDraftModal(false);
+  }
+
+  function savePoolItem(updated: Item) {
+    dispatch({
+      type: "UPDATE_ITEM",
+      item: {
+        ...updated,
+        updatedAt: new Date().toISOString(),
+      },
+    });
+    setEditingItem(null);
+    setShoppingModalMode("view");
   }
 
   async function deleteDraftItem(id: string) {
@@ -194,11 +228,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         candidate.userId
       ].shopping.map((item) =>
         item.id === candidate.item.id
-          ? {
-              ...item,
-              promotedToPoolAt: now,
-              promotedBy: state.auth.currentUser!.id,
-            }
+          ? linkTripShoppingItemToPoolItem({
+              tripItem: item,
+              poolItemId,
+            })
           : item,
       ),
     });
@@ -208,16 +241,78 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         entry.userId === candidate.userId && entry.item.id === candidate.item.id
           ? {
               ...entry,
-              item: {
-                ...entry.item,
-                promotedToPoolAt: now,
-                promotedBy: state.auth.currentUser!.id,
-              },
+              item: linkTripShoppingItemToPoolItem({
+                tripItem: entry.item,
+                poolItemId,
+              }),
             }
           : entry,
       ),
     );
   }
+
+  async function promoteOwnItemToPool(item: TripShoppingItem) {
+    if (
+      !state.auth.currentUser ||
+      !ownPromotionCandidateIds.has(item.id) ||
+      promotingItemIds.has(item.id)
+    ) {
+      return;
+    }
+
+    setPromotingItemIds((current) => new Set(current).add(item.id));
+    try {
+      const now = new Date().toISOString();
+      const poolItemId = generateId();
+      const copiedImages = await copyImagesToNewPaths({
+        images: item.images,
+        targetBasePath: `tc-images/users/${state.auth.currentUser.id}/items/${poolItemId}`,
+        createImageId: generateId,
+        createdAt: now,
+        fetchBlob: async (url) => {
+          const response = await fetch(url);
+          return response.blob();
+        },
+        upload: uploadImage,
+        remove: deleteImage,
+      });
+
+      dispatch({
+        type: "ADD_ITEM",
+        item: buildPoolItemFromTripShopping({
+          source: item,
+          itemId: poolItemId,
+          images: copiedImages,
+          now,
+        }),
+      });
+
+      setUserTripData(tripId, {
+        shopping: items.map((entry) =>
+          entry.id === item.id
+            ? linkTripShoppingItemToPoolItem({
+                tripItem: entry,
+                poolItemId,
+              })
+            : entry,
+        ),
+      });
+      showToast({ type: "success", message: "已加入魚池" });
+    } catch (error) {
+      console.error("Failed to promote shopping item to pool:", error);
+      showToast({ type: "error", message: "加入魚池失敗，請稍後再試" });
+    } finally {
+      setPromotingItemIds((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
+    }
+  }
+
+  const confirmDeleteItem = confirmDeleteItemId
+    ? items.find((item) => item.id === confirmDeleteItemId)
+    : undefined;
 
   return (
     <div>
@@ -287,48 +382,79 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       </div>
 
       <div className="card">
-        {resolvedDisplayed.map((item) => (
-          <div
-            key={item.id}
-            className={`checklist-item ${item.checked ? "checked" : ""}`}
-          >
-            {!viewOnly && (
-              <input
-                type="checkbox"
-                checked={item.checked}
-                onChange={() => toggleCheck(item.id)}
-                className="w-5 h-5"
-              />
-            )}
-            <button
-              type="button"
-              className="flex flex-1 items-center gap-2 text-left min-w-0"
-              onClick={() => openShoppingItemModal(item.source)}
+        {resolvedDisplayed.map((item) => {
+          const linked = isLinkedTripShoppingItem(item.source);
+          const canShowStar =
+            canManageTrip &&
+            state.auth.currentUser?.id === item.source.createdBy;
+          const canPromoteOwnItem = canShowStar && !linked;
+          const promoting = promotingItemIds.has(item.source.id);
+          const promoted = linked;
+          const starLabel = promoting
+            ? "加入魚池中"
+            : promoted
+              ? "已加入魚池"
+              : "加入魚池";
+
+          return (
+            <div
+              key={item.id}
+              className={`checklist-item ${item.checked ? "checked" : ""}`}
             >
-              {item.images[0] && (
-                <LoadingImage
-                  src={item.images[0].url}
-                  alt=""
-                  width={40}
-                  height={40}
-                  fit="cover"
-                  frameClassName="shopping-thumbnail-frame w-10 h-10 flex-shrink-0"
-                  frameContentClassName="h-full"
-                  imageClassName={shoppingThumbnailClassName}
+              {!viewOnly && (
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={() => toggleCheck(item.id)}
+                  className="w-5 h-5"
                 />
               )}
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm">{item.name}</span>
-                {(item.estimatedAmount || item.currency) && (
-                  <span className="block text-xs text-slate-400">
-                    {item.estimatedAmount || "-"}
-                    {item.currency ? ` ${item.currency}` : ""}
-                  </span>
+              <button
+                type="button"
+                className="flex flex-1 items-center gap-2 text-left min-w-0"
+                onClick={() => openShoppingItemModal(item.source)}
+              >
+                {item.images[0] && (
+                  <LoadingImage
+                    src={item.images[0].url}
+                    alt=""
+                    width={40}
+                    height={40}
+                    fit="cover"
+                    frameClassName="shopping-thumbnail-frame w-10 h-10 flex-shrink-0"
+                    frameContentClassName="h-full"
+                    imageClassName={shoppingThumbnailClassName}
+                  />
                 )}
-              </span>
-            </button>
-          </div>
-        ))}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm">{item.name}</span>
+                  {(item.estimatedAmount || item.currency) && (
+                    <span className="block text-xs text-slate-400">
+                      {item.estimatedAmount || "-"}
+                      {item.currency ? ` ${item.currency}` : ""}
+                    </span>
+                  )}
+                </span>
+              </button>
+              {canShowStar && (
+                <button
+                  type="button"
+                  className={`star-btn ${promoting || promoted ? "active" : ""}`}
+                  aria-label={starLabel}
+                  title={starLabel}
+                  disabled={promoting || promoted}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (!canPromoteOwnItem) return;
+                    void promoteOwnItemToPool(item.source);
+                  }}
+                >
+                  <FontAwesomeIcon icon={faStar} />
+                </button>
+              )}
+            </div>
+          );
+        })}
         {resolvedDisplayed.length === 0 && (
           <div className="py-4 text-center text-sm text-slate-400">
             {showCompleted ? "購物清單是空的" : "全部買好了！"}
@@ -342,6 +468,9 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             editingItem,
             state.items,
           );
+          const linkedPoolItem = editingItem.itemId
+            ? state.items.find((item) => item.id === editingItem.itemId)
+            : undefined;
           const titleText = getShoppingModalTitle(
             shoppingModalMode,
             editingItem,
@@ -375,8 +504,22 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                 setShoppingModalMode("view");
               }}
             >
-              {shoppingModalMode === "edit" &&
-              !isLinkedTripShoppingItem(editingItem) ? (
+              {shoppingModalMode === "edit" && linkedPoolItem ? (
+                <PoolItemForm
+                  item={linkedPoolItem}
+                  onSave={savePoolItem}
+                  onCancel={() => setShoppingModalMode("view")}
+                  onDelete={
+                    canShowShoppingModalRemoveAction(
+                      shoppingModalMode,
+                      canManageTrip,
+                    )
+                      ? () => setConfirmDeleteItemId(editingItem.id)
+                      : undefined
+                  }
+                />
+              ) : shoppingModalMode === "edit" &&
+                !isLinkedTripShoppingItem(editingItem) ? (
                 <DraftShoppingForm
                   tripId={tripId}
                   item={editingItem}
@@ -418,25 +561,39 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
           onClose={() => setShowPoolModal(false)}
         >
           <div className="space-y-3">
-            {state.items.length === 0 ? (
+            {availablePoolItems.length === 0 ? (
               <div className="empty-state">
                 <p>魚池目前沒有項目</p>
               </div>
             ) : (
-              state.items.map((item) => (
+              availablePoolItems.map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  className="card w-full text-left"
+                  className="card w-full text-left flex items-center gap-3"
                   onClick={() => addPoolItemToTrip(item)}
                 >
-                  <div className="font-semibold">{item.name}</div>
-                  {(item.estimatedAmount || item.currency) && (
-                    <div className="text-sm text-slate-500">
-                      {item.estimatedAmount || "-"}
-                      {item.currency ? ` ${item.currency}` : ""}
-                    </div>
+                  {item.images[0] && (
+                    <LoadingImage
+                      src={item.images[0].url}
+                      alt=""
+                      width={48}
+                      height={48}
+                      fit="cover"
+                      frameClassName="shopping-thumbnail-frame w-12 h-12 flex-shrink-0"
+                      frameContentClassName="h-full"
+                      imageClassName={shoppingThumbnailClassName}
+                    />
                   )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">{item.name}</span>
+                    {(item.estimatedAmount || item.currency) && (
+                      <span className="block text-sm text-slate-500">
+                        {item.estimatedAmount || "-"}
+                        {item.currency ? ` ${item.currency}` : ""}
+                      </span>
+                    )}
+                  </span>
                 </button>
               ))
             )}
@@ -499,7 +656,11 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       {confirmDeleteItemId && (
         <ConfirmDeleteModal
           title="刪除購物項目"
-          message="確定要刪除這個購物項目嗎？圖片也會一起刪除。"
+          message={
+            confirmDeleteItem && isLinkedTripShoppingItem(confirmDeleteItem)
+              ? "確定要從這趟旅程刪除這個購物項目嗎？魚池項目不會被刪除。"
+              : "確定要刪除這個購物項目嗎？圖片也會一起刪除。"
+          }
           onCancel={() => setConfirmDeleteItemId(null)}
           onConfirm={() => {
             deleteDraftItem(confirmDeleteItemId);
@@ -586,6 +747,132 @@ function DraftShoppingForm({
           className="form-input"
           value={form.note || ""}
           onChange={(event) => setForm({ ...form, note: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">圖片</label>
+        <MultiImageUpload
+          existingImages={form.images}
+          pendingImages={pendingImages}
+          onAddFiles={(files) =>
+            setPendingImages((current) => [
+              ...current,
+              ...createPendingImages(files, generateId),
+            ])
+          }
+          onRemoveExisting={(imageId) => {
+            const image = form.images.find((entry) => entry.id === imageId);
+            if (!image) return;
+            setRemovedImages((current) => [...current, image]);
+            setForm({
+              ...form,
+              images: form.images.filter((entry) => entry.id !== imageId),
+            });
+          }}
+          onRemovePending={(imageId) =>
+            setPendingImages((current) =>
+              current.filter((entry) => entry.imageId !== imageId),
+            )
+          }
+        />
+      </div>
+      <div className="form-actions">
+        <button className="btn btn-secondary" onClick={onCancel} type="button">
+          取消
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "儲存中..." : "儲存"}
+        </button>
+      </div>
+      {onDelete && (
+        <button
+          className="btn btn-secondary btn-danger w-full mt-2"
+          onClick={onDelete}
+        >
+          <FontAwesomeIcon icon={faTrash} className="mr-1" />
+          刪除
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PoolItemForm({
+  item,
+  onSave,
+  onCancel,
+  onDelete,
+}: {
+  item: Item;
+  onSave: (item: Item) => void;
+  onCancel: () => void;
+  onDelete?: () => void;
+}) {
+  const { state } = useApp();
+  const [form, setForm] = useState(item);
+  const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
+  const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await persistImagesForRecord({
+        existingImages: form.images,
+        pendingImages,
+        removedImages,
+        basePath: `tc-images/users/${state.auth.currentUser?.id || "anonymous"}/items/${item.id}`,
+        createdAt: new Date().toISOString(),
+        upload: uploadImage,
+        remove: deleteImage,
+        onPersist: async (images) => onSave({ ...form, images }),
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="form-group">
+        <label className="form-label">名稱</label>
+        <input
+          className="form-input"
+          value={form.name}
+          onChange={(event) => setForm({ ...form, name: event.target.value })}
+          autoFocus
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">建議售價</label>
+        <input
+          className="form-input"
+          value={form.estimatedAmount || ""}
+          onChange={(event) =>
+            setForm({ ...form, estimatedAmount: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">幣別</label>
+        <input
+          className="form-input"
+          value={form.currency || ""}
+          onChange={(event) =>
+            setForm({ ...form, currency: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">備註</label>
+        <textarea
+          className="form-input"
+          value={form.notes || ""}
+          onChange={(event) => setForm({ ...form, notes: event.target.value })}
         />
       </div>
       <div className="form-group">

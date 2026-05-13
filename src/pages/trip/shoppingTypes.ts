@@ -89,6 +89,16 @@ export function getPoolPromotionCandidates(
   );
 }
 
+export function getOwnPoolPromotionCandidates(
+  shoppingItems: TripShoppingItem[],
+  adminUserId: string,
+): TripShoppingItem[] {
+  return shoppingItems.filter(
+    (item) =>
+      !item.itemId && item.createdBy === adminUserId && !item.promotedToPoolAt,
+  );
+}
+
 export function getFavoriteItems(items: Item[]): Item[] {
   return items.filter((item) => item.isFavorite);
 }
@@ -115,5 +125,50 @@ export function buildPoolItemFromTripShopping({
     isFavorite: false,
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+export function detachTripShoppingItemFromPoolItem({
+  tripItem,
+  poolItem,
+}: {
+  tripItem: TripShoppingItem;
+  poolItem: Item;
+}): TripShoppingItem {
+  const {
+    itemId: _itemId,
+    promotedToPoolAt: _promotedToPoolAt,
+    promotedBy: _promotedBy,
+    ...rest
+  } = tripItem;
+  void _itemId;
+  void _promotedToPoolAt;
+  void _promotedBy;
+
+  return {
+    ...rest,
+    textSnapshot: poolItem.name,
+    images: poolItem.images,
+    estimatedAmount: poolItem.estimatedAmount,
+    currency: poolItem.currency,
+    note: poolItem.notes,
+  };
+}
+
+export function linkTripShoppingItemToPoolItem({
+  tripItem,
+  poolItemId,
+}: {
+  tripItem: TripShoppingItem;
+  poolItemId: string;
+}): TripShoppingItem {
+  return {
+    id: tripItem.id,
+    itemId: poolItemId,
+    textSnapshot: tripItem.textSnapshot,
+    images: [],
+    checked: tripItem.checked,
+    createdBy: tripItem.createdBy,
+    createdAt: tripItem.createdAt,
   };
 }

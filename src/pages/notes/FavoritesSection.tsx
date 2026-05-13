@@ -15,15 +15,28 @@ import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
+  copyImagesToNewPaths,
   createPendingImages,
   persistImagesForRecord,
 } from "../../utils/imageUpload";
 import type { Purchase } from "../../types";
 import type { ImageAsset, PendingImageFile } from "../../types/images";
-import { getFavoriteItems, type Item } from "../trip/shoppingTypes";
+import {
+  detachTripShoppingItemFromPoolItem,
+  getFavoriteItems,
+  type Item,
+  type TripShoppingItem,
+} from "../trip/shoppingTypes";
 
 export function FavoritesSection() {
-  const { state, dispatch } = useApp();
+  const {
+    state,
+    dispatch,
+    setUserTripData,
+    setTripMemberData,
+    loadTripMemberData,
+    showToast,
+  } = useApp();
   const [editing, setEditing] = useState<Item | null>(null);
   const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<
@@ -36,10 +49,88 @@ export function FavoritesSection() {
     [state.items],
   );
 
+  async function detachShoppingItemsFromPoolItem({
+    tripId,
+    shopping,
+    item,
+  }: {
+    tripId: string;
+    shopping: TripShoppingItem[];
+    item: Item;
+  }): Promise<TripShoppingItem[]> {
+    let changed = false;
+    const nextShopping: TripShoppingItem[] = [];
+
+    for (const shoppingItem of shopping) {
+      if (shoppingItem.itemId !== item.id) {
+        nextShopping.push(shoppingItem);
+        continue;
+      }
+
+      changed = true;
+      const copiedImages = await copyImagesToNewPaths({
+        images: item.images,
+        targetBasePath: `tc-images/trips/${tripId}/shopping/${shoppingItem.id}`,
+        createImageId: generateId,
+        createdAt: new Date().toISOString(),
+        fetchBlob: async (url) => {
+          const response = await fetch(url);
+          return response.blob();
+        },
+        upload: uploadImage,
+        remove: deleteImage,
+      });
+
+      nextShopping.push(
+        detachTripShoppingItemFromPoolItem({
+          tripItem: shoppingItem,
+          poolItem: {
+            ...item,
+            images: copiedImages,
+          },
+        }),
+      );
+    }
+
+    return changed ? nextShopping : shopping;
+  }
+
+  async function detachTripReferencesBeforeDelete(item: Item) {
+    for (const trip of state.trips) {
+      const ownTripData = state.userTripData[trip.id];
+      if (ownTripData?.shopping.some((entry) => entry.itemId === item.id)) {
+        const shopping = await detachShoppingItemsFromPoolItem({
+          tripId: trip.id,
+          shopping: ownTripData.shopping,
+          item,
+        });
+        setUserTripData(trip.id, { shopping });
+      }
+
+      const memberData = await loadTripMemberData(trip.id);
+      for (const [userId, data] of Object.entries(memberData)) {
+        if (!data.shopping.some((entry) => entry.itemId === item.id)) continue;
+        const shopping = await detachShoppingItemsFromPoolItem({
+          tripId: trip.id,
+          shopping: data.shopping,
+          item,
+        });
+        await setTripMemberData(trip.id, userId, { shopping });
+      }
+    }
+  }
+
   async function remove(id: string) {
     const item = state.items.find((entry) => entry.id === id);
     if (item) {
-      await Promise.all(item.images.map((image) => deleteImage(image.path)));
+      try {
+        await detachTripReferencesBeforeDelete(item);
+        await Promise.all(item.images.map((image) => deleteImage(image.path)));
+      } catch (error) {
+        console.error("Failed to detach fish pool item before delete:", error);
+        showToast({ type: "error", message: "刪除失敗，請稍後再試" });
+        return;
+      }
     }
     dispatch({ type: "DELETE_ITEM", itemId: id });
     setEditing(null);
