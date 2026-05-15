@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
+import { lockModalScroll } from "../utils/modalScrollLock";
 
 interface Props {
   title: ReactNode;
@@ -10,29 +11,7 @@ interface Props {
 
 export function FullScreenModal({ title, onClose, children }: Props) {
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    const previousTouchAction = document.body.style.touchAction;
-    const previousBodyPosition = document.body.style.position;
-    const previousBodyTop = document.body.style.top;
-    const previousBodyWidth = document.body.style.width;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-    const scrollY = window.scrollY;
-    document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = "100%";
-    document.documentElement.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.body.style.touchAction = previousTouchAction;
-      document.body.style.position = previousBodyPosition;
-      document.body.style.top = previousBodyTop;
-      document.body.style.width = previousBodyWidth;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-      window.scrollTo(0, scrollY);
-    };
+    return lockModalScroll();
   }, []);
 
   return (
