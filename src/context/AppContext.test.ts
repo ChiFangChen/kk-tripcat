@@ -1,5 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { shouldSyncUserCollectionToRemote } from "./AppContext";
+import {
+  shouldSubscribeUserCollections,
+  shouldSyncUserCollectionToRemote,
+} from "./AppContext";
+
+describe("shouldSubscribeUserCollections", () => {
+  it("waits for Firebase before subscribing for the current user", () => {
+    expect(
+      shouldSubscribeUserCollections({
+        hasCurrentUser: true,
+        dbReady: false,
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldSubscribeUserCollections({
+        hasCurrentUser: true,
+        dbReady: true,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not subscribe user collections without a current user", () => {
+    expect(
+      shouldSubscribeUserCollections({
+        hasCurrentUser: false,
+        dbReady: true,
+      }),
+    ).toBe(false);
+  });
+});
 
 describe("shouldSyncUserCollectionToRemote", () => {
   it("does not sync collections that were just hydrated from local storage", () => {

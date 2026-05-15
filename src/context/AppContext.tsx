@@ -189,6 +189,16 @@ export function shouldSyncUserCollectionToRemote({
   return collection !== previousCollection;
 }
 
+export function shouldSubscribeUserCollections({
+  hasCurrentUser,
+  dbReady,
+}: {
+  hasCurrentUser: boolean;
+  dbReady: boolean;
+}) {
+  return hasCurrentUser && dbReady;
+}
+
 const WRITE_BLOCKED_ACTIONS = new Set<Action["type"]>([
   "ADD_USER",
   "UPDATE_USER",
@@ -717,7 +727,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Subscribe to template, tips, item pool when user logs in
   useEffect(() => {
-    if (!state.auth.currentUser || !dbRef.current) return;
+    if (
+      !shouldSubscribeUserCollections({
+        hasCurrentUser: Boolean(state.auth.currentUser),
+        dbReady,
+      }) ||
+      !state.auth.currentUser ||
+      !dbRef.current
+    ) {
+      return;
+    }
     const db = dbRef.current;
     const userId = state.auth.currentUser.id;
     const unsub1 = subscribeToTemplate(db, userId, (template) => {
@@ -797,7 +816,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       unsub2();
       unsub3();
     };
-  }, [state.auth.currentUser]);
+  }, [state.auth.currentUser, dbReady]);
 
   // Subscribe to shared trip data for view-only link
   useEffect(() => {
