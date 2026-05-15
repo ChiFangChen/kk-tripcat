@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   copyImagesToNewPaths: vi.fn(),
   persistImagesForRecord: vi.fn(),
   dispatch: vi.fn(),
+  setItems: vi.fn(),
   setUserTripData: vi.fn(),
   showToast: vi.fn(),
   state: {
@@ -89,6 +90,7 @@ vi.mock("../../context/AppContext", () => ({
   useApp: () => ({
     state: mocks.state,
     dispatch: mocks.dispatch,
+    setItems: mocks.setItems,
     setUserTripData: mocks.setUserTripData,
     setTripMemberData: vi.fn(),
     getTripData: () => ({
@@ -104,6 +106,7 @@ vi.mock("../../context/AppContext", () => ({
 describe("ShoppingTab", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    mocks.setItems.mockResolvedValue(undefined);
     mocks.persistImagesForRecord.mockImplementation(
       async ({ existingImages, onPersist }) => {
         await onPersist(existingImages);
@@ -134,6 +137,7 @@ describe("ShoppingTab", () => {
   });
 
   beforeEach(() => {
+    mocks.setItems.mockResolvedValue(undefined);
     mocks.persistImagesForRecord.mockImplementation(
       async ({ existingImages, onPersist }) => {
         await onPersist(existingImages);
@@ -170,6 +174,56 @@ describe("ShoppingTab", () => {
       message: "加入魚池失敗，請稍後再試",
     });
     consoleError.mockRestore();
+  });
+
+  it("persists a promoted pool item before linking the trip shopping item", async () => {
+    const copiedImages = [
+      {
+        id: "copied-img-1",
+        url: "https://files.local/items/copied-matcha.jpg",
+        path: "tc-images/users/admin-1/items/pool/copied-img-1.jpg",
+        createdAt: "2026-04-25T00:00:00.000Z",
+        width: 320,
+        height: 240,
+      },
+    ];
+    mocks.copyImagesToNewPaths.mockResolvedValueOnce(copiedImages);
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    const button = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="加入魚池"]',
+    );
+
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mocks.setItems).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "抹茶",
+        images: copiedImages,
+      }),
+    ]);
+    expect(mocks.setUserTripData).toHaveBeenCalledWith("trip-1", {
+      shopping: [
+        expect.objectContaining({
+          id: "shopping-1",
+          itemId: expect.any(String),
+          images: [],
+        }),
+      ],
+    });
+    expect(mocks.setItems.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.setUserTripData.mock.invocationCallOrder[0],
+    );
   });
 
   it("filters already linked pool items from the add-from-pool modal", async () => {

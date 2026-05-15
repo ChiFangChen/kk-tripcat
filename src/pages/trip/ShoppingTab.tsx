@@ -52,6 +52,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const {
     state,
     dispatch,
+    setItems,
     setUserTripData,
     setTripMemberData,
     getTripData,
@@ -198,57 +199,61 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   }) {
     if (!state.auth.currentUser) return;
 
-    const now = new Date().toISOString();
-    const poolItemId = generateId();
-    const copiedImages = await copyImagesToNewPaths({
-      images: candidate.item.images,
-      targetBasePath: `tc-images/users/${state.auth.currentUser.id}/items/${poolItemId}`,
-      createImageId: generateId,
-      createdAt: now,
-      fetchBlob: async (url) => {
-        const response = await fetch(url);
-        return response.blob();
-      },
-      upload: uploadImage,
-      remove: deleteImage,
-    });
-
-    dispatch({
-      type: "ADD_ITEM",
-      item: buildPoolItemFromTripShopping({
+    try {
+      const now = new Date().toISOString();
+      const poolItemId = generateId();
+      const copiedImages = await copyImagesToNewPaths({
+        images: candidate.item.images,
+        targetBasePath: `tc-images/users/${state.auth.currentUser.id}/items/${poolItemId}`,
+        createImageId: generateId,
+        createdAt: now,
+        fetchBlob: async (url) => {
+          const response = await fetch(url);
+          return response.blob();
+        },
+        upload: uploadImage,
+        remove: deleteImage,
+      });
+      const poolItem = buildPoolItemFromTripShopping({
         source: candidate.item,
         itemId: poolItemId,
         images: copiedImages,
         now,
-      }),
-    });
+      });
 
-    await setTripMemberData(tripId, candidate.userId, {
-      shopping: (await loadTripMemberData(tripId))[
-        candidate.userId
-      ].shopping.map((item) =>
-        item.id === candidate.item.id
-          ? linkTripShoppingItemToPoolItem({
-              tripItem: item,
-              poolItemId,
-            })
-          : item,
-      ),
-    });
+      await setItems([poolItem, ...state.items]);
 
-    setReviewItems((current) =>
-      current.map((entry) =>
-        entry.userId === candidate.userId && entry.item.id === candidate.item.id
-          ? {
-              ...entry,
-              item: linkTripShoppingItemToPoolItem({
-                tripItem: entry.item,
+      await setTripMemberData(tripId, candidate.userId, {
+        shopping: (await loadTripMemberData(tripId))[
+          candidate.userId
+        ].shopping.map((item) =>
+          item.id === candidate.item.id
+            ? linkTripShoppingItemToPoolItem({
+                tripItem: item,
                 poolItemId,
-              }),
-            }
-          : entry,
-      ),
-    );
+              })
+            : item,
+        ),
+      });
+
+      setReviewItems((current) =>
+        current.map((entry) =>
+          entry.userId === candidate.userId &&
+          entry.item.id === candidate.item.id
+            ? {
+                ...entry,
+                item: linkTripShoppingItemToPoolItem({
+                  tripItem: entry.item,
+                  poolItemId,
+                }),
+              }
+            : entry,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to promote member shopping item to pool:", error);
+      showToast({ type: "error", message: "加入魚池失敗，請稍後再試" });
+    }
   }
 
   async function promoteOwnItemToPool(item: TripShoppingItem) {
@@ -277,15 +282,14 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         remove: deleteImage,
       });
 
-      dispatch({
-        type: "ADD_ITEM",
-        item: buildPoolItemFromTripShopping({
-          source: item,
-          itemId: poolItemId,
-          images: copiedImages,
-          now,
-        }),
+      const poolItem = buildPoolItemFromTripShopping({
+        source: item,
+        itemId: poolItemId,
+        images: copiedImages,
+        now,
       });
+
+      await setItems([poolItem, ...state.items]);
 
       setUserTripData(tripId, {
         shopping: items.map((entry) =>

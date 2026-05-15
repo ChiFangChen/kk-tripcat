@@ -356,6 +356,7 @@ interface AppContextType {
     displayName: string,
   ) => Promise<User>;
   updateUser: (user: User) => void;
+  setItems: (items: Item[]) => Promise<void>;
   setTemplate: (template: Template) => void;
   addTrip: (trip: Trip) => void;
   updateTrip: (trip: Trip, fields?: Partial<Trip>) => void;
@@ -1129,6 +1130,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [dispatch, firebaseConnected, state.auth.currentUser],
   );
 
+  const setItems = useCallback(
+    async (items: Item[]) => {
+      if (!firebaseConnected || !dbRef.current || !currentUserId) {
+        throw new Error("Cannot sync item pool while Firebase is unavailable.");
+      }
+
+      const updatedAt = new Date().toISOString();
+      pendingItemsUpdatedAtRef.current = updatedAt;
+      itemsUpdatedAtRef.current = updatedAt;
+      hydratedItemsRef.current = items;
+      rawDispatch({ type: "SET_ITEMS", items });
+      storage.setItem(getItemsStorageKey(currentUserId), items);
+      storage.setItem(getItemsUpdatedAtStorageKey(currentUserId), updatedAt);
+
+      try {
+        await syncItems(dbRef.current, currentUserId, items, updatedAt);
+      } catch (error) {
+        if (pendingItemsUpdatedAtRef.current === updatedAt) {
+          pendingItemsUpdatedAtRef.current = undefined;
+        }
+        throw error;
+      }
+    },
+    [currentUserId, firebaseConnected],
+  );
+
   function setTemplate(template: Template) {
     if (!firebaseConnected) return;
     dispatch({ type: "SET_TEMPLATE", template });
@@ -1352,6 +1379,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         register,
         updateUser,
+        setItems,
         setTemplate,
         addTrip,
         updateTrip,
