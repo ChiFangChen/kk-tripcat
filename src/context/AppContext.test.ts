@@ -3,19 +3,32 @@ import { shouldSyncUserCollectionToRemote } from "./AppContext";
 
 describe("shouldSyncUserCollectionToRemote", () => {
   it("does not sync collections that were just hydrated from local storage", () => {
-    const previousItems: unknown[] = [];
     const hydratedItems: unknown[] = [];
 
     expect(
       shouldSyncUserCollectionToRemote({
         firebaseConnected: true,
         hasCurrentUser: true,
-        currentUserId: "admin-1",
-        hydratedCollectionUserId: "admin-1",
+        hydratedCollection: hydratedItems,
         collection: hydratedItems,
-        previousCollection: previousItems,
+        previousCollection: [],
       }),
     ).toBe(false);
+  });
+
+  it("syncs real collection changes even when they happen right after hydration", () => {
+    const hydratedItems: unknown[] = [];
+    const nextItems: unknown[] = [{ id: "pool-1" }];
+
+    expect(
+      shouldSyncUserCollectionToRemote({
+        firebaseConnected: true,
+        hasCurrentUser: true,
+        hydratedCollection: hydratedItems,
+        collection: nextItems,
+        previousCollection: hydratedItems,
+      }),
+    ).toBe(true);
   });
 
   it("syncs real collection changes after hydration has settled", () => {
@@ -26,8 +39,7 @@ describe("shouldSyncUserCollectionToRemote", () => {
       shouldSyncUserCollectionToRemote({
         firebaseConnected: true,
         hasCurrentUser: true,
-        currentUserId: "admin-1",
-        hydratedCollectionUserId: undefined,
+        hydratedCollection: undefined,
         collection: nextItems,
         previousCollection: previousItems,
       }),
