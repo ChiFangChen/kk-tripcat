@@ -221,6 +221,36 @@ describe("shoppingTypes", () => {
     });
   });
 
+  it("omits empty optional fields when building a pool item", () => {
+    const tripItem: TripShoppingItem = {
+      id: "trip-2",
+      textSnapshot: "草莓巧克力",
+      images: [],
+      checked: false,
+      createdBy: "user-2",
+      createdAt: "2026-04-25T00:00:00.000Z",
+    };
+
+    const poolItem = buildPoolItemFromTripShopping({
+      source: tripItem,
+      itemId: "pool-new",
+      images: [],
+      now: "2026-04-25T01:00:00.000Z",
+    });
+
+    expect(poolItem).toStrictEqual({
+      id: "pool-new",
+      name: "草莓巧克力",
+      images: [],
+      purchases: [],
+      createdAt: "2026-04-25T01:00:00.000Z",
+      updatedAt: "2026-04-25T01:00:00.000Z",
+    });
+    expect("estimatedAmount" in poolItem).toBe(false);
+    expect("currency" in poolItem).toBe(false);
+    expect("notes" in poolItem).toBe(false);
+  });
+
   it("detaches a linked trip shopping item using the latest pool item snapshot", () => {
     const linkedTripItem: TripShoppingItem = {
       id: "trip-1",

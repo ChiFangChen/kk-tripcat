@@ -80,9 +80,9 @@ function normalizeImageArray<T extends { images?: unknown }>(
   };
 }
 
-function normalizeMemoryPost<T extends { images?: unknown; comments?: unknown }>(
-  post: T,
-): T & { images: unknown[]; comments: unknown[] } {
+function normalizeMemoryPost<
+  T extends { images?: unknown; comments?: unknown },
+>(post: T): T & { images: unknown[]; comments: unknown[] } {
   return {
     ...post,
     images: Array.isArray(post.images) ? post.images : [],
@@ -486,7 +486,10 @@ export async function syncItems(
   items: Item[],
   updatedAt: string,
 ): Promise<void> {
-  await setDoc(doc(db, "tcItems", userId), { items, updatedAt });
+  await setDoc(doc(db, "tcItems", userId), {
+    items: stripUndefinedDeep(items),
+    updatedAt,
+  });
 }
 
 // --- Image Storage ---

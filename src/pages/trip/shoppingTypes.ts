@@ -109,17 +109,26 @@ export function buildPoolItemFromTripShopping({
   images: ImageAsset[];
   now: string;
 }): Item {
-  return {
+  const item: Item = {
     id: itemId,
     name: source.textSnapshot,
     images,
-    estimatedAmount: source.estimatedAmount,
-    currency: source.currency,
-    notes: source.note,
     purchases: [],
     createdAt: now,
     updatedAt: now,
   };
+
+  if (source.estimatedAmount !== undefined) {
+    item.estimatedAmount = source.estimatedAmount;
+  }
+  if (source.currency !== undefined) {
+    item.currency = source.currency;
+  }
+  if (source.note !== undefined) {
+    item.notes = source.note;
+  }
+
+  return item;
 }
 
 export function detachTripShoppingItemFromPoolItem({
