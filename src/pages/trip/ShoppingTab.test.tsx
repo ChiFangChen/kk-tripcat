@@ -146,12 +146,7 @@ describe("ShoppingTab", () => {
     );
   });
 
-  it("shows an error when inline pool promotion cannot copy images", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-    mocks.copyImagesToNewPaths.mockRejectedValueOnce(new Error("cors"));
-
+  it("promotes a shopping item to the pool without copying image bytes", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -167,28 +162,19 @@ describe("ShoppingTab", () => {
 
     await act(async () => {
       button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
     });
 
-    expect(mocks.showToast).toHaveBeenCalledWith({
-      type: "error",
-      message: "加入魚池失敗，請稍後再試",
-    });
-    consoleError.mockRestore();
+    expect(mocks.copyImagesToNewPaths).not.toHaveBeenCalled();
+    expect(mocks.setItems).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: "抹茶",
+        images: mocks.tripShopping[0].images,
+      }),
+    ]);
   });
 
   it("persists a promoted pool item before linking the trip shopping item", async () => {
-    const copiedImages = [
-      {
-        id: "copied-img-1",
-        url: "https://files.local/items/copied-matcha.jpg",
-        path: "tc-images/users/admin-1/items/pool/copied-img-1.jpg",
-        createdAt: "2026-04-25T00:00:00.000Z",
-        width: 320,
-        height: 240,
-      },
-    ];
-    mocks.copyImagesToNewPaths.mockResolvedValueOnce(copiedImages);
-
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -209,7 +195,7 @@ describe("ShoppingTab", () => {
     expect(mocks.setItems).toHaveBeenCalledWith([
       expect.objectContaining({
         name: "抹茶",
-        images: copiedImages,
+        images: mocks.tripShopping[0].images,
       }),
     ]);
     expect(mocks.setUserTripData).toHaveBeenCalledWith("trip-1", {

@@ -20,7 +20,6 @@ import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
-  copyImagesToNewPaths,
   createPendingImages,
   persistImagesForRecord,
 } from "../../utils/imageUpload";
@@ -202,22 +201,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     try {
       const now = new Date().toISOString();
       const poolItemId = generateId();
-      const copiedImages = await copyImagesToNewPaths({
-        images: candidate.item.images,
-        targetBasePath: `tc-images/users/${state.auth.currentUser.id}/items/${poolItemId}`,
-        createImageId: generateId,
-        createdAt: now,
-        fetchBlob: async (url) => {
-          const response = await fetch(url);
-          return response.blob();
-        },
-        upload: uploadImage,
-        remove: deleteImage,
-      });
       const poolItem = buildPoolItemFromTripShopping({
         source: candidate.item,
         itemId: poolItemId,
-        images: copiedImages,
+        images: candidate.item.images,
         now,
       });
 
@@ -269,23 +256,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     try {
       const now = new Date().toISOString();
       const poolItemId = generateId();
-      const copiedImages = await copyImagesToNewPaths({
-        images: item.images,
-        targetBasePath: `tc-images/users/${state.auth.currentUser.id}/items/${poolItemId}`,
-        createImageId: generateId,
-        createdAt: now,
-        fetchBlob: async (url) => {
-          const response = await fetch(url);
-          return response.blob();
-        },
-        upload: uploadImage,
-        remove: deleteImage,
-      });
-
       const poolItem = buildPoolItemFromTripShopping({
         source: item,
         itemId: poolItemId,
-        images: copiedImages,
+        images: item.images,
         now,
       });
 
