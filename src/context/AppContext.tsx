@@ -171,6 +171,28 @@ function getUserTripUpdatedAtStorageKey(userId: string) {
   return `userTripUpdatedAt-${userId}`;
 }
 
+export function shouldSyncUserCollectionToRemote({
+  firebaseConnected,
+  hasCurrentUser,
+  currentUserId,
+  hydratedCollectionUserId,
+  collection,
+  previousCollection,
+}: {
+  firebaseConnected: boolean;
+  hasCurrentUser: boolean;
+  currentUserId?: string;
+  hydratedCollectionUserId?: string;
+  collection: unknown;
+  previousCollection: unknown;
+}) {
+  if (!firebaseConnected || !hasCurrentUser) return false;
+  if (hydratedCollectionUserId && hydratedCollectionUserId === currentUserId) {
+    return false;
+  }
+  return collection !== previousCollection;
+}
+
 const WRITE_BLOCKED_ACTIONS = new Set<Action["type"]>([
   "ADD_USER",
   "UPDATE_USER",
@@ -458,6 +480,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const pendingUserTripUpdatedAtRef = useRef<Record<string, string>>({});
   const pendingTipsUpdatedAtRef = useRef<string | undefined>(undefined);
   const pendingItemsUpdatedAtRef = useRef<string | undefined>(undefined);
+  const hydratedCollectionsUserIdRef = useRef<string | undefined>(undefined);
   const versionBlockedTripIdsRef = useRef<Set<string>>(new Set());
   const toastTimerRef = useRef<number | null>(null);
 
@@ -558,8 +581,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       itemsUpdatedAtRef.current = undefined;
       pendingTipsUpdatedAtRef.current = undefined;
       pendingItemsUpdatedAtRef.current = undefined;
+      hydratedCollectionsUserIdRef.current = undefined;
       return;
     }
+
+    hydratedCollectionsUserIdRef.current = currentUserId;
 
     const nextUserTripData =
       storage.getItem<Record<string, UserTripData>>(
@@ -994,7 +1020,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     // Sync tips/item pool to Firebase when they change
     if (firebaseConnected && dbRef.current && state.auth.currentUser) {
-      if (state.tips !== prevTipsRef.current) {
+      const hydratedCollectionsUserId = hydratedCollectionsUserIdRef.current;
+      if (
+        shouldSyncUserCollectionToRemote({
+          firebaseConnected,
+          hasCurrentUser: Boolean(state.auth.currentUser),
+          currentUserId,
+          hydratedCollectionUserId: hydratedCollectionsUserId,
+          collection: state.tips,
+          previousCollection: prevTipsRef.current,
+        })
+      ) {
         const updatedAt = new Date().toISOString();
         pendingTipsUpdatedAtRef.current = updatedAt;
         tipsUpdatedAtRef.current = updatedAt;
@@ -1008,7 +1044,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           pendingTipsUpdatedAtRef.current = undefined;
         });
       }
-      if (state.items !== prevItemsRef.current) {
+      if (
+        shouldSyncUserCollectionToRemote({
+          firebaseConnected,
+          hasCurrentUser: Boolean(state.auth.currentUser),
+          currentUserId,
+          hydratedCollectionUserId: hydratedCollectionsUserId,
+          collection: state.items,
+          previousCollection: prevItemsRef.current,
+        })
+      ) {
         const updatedAt = new Date().toISOString();
         pendingItemsUpdatedAtRef.current = updatedAt;
         itemsUpdatedAtRef.current = updatedAt;
@@ -1021,6 +1066,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (pendingItemsUpdatedAtRef.current !== updatedAt) return;
           pendingItemsUpdatedAtRef.current = undefined;
         });
+      }
+      if (hydratedCollectionsUserId === currentUserId) {
+        hydratedCollectionsUserIdRef.current = undefined;
       }
     }
     prevTipsRef.current = state.tips;
