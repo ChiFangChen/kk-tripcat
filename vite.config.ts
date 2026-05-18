@@ -2,6 +2,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import {
+  FIREBASE_STORAGE_IMAGE_CACHE_MAX_AGE_SECONDS,
+  FIREBASE_STORAGE_IMAGE_CACHE_MAX_ENTRIES,
+  FIREBASE_STORAGE_IMAGE_CACHE_NAME,
+  isFirebaseStorageImageUrl,
+} from "./src/utils/imageCache";
 
 export default defineConfig({
   base: "/kk-tripcat/",
@@ -15,6 +21,22 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => isFirebaseStorageImageUrl(url.href),
+            handler: "CacheFirst",
+            options: {
+              cacheName: FIREBASE_STORAGE_IMAGE_CACHE_NAME,
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              expiration: {
+                maxEntries: FIREBASE_STORAGE_IMAGE_CACHE_MAX_ENTRIES,
+                maxAgeSeconds: FIREBASE_STORAGE_IMAGE_CACHE_MAX_AGE_SECONDS,
+              },
+            },
+          },
+        ],
       },
       manifest: {
         name: "KK TripCat",
