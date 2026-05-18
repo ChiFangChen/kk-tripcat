@@ -50,7 +50,6 @@ interface Props {
 export function ShoppingTab({ tripId, viewOnly }: Props) {
   const {
     state,
-    dispatch,
     setItems,
     setUserTripData,
     setTripMemberData,
@@ -124,14 +123,23 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     setShowAddDraftModal(false);
   }
 
-  function savePoolItem(updated: Item) {
-    dispatch({
-      type: "UPDATE_ITEM",
-      item: {
-        ...updated,
-        updatedAt: new Date().toISOString(),
-      },
-    });
+  async function savePoolItem(updated: Item) {
+    try {
+      await setItems(
+        state.items.map((item) =>
+          item.id === updated.id
+            ? {
+                ...updated,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to sync pool item:", error);
+      showToast({ type: "error", message: "儲存失敗，請稍後再試" });
+      return;
+    }
     setEditingItem(null);
     setShoppingModalMode("view");
   }

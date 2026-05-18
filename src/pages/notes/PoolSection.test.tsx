@@ -41,6 +41,7 @@ const mocks = vi.hoisted(() => ({
   copyImagesToNewPaths: vi.fn(),
   deleteImage: vi.fn(),
   dispatch: vi.fn(),
+  setItems: vi.fn(),
   setUserTripData: vi.fn(),
   setTripMemberData: vi.fn(),
   loadTripMemberData: vi.fn(),
@@ -118,7 +119,9 @@ vi.mock("../../context/AppContext", () => ({
         },
       },
     },
+    firebaseConnected: true,
     dispatch: mocks.dispatch,
+    setItems: mocks.setItems,
     setUserTripData: mocks.setUserTripData,
     setTripMemberData: mocks.setTripMemberData,
     loadTripMemberData: mocks.loadTripMemberData,
@@ -215,9 +218,8 @@ describe("PoolSection", () => {
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(mocks.dispatch).toHaveBeenCalledWith({
-      type: "UPDATE_ITEM",
-      item: expect.objectContaining({
+    expect(mocks.setItems).toHaveBeenCalledWith([
+      expect.objectContaining({
         id: "pool-1",
         purchases: [
           {
@@ -231,7 +233,7 @@ describe("PoolSection", () => {
           expect.objectContaining({ id: "purchase-2" }),
         ],
       }),
-    });
+    ]);
   });
 
   it("detaches trip shopping references before deleting a pool item", async () => {
@@ -301,9 +303,6 @@ describe("PoolSection", () => {
     expect(mocks.deleteImage).toHaveBeenCalledWith(
       "tc-images/users/admin-1/items/pool-1/pool-img-1.jpg",
     );
-    expect(mocks.dispatch).toHaveBeenCalledWith({
-      type: "DELETE_ITEM",
-      itemId: "pool-1",
-    });
+    expect(mocks.setItems).toHaveBeenCalledWith([]);
   });
 });

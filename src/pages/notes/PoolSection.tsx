@@ -33,7 +33,8 @@ import {
 export function PoolSection() {
   const {
     state,
-    dispatch,
+    firebaseConnected,
+    setItems,
     setUserTripData,
     setTripMemberData,
     loadTripMemberData,
@@ -54,6 +55,10 @@ export function PoolSection() {
     | null
   >(null);
   const poolItems = state.items;
+
+  function warnReadOnly() {
+    showToast({ type: "info", message: "離線時只能查看魚池" });
+  }
 
   function togglePurchaseHistory(itemId: string) {
     setExpandedPurchaseIds((current) => {
@@ -139,6 +144,10 @@ export function PoolSection() {
   }
 
   async function remove(id: string) {
+    if (!firebaseConnected) {
+      warnReadOnly();
+      return;
+    }
     const item = state.items.find((entry) => entry.id === id);
     if (item) {
       try {
@@ -150,46 +159,73 @@ export function PoolSection() {
         return;
       }
     }
-    dispatch({ type: "DELETE_ITEM", itemId: id });
+    try {
+      await setItems(state.items.filter((entry) => entry.id !== id));
+    } catch (error) {
+      console.error("Failed to sync fish pool item delete:", error);
+      showToast({ type: "error", message: "刪除失敗，請稍後再試" });
+      return;
+    }
     setEditing(null);
   }
 
-  function addPurchase(itemId: string, purchase: Purchase) {
+  async function addPurchase(itemId: string, purchase: Purchase) {
+    if (!firebaseConnected) {
+      warnReadOnly();
+      return;
+    }
     const item = state.items.find((entry) => entry.id === itemId);
     if (!item) return;
-    dispatch({
-      type: "UPDATE_ITEM",
-      item: { ...item, purchases: [purchase, ...item.purchases] },
-    });
+    await setItems(
+      state.items.map((entry) =>
+        entry.id === itemId
+          ? { ...item, purchases: [purchase, ...item.purchases] }
+          : entry,
+      ),
+    );
     setAddingPurchaseTo(null);
   }
 
-  function deletePurchase(itemId: string, purchaseId: string) {
+  async function deletePurchase(itemId: string, purchaseId: string) {
+    if (!firebaseConnected) {
+      warnReadOnly();
+      return;
+    }
     const item = state.items.find((entry) => entry.id === itemId);
     if (!item) return;
-    dispatch({
-      type: "UPDATE_ITEM",
-      item: {
-        ...item,
-        purchases: item.purchases.filter(
-          (purchase) => purchase.id !== purchaseId,
-        ),
-      },
-    });
+    await setItems(
+      state.items.map((entry) =>
+        entry.id === itemId
+          ? {
+              ...item,
+              purchases: item.purchases.filter(
+                (purchase) => purchase.id !== purchaseId,
+              ),
+            }
+          : entry,
+      ),
+    );
   }
 
-  function updatePurchase(itemId: string, purchase: Purchase) {
+  async function updatePurchase(itemId: string, purchase: Purchase) {
+    if (!firebaseConnected) {
+      warnReadOnly();
+      return;
+    }
     const item = state.items.find((entry) => entry.id === itemId);
     if (!item) return;
-    dispatch({
-      type: "UPDATE_ITEM",
-      item: {
-        ...item,
-        purchases: item.purchases.map((entry) =>
-          entry.id === purchase.id ? purchase : entry,
-        ),
-      },
-    });
+    await setItems(
+      state.items.map((entry) =>
+        entry.id === itemId
+          ? {
+              ...item,
+              purchases: item.purchases.map((entry) =>
+                entry.id === purchase.id ? purchase : entry,
+              ),
+            }
+          : entry,
+      ),
+    );
     setEditingPurchase(null);
   }
 
@@ -210,7 +246,16 @@ export function PoolSection() {
       <div className="flex justify-end items-center mb-4">
         <button
           className="btn-round-add"
-          onClick={() => setEditing(newPoolItem())}
+          onClick={() => {
+            if (!firebaseConnected) {
+              warnReadOnly();
+              return;
+            }
+            setEditing(newPoolItem());
+          }}
+          disabled={!firebaseConnected}
+          aria-disabled={!firebaseConnected}
+          title={firebaseConnected ? "新增魚池項目" : "離線時只能查看魚池"}
         >
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
@@ -270,8 +315,13 @@ export function PoolSection() {
                       <button
                         className="pool-item-icon-button"
                         onClick={() => setEditing(item)}
+                        disabled={!firebaseConnected}
                         aria-label="編輯魚池項目"
-                        title="編輯魚池項目"
+                        title={
+                          firebaseConnected
+                            ? "編輯魚池項目"
+                            : "離線時只能查看魚池"
+                        }
                       >
                         <FontAwesomeIcon icon={faPen} />
                       </button>
@@ -280,8 +330,13 @@ export function PoolSection() {
                         onClick={() =>
                           setConfirmDelete({ type: "item", itemId: item.id })
                         }
+                        disabled={!firebaseConnected}
                         aria-label="刪除魚池項目"
-                        title="刪除魚池項目"
+                        title={
+                          firebaseConnected
+                            ? "刪除魚池項目"
+                            : "離線時只能查看魚池"
+                        }
                       >
                         <FontAwesomeIcon icon={faTrash} />
                       </button>
@@ -291,8 +346,13 @@ export function PoolSection() {
                     <button
                       className="btn-round-add !w-7 !h-7"
                       onClick={() => setAddingPurchaseTo(item.id)}
+                      disabled={!firebaseConnected}
                       aria-label="新增購買紀錄"
-                      title="新增購買紀錄"
+                      title={
+                        firebaseConnected
+                          ? "新增購買紀錄"
+                          : "離線時只能查看魚池"
+                      }
                     >
                       <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
                     </button>
@@ -352,8 +412,13 @@ export function PoolSection() {
                                 purchase,
                               })
                             }
+                            disabled={!firebaseConnected}
                             aria-label="編輯購買紀錄"
-                            title="編輯購買紀錄"
+                            title={
+                              firebaseConnected
+                                ? "編輯購買紀錄"
+                                : "離線時只能查看魚池"
+                            }
                           >
                             <FontAwesomeIcon icon={faPen} />
                           </button>
@@ -366,8 +431,13 @@ export function PoolSection() {
                                 purchaseId: purchase.id,
                               })
                             }
+                            disabled={!firebaseConnected}
                             aria-label="刪除購買紀錄"
-                            title="刪除購買紀錄"
+                            title={
+                              firebaseConnected
+                                ? "刪除購買紀錄"
+                                : "離線時只能查看魚池"
+                            }
                           >
                             <FontAwesomeIcon icon={faTrash} />
                           </button>
@@ -393,15 +463,22 @@ export function PoolSection() {
         >
           <ItemForm
             item={editing}
-            onSave={(item) => {
+            onSave={async (item) => {
+              if (!firebaseConnected) {
+                warnReadOnly();
+                return;
+              }
               const exists = state.items.find((entry) => entry.id === item.id);
-              dispatch({
-                type: exists ? "UPDATE_ITEM" : "ADD_ITEM",
-                item: {
-                  ...item,
-                  updatedAt: new Date().toISOString(),
-                },
-              });
+              const nextItem = {
+                ...item,
+                updatedAt: new Date().toISOString(),
+              };
+              const nextItems = exists
+                ? state.items.map((entry) =>
+                    entry.id === item.id ? nextItem : entry,
+                  )
+                : [nextItem, ...state.items];
+              await setItems(nextItems);
               setEditing(null);
             }}
           />
@@ -508,7 +585,7 @@ function ItemForm({
   onSave,
 }: {
   item: Item;
-  onSave: (item: Item) => void;
+  onSave: (item: Item) => void | Promise<void>;
 }) {
   const { state } = useApp();
   const [form, setForm] = useState(item);
@@ -528,7 +605,7 @@ function ItemForm({
         upload: uploadImage,
         remove: deleteImage,
         onPersist: async (images) => {
-          onSave({ ...form, images });
+          await onSave({ ...form, images });
         },
       });
     } finally {
@@ -617,7 +694,7 @@ function PurchaseForm({
   onSave,
 }: {
   purchase?: Purchase;
-  onSave: (purchase: Purchase) => void;
+  onSave: (purchase: Purchase) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<Omit<Purchase, "id">>(() => ({
     date: purchase?.date ?? new Date().toISOString().split("T")[0],
@@ -667,7 +744,9 @@ function PurchaseForm({
       </div>
       <button
         className="btn btn-primary w-full"
-        onClick={() => onSave({ ...form, id: purchase?.id ?? generateId() })}
+        onClick={() => {
+          void onSave({ ...form, id: purchase?.id ?? generateId() });
+        }}
       >
         儲存
       </button>

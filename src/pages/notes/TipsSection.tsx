@@ -17,7 +17,7 @@ import type { TipNote } from "../../types";
 import type { ImageAsset, PendingImageFile } from "../../types/images";
 
 export function TipsSection() {
-  const { state, dispatch } = useApp();
+  const { state, firebaseConnected, setTips, showToast } = useApp();
   const [editing, setEditing] = useState<TipNote | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
@@ -37,25 +37,39 @@ export function TipsSection() {
     return true;
   });
 
-  function save(tip: TipNote) {
+  function warnReadOnly() {
+    showToast({ type: "info", message: "離線時只能查看筆記" });
+  }
+
+  async function save(tip: TipNote) {
+    if (!firebaseConnected) {
+      warnReadOnly();
+      return;
+    }
     const exists = state.tips.find((t) => t.id === tip.id);
+    const updatedAt = new Date().toISOString();
     if (exists) {
-      dispatch({
-        type: "UPDATE_TIP",
-        tip: { ...tip, updatedAt: new Date().toISOString() },
-      });
+      await setTips(
+        state.tips.map((entry) =>
+          entry.id === tip.id ? { ...tip, updatedAt } : entry,
+        ),
+      );
     } else {
-      dispatch({ type: "ADD_TIP", tip });
+      await setTips([tip, ...state.tips]);
     }
     setEditing(null);
   }
 
   async function remove(id: string) {
+    if (!firebaseConnected) {
+      warnReadOnly();
+      return;
+    }
     const tip = state.tips.find((entry) => entry.id === id);
     if (tip) {
       await Promise.all(tip.images.map((image) => deleteImage(image.path)));
     }
-    dispatch({ type: "DELETE_TIP", tipId: id });
+    await setTips(state.tips.filter((tip) => tip.id !== id));
   }
 
   function newTip(): TipNote {
@@ -80,7 +94,19 @@ export function TipsSection() {
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
-        <button className="btn-round-add" onClick={() => setEditing(newTip())}>
+        <button
+          className="btn-round-add"
+          onClick={() => {
+            if (!firebaseConnected) {
+              warnReadOnly();
+              return;
+            }
+            setEditing(newTip());
+          }}
+          disabled={!firebaseConnected}
+          aria-disabled={!firebaseConnected}
+          title={firebaseConnected ? "新增筆記" : "離線時只能查看筆記"}
+        >
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
@@ -115,6 +141,10 @@ export function TipsSection() {
             key={tip.id}
             className="card cursor-pointer"
             onClick={detailDoubleTap("tip-detail-title", () => {
+              if (!firebaseConnected) {
+                warnReadOnly();
+                return;
+              }
               setEditing(tip);
             })}
           >
@@ -170,7 +200,7 @@ function TipForm({
   onDelete,
 }: {
   tip: TipNote;
-  onSave: (t: TipNote) => void;
+  onSave: (t: TipNote) => void | Promise<void>;
   onCancel: () => void;
   onDelete: () => void;
 }) {
@@ -193,7 +223,7 @@ function TipForm({
         upload: uploadImage,
         remove: deleteImage,
         onPersist: async (images) => {
-          onSave({
+          await onSave({
             ...form,
             images,
             tags: tagsInput

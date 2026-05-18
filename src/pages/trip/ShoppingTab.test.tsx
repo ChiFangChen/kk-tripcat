@@ -341,13 +341,12 @@ describe("ShoppingTab", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.dispatch).toHaveBeenCalledWith({
-      type: "UPDATE_ITEM",
-      item: expect.objectContaining({
+    expect(mocks.setItems).toHaveBeenCalledWith([
+      expect.objectContaining({
         id: "pool-1",
         name: "新吹風機",
       }),
-    });
+    ]);
 
     await act(async () => {
       root.render(<ShoppingTab tripId="trip-1" />);

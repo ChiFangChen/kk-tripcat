@@ -172,11 +172,11 @@ function getUserTripUpdatedAtStorageKey(userId: string) {
 }
 
 export function shouldSyncUserCollectionToRemote({
-  firebaseConnected,
-  hasCurrentUser,
-  hydratedCollection,
-  collection,
-  previousCollection,
+  firebaseConnected: _firebaseConnected,
+  hasCurrentUser: _hasCurrentUser,
+  hydratedCollection: _hydratedCollection,
+  collection: _collection,
+  previousCollection: _previousCollection,
 }: {
   firebaseConnected: boolean;
   hasCurrentUser: boolean;
@@ -184,9 +184,12 @@ export function shouldSyncUserCollectionToRemote({
   collection: unknown;
   previousCollection: unknown;
 }) {
-  if (!firebaseConnected || !hasCurrentUser) return false;
-  if (hydratedCollection && collection === hydratedCollection) return false;
-  return collection !== previousCollection;
+  void _firebaseConnected;
+  void _hasCurrentUser;
+  void _hydratedCollection;
+  void _collection;
+  void _previousCollection;
+  return false;
 }
 
 export function shouldSubscribeUserCollections({
@@ -197,6 +200,31 @@ export function shouldSubscribeUserCollections({
   dbReady: boolean;
 }) {
   return hasCurrentUser && dbReady;
+}
+
+export function getInitialLoadingState() {
+  return false;
+}
+
+export function shouldApplyUserCollectionSnapshot({
+  currentUpdatedAt,
+  incomingUpdatedAt,
+  currentCollection,
+  incomingCollection,
+}: {
+  currentUpdatedAt?: string;
+  incomingUpdatedAt?: string;
+  currentCollection: unknown[];
+  incomingCollection: unknown[];
+}) {
+  if (
+    !currentUpdatedAt &&
+    currentCollection.length > 0 &&
+    incomingCollection.length === 0
+  ) {
+    return false;
+  }
+  return shouldApplyIncomingSnapshot(currentUpdatedAt, incomingUpdatedAt);
 }
 
 const WRITE_BLOCKED_ACTIONS = new Set<Action["type"]>([
@@ -366,6 +394,7 @@ interface AppContextType {
     displayName: string,
   ) => Promise<User>;
   updateUser: (user: User) => void;
+  setTips: (tips: TipNote[]) => Promise<void>;
   setItems: (items: Item[]) => Promise<void>;
   setTemplate: (template: Template) => void;
   addTrip: (trip: Trip) => void;
@@ -449,7 +478,7 @@ function loadInitialState(): AppState {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, rawDispatch] = useReducer(reducer, null, loadInitialState);
   const currentUserId = state.auth.currentUser?.id;
-  const [loading, setLoading] = useState(isFirebaseConfigured());
+  const [loading, setLoading] = useState(getInitialLoadingState);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [dbReady, setDbReady] = useState(false);
   const [isOnline, setIsOnline] = useState(() => window.navigator.onLine);
@@ -489,6 +518,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const pendingItemsUpdatedAtRef = useRef<string | undefined>(undefined);
   const hydratedTipsRef = useRef<TipNote[] | undefined>(undefined);
   const hydratedItemsRef = useRef<Item[] | undefined>(undefined);
+  const latestTipsRef = useRef(state.tips);
+  const latestItemsRef = useRef(state.items);
   const versionBlockedTripIdsRef = useRef<Set<string>>(new Set());
   const toastTimerRef = useRef<number | null>(null);
 
@@ -575,6 +606,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     userTripDataRef.current = state.userTripData;
   }, [state.userTripData]);
+
+  useEffect(() => {
+    latestTipsRef.current = state.tips;
+  }, [state.tips]);
+
+  useEffect(() => {
+    latestItemsRef.current = state.items;
+  }, [state.items]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -757,10 +796,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (
-        !shouldApplyIncomingSnapshot(
-          tipsUpdatedAtRef.current,
-          snapshot.updatedAt,
-        )
+        !shouldApplyUserCollectionSnapshot({
+          currentUpdatedAt: tipsUpdatedAtRef.current,
+          incomingUpdatedAt: snapshot.updatedAt,
+          currentCollection: latestTipsRef.current,
+          incomingCollection: snapshot.tips,
+        })
       ) {
         return;
       }
@@ -787,10 +828,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (
-        !shouldApplyIncomingSnapshot(
-          itemsUpdatedAtRef.current,
-          snapshot.updatedAt,
-        )
+        !shouldApplyUserCollectionSnapshot({
+          currentUpdatedAt: itemsUpdatedAtRef.current,
+          incomingUpdatedAt: snapshot.updatedAt,
+          currentCollection: latestItemsRef.current,
+          incomingCollection: snapshot.items,
+        })
       ) {
         return;
       }
@@ -1002,9 +1045,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persistUserTripCache,
   ]);
 
-  // Save local cache for non-trip collections and sync tips/items to Firebase.
-  const prevTipsRef = useRef(state.tips);
-  const prevItemsRef = useRef(state.items);
+  // Save local cache. Remote writes happen only through explicit write APIs.
   useEffect(() => {
     if (skipFirstSave.current) {
       skipFirstSave.current = false;
@@ -1037,53 +1078,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         userTripUpdatedAtRef.current,
       );
     }
-
-    // Sync tips/item pool to Firebase when they change
     if (firebaseConnected && dbRef.current && state.auth.currentUser) {
-      if (
-        shouldSyncUserCollectionToRemote({
-          firebaseConnected,
-          hasCurrentUser: Boolean(state.auth.currentUser),
-          hydratedCollection: hydratedTipsRef.current,
-          collection: state.tips,
-          previousCollection: prevTipsRef.current,
-        })
-      ) {
-        const updatedAt = new Date().toISOString();
-        pendingTipsUpdatedAtRef.current = updatedAt;
-        tipsUpdatedAtRef.current = updatedAt;
-        syncTips(
-          dbRef.current,
-          state.auth.currentUser.id,
-          state.tips,
-          updatedAt,
-        ).catch(() => {
-          if (pendingTipsUpdatedAtRef.current !== updatedAt) return;
-          pendingTipsUpdatedAtRef.current = undefined;
-        });
-      }
-      if (
-        shouldSyncUserCollectionToRemote({
-          firebaseConnected,
-          hasCurrentUser: Boolean(state.auth.currentUser),
-          hydratedCollection: hydratedItemsRef.current,
-          collection: state.items,
-          previousCollection: prevItemsRef.current,
-        })
-      ) {
-        const updatedAt = new Date().toISOString();
-        pendingItemsUpdatedAtRef.current = updatedAt;
-        itemsUpdatedAtRef.current = updatedAt;
-        syncItems(
-          dbRef.current,
-          state.auth.currentUser.id,
-          state.items,
-          updatedAt,
-        ).catch(() => {
-          if (pendingItemsUpdatedAtRef.current !== updatedAt) return;
-          pendingItemsUpdatedAtRef.current = undefined;
-        });
-      }
       if (state.tips === hydratedTipsRef.current) {
         hydratedTipsRef.current = undefined;
       }
@@ -1091,14 +1086,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         hydratedItemsRef.current = undefined;
       }
     }
-    prevTipsRef.current = state.tips;
-    prevItemsRef.current = state.items;
   }, [
     state.users,
     state.trips,
     state.template,
     state.tips,
     state.items,
+    state.userTripData,
+    state.auth.currentUser,
     currentUserId,
     firebaseConnected,
   ]);
@@ -1106,12 +1101,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login = useCallback((user: User) => {
     dispatch({ type: "LOGIN", user });
     storage.saveAuth(user);
-  }, []);
+  }, [dispatch]);
 
   const logout = useCallback(() => {
     dispatch({ type: "LOGOUT" });
     storage.saveAuth(null);
-  }, []);
+  }, [dispatch]);
 
   const register = useCallback(
     async (
@@ -1149,6 +1144,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [dispatch, firebaseConnected, state.auth.currentUser],
   );
 
+  const setTips = useCallback(
+    async (tips: TipNote[]) => {
+      if (!firebaseConnected || !dbRef.current || !currentUserId) {
+        throw new Error("Cannot sync tips while Firebase is unavailable.");
+      }
+
+      const updatedAt = new Date().toISOString();
+      const previousUpdatedAt = tipsUpdatedAtRef.current;
+      pendingTipsUpdatedAtRef.current = updatedAt;
+      tipsUpdatedAtRef.current = updatedAt;
+
+      try {
+        await syncTips(dbRef.current, currentUserId, tips, updatedAt);
+        hydratedTipsRef.current = tips;
+        rawDispatch({ type: "SET_TIPS", tips });
+        storage.setItem(getTipsStorageKey(currentUserId), tips);
+        storage.setItem(getTipsUpdatedAtStorageKey(currentUserId), updatedAt);
+      } catch (error) {
+        if (pendingTipsUpdatedAtRef.current === updatedAt) {
+          pendingTipsUpdatedAtRef.current = undefined;
+        }
+        tipsUpdatedAtRef.current = previousUpdatedAt;
+        throw error;
+      }
+    },
+    [currentUserId, firebaseConnected],
+  );
+
   const setItems = useCallback(
     async (items: Item[]) => {
       if (!firebaseConnected || !dbRef.current || !currentUserId) {
@@ -1156,19 +1179,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       const updatedAt = new Date().toISOString();
+      const previousUpdatedAt = itemsUpdatedAtRef.current;
       pendingItemsUpdatedAtRef.current = updatedAt;
       itemsUpdatedAtRef.current = updatedAt;
-      hydratedItemsRef.current = items;
-      rawDispatch({ type: "SET_ITEMS", items });
-      storage.setItem(getItemsStorageKey(currentUserId), items);
-      storage.setItem(getItemsUpdatedAtStorageKey(currentUserId), updatedAt);
 
       try {
         await syncItems(dbRef.current, currentUserId, items, updatedAt);
+        hydratedItemsRef.current = items;
+        rawDispatch({ type: "SET_ITEMS", items });
+        storage.setItem(getItemsStorageKey(currentUserId), items);
+        storage.setItem(getItemsUpdatedAtStorageKey(currentUserId), updatedAt);
       } catch (error) {
         if (pendingItemsUpdatedAtRef.current === updatedAt) {
           pendingItemsUpdatedAtRef.current = undefined;
         }
+        itemsUpdatedAtRef.current = previousUpdatedAt;
         throw error;
       }
     },
@@ -1398,6 +1423,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         register,
         updateUser,
+        setTips,
         setItems,
         setTemplate,
         addTrip,
