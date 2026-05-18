@@ -13,6 +13,10 @@ import { NotesPage } from "./pages/NotesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { UserMenu } from "./components/UserMenu";
 import { Modal } from "./components/Modal";
+import {
+  getEffectiveMainTab,
+  getEffectiveSelectedTripId,
+} from "./navigationState";
 import type { TabType } from "./types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
@@ -38,31 +42,31 @@ function AppContent() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Persist route state
-  useEffect(() => {
-    if (selectedTripId) {
-      storage.setItem("route-trip", selectedTripId);
-    } else {
-      storage.removeItem("route-trip");
-    }
-  }, [selectedTripId]);
-
-  useEffect(() => {
-    storage.setItem("activeTab", activeTab);
-  }, [activeTab]);
-
   const currentUserId = state.auth.currentUser?.id;
   const visibleTrips = currentUserId
     ? state.trips.filter((trip) => trip.members.includes(currentUserId))
     : [];
-  const selectedTrip = visibleTrips.find((trip) => trip.id === selectedTripId);
   const canAccessNotes = isCurrentUserAdmin();
+  const effectiveActiveTab = getEffectiveMainTab(activeTab, canAccessNotes);
+  const effectiveSelectedTripId = getEffectiveSelectedTripId(
+    selectedTripId,
+    visibleTrips.map((trip) => trip.id),
+  );
+  const selectedTrip = visibleTrips.find(
+    (trip) => trip.id === effectiveSelectedTripId,
+  );
 
   useEffect(() => {
-    if (activeTab === "notes" && !canAccessNotes) {
-      setActiveTab("trips");
+    if (effectiveSelectedTripId) {
+      storage.setItem("route-trip", effectiveSelectedTripId);
+    } else {
+      storage.removeItem("route-trip");
     }
-  }, [activeTab, canAccessNotes]);
+  }, [effectiveSelectedTripId]);
+
+  useEffect(() => {
+    storage.setItem("activeTab", effectiveActiveTab);
+  }, [effectiveActiveTab]);
 
   useEffect(() => {
     storage.setItem("theme", theme);
@@ -75,12 +79,6 @@ function AppContent() {
       );
     }
   }, [theme]);
-
-  useEffect(() => {
-    if (!selectedTripId) return;
-    if (selectedTrip) return;
-    setSelectedTripId(null);
-  }, [selectedTrip, selectedTripId]);
 
   // Join trip via URL: ?join=<tripId>
   const [joinTripId, setJoinTripId] = useState<string | null>(() => {
@@ -211,7 +209,7 @@ function AppContent() {
     : null;
 
   // Inside a trip
-  if (selectedTripId && selectedTrip) {
+  if (effectiveSelectedTripId && selectedTrip) {
     return (
       <div className={`app theme-${theme}`}>
         <TripDetailPage
@@ -253,10 +251,12 @@ function AppContent() {
         </div>
       </div>
 
-      {activeTab === "trips" && <TripsPage onSelectTrip={setSelectedTripId} />}
-      {activeTab === "notes" && canAccessNotes && <NotesPage />}
-      {activeTab === "settings" && <SettingsPage />}
-      <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+      {effectiveActiveTab === "trips" && (
+        <TripsPage onSelectTrip={setSelectedTripId} />
+      )}
+      {effectiveActiveTab === "notes" && canAccessNotes && <NotesPage />}
+      {effectiveActiveTab === "settings" && <SettingsPage />}
+      <BottomTabBar activeTab={effectiveActiveTab} onTabChange={setActiveTab} />
 
       {showUserMenu && (
         <UserMenu

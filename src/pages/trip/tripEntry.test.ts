@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getFirstEntryMode,
   getEditableTabs,
+  getEffectiveTripTab,
   getOrderedTripTabs,
   getTripTabGroups,
   getViewerTabs,
@@ -118,5 +119,28 @@ describe("tripEntry", () => {
     expect(
       getViewerTabs(true).find((tab) => tab.key === "memories")?.label,
     ).toBe("記錄");
+  });
+
+  it("falls back to the default trip tab when the active tab is unavailable", () => {
+    expect(
+      getEffectiveTripTab({
+        activeTab: "preparation",
+        defaultTab: "flight",
+        tabs: [{ key: "flight", label: "飛機" }],
+      }),
+    ).toBe("flight");
+  });
+
+  it("keeps the active trip tab when it is available", () => {
+    expect(
+      getEffectiveTripTab({
+        activeTab: "shopping",
+        defaultTab: "flight",
+        tabs: [
+          { key: "flight", label: "飛機" },
+          { key: "shopping", label: "購物" },
+        ],
+      }),
+    ).toBe("shopping");
   });
 });

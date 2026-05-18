@@ -25,6 +25,7 @@ import { MemoriesTab } from "./trip/MemoriesTab";
 import type { TripTabType, ChecklistItem, Template } from "../types";
 import * as storage from "../utils/storage";
 import {
+  getEffectiveTripTab,
   getFirstEntryMode,
   getTripTabGroups,
   getViewerTabs,
@@ -95,15 +96,15 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     if (viewOnly) return defaultTab;
     return storage.getItem<TripTabType>(storageKey) || defaultTab;
   });
+  const effectiveActiveTab = getEffectiveTripTab({
+    activeTab,
+    defaultTab,
+    tabs: allTabs,
+  });
 
   useEffect(() => {
-    if (!viewOnly) storage.setItem(storageKey, activeTab);
-  }, [activeTab, storageKey, viewOnly]);
-
-  useEffect(() => {
-    if (allTabs.some((tab) => tab.key === activeTab)) return;
-    setActiveTab(defaultTab);
-  }, [activeTab, allTabs, defaultTab]);
+    if (!viewOnly) storage.setItem(storageKey, effectiveActiveTab);
+  }, [effectiveActiveTab, storageKey, viewOnly]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -315,7 +316,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              className={`trip-tab ${activeTab === tab.key ? "active" : ""}`}
+              className={`trip-tab ${effectiveActiveTab === tab.key ? "active" : ""}`}
               onClick={() => setActiveTab(tab.key)}
             >
               {tab.label}
@@ -325,7 +326,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         {menuTabs.length > 0 && (
           <div className="trip-tabs-menu">
             <button
-              className={`trip-tab-menu-btn ${menuTabs.some((tab) => tab.key === activeTab) ? "active" : ""}`}
+              className={`trip-tab-menu-btn ${menuTabs.some((tab) => tab.key === effectiveActiveTab) ? "active" : ""}`}
               onClick={() => setShowTabMenu((current) => !current)}
               title="更多分頁"
             >
@@ -341,7 +342,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
                   {menuTabs.map((tab) => (
                     <button
                       key={tab.key}
-                      className={`trip-tab-menu-item ${activeTab === tab.key ? "active" : ""}`}
+                      className={`trip-tab-menu-item ${effectiveActiveTab === tab.key ? "active" : ""}`}
                       onClick={() => {
                         setActiveTab(tab.key);
                         setShowTabMenu(false);
@@ -358,25 +359,25 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       </div>
 
       <div className="page-container">
-        {activeTab === "preparation" && !viewOnly && (
+        {effectiveActiveTab === "preparation" && !viewOnly && (
           <PreparationTab tripId={tripId} viewOnly={readOnly} />
         )}
-        {activeTab === "flight" && (
+        {effectiveActiveTab === "flight" && (
           <FlightTab tripId={tripId} viewOnly={readOnly} />
         )}
-        {activeTab === "hotel" && (
+        {effectiveActiveTab === "hotel" && (
           <HotelTab tripId={tripId} viewOnly={readOnly} />
         )}
-        {activeTab === "schedule" && (
+        {effectiveActiveTab === "schedule" && (
           <ScheduleTab tripId={tripId} viewOnly={readOnly} />
         )}
-        {activeTab === "transport" && (
+        {effectiveActiveTab === "transport" && (
           <TransportTab tripId={tripId} viewOnly={readOnly} />
         )}
-        {activeTab === "shopping" && !viewOnly && (
+        {effectiveActiveTab === "shopping" && !viewOnly && (
           <ShoppingTab tripId={tripId} viewOnly={readOnly} />
         )}
-        {activeTab === "memories" && (
+        {effectiveActiveTab === "memories" && (
           <MemoriesTab tripId={tripId} viewOnly={viewOnly} />
         )}
       </div>

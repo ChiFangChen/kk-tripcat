@@ -65,6 +65,18 @@ export function getViewerTabs(memoriesVisibleToViewers?: boolean): Array<{
   return tabs;
 }
 
+export function getEffectiveTripTab({
+  activeTab,
+  defaultTab,
+  tabs,
+}: {
+  activeTab: TripTabType;
+  defaultTab: TripTabType;
+  tabs: Array<{ key: TripTabType; label: string }>;
+}): TripTabType {
+  return tabs.some((tab) => tab.key === activeTab) ? activeTab : defaultTab;
+}
+
 export function getOrderedTripTabs({
   skipPreparation,
   gotReady,
