@@ -118,11 +118,12 @@ export function normalizeSharedTripData(
 export function normalizeUserTripData(
   data: Partial<UserTripData> | undefined,
 ): UserTripData {
+  const checklist = data?.checklist || [];
   return {
-    checklist: data?.checklist || [],
+    checklist,
     shopping: data?.shopping?.map((item) => normalizeImageArray(item)) || [],
     preparationNotes: data?.preparationNotes || "",
-    setupComplete: data?.setupComplete,
+    setupComplete: data?.setupComplete || checklist.length > 0 || undefined,
     skipPreparation: data?.skipPreparation ?? false,
     gotReady: data?.gotReady ?? false,
   };
@@ -326,34 +327,11 @@ export function subscribeToUserTripData(
       const data = snapshot.data() as Partial<UserTripData> & DatedTripDoc;
       const normalized = normalizeUserTripData(data);
       const updatedAt = getDocUpdatedAt(data);
-      // Migrate old data: add setupComplete if user already has checklist data
-      // and initialize skipPreparation for older documents.
-      if (
-        (!normalized.setupComplete && normalized.checklist.length > 0) ||
-        data.skipPreparation === undefined ||
-        data.gotReady === undefined
-      ) {
-        const migrated = {
-          ...normalized,
-          setupComplete:
-            normalized.setupComplete || normalized.checklist.length > 0,
-          skipPreparation: normalized.skipPreparation ?? false,
-          gotReady: normalized.gotReady ?? false,
-          updatedAt: updatedAt ?? new Date().toISOString(),
-        };
-        setDoc(docRef, migrated, { merge: true });
-        callback({
-          data: normalizeUserTripData(migrated),
-          updatedAt: migrated.updatedAt,
-          appVersion: APP_WRITE_VERSION,
-        });
-      } else {
-        callback({
-          data: normalized,
-          updatedAt,
-          appVersion: getDocAppVersion(data),
-        });
-      }
+      callback({
+        data: normalized,
+        updatedAt,
+        appVersion: getDocAppVersion(data),
+      });
     } else {
       callback({
         data: normalizeUserTripData(undefined),

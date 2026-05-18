@@ -103,7 +103,7 @@ describe("normalizeSharedTripData", () => {
       ],
       shopping: [],
       preparationNotes: "",
-      setupComplete: undefined,
+      setupComplete: true,
       skipPreparation: false,
       gotReady: false,
     });
