@@ -10,6 +10,22 @@ import { PoolSection } from "./PoolSection";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 window.scrollTo = vi.fn();
 
+function setInputValue(input: HTMLInputElement, value: string) {
+  const valueSetter = Object.getOwnPropertyDescriptor(input, "value")?.set;
+  const prototypeValueSetter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set;
+
+  if (prototypeValueSetter && valueSetter !== prototypeValueSetter) {
+    prototypeValueSetter.call(input, value);
+  } else {
+    valueSetter?.call(input, value);
+  }
+
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 const copiedImages = [
   {
     id: "copied-img-1",
@@ -155,6 +171,67 @@ describe("PoolSection", () => {
     expect(
       document.querySelector('button[aria-label="收合購買紀錄"]'),
     ).not.toBeNull();
+  });
+
+  it("edits a single purchase from the expanded purchase history", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<PoolSection />);
+    });
+
+    await act(async () => {
+      document
+        .querySelector('button[aria-label="展開購買紀錄"]')
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    await act(async () => {
+      document
+        .querySelector('button[aria-label="編輯購買紀錄"]')
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(document.body.textContent).toContain("編輯購買紀錄");
+
+    const inputs = Array.from(document.querySelectorAll("input"));
+    const amountInput = inputs[0];
+    const currencyInput = inputs[1];
+    const dateInput = inputs[2];
+    const noteInput = inputs[3];
+
+    await act(async () => {
+      setInputValue(amountInput, "3900");
+      setInputValue(currencyInput, "TWD");
+      setInputValue(dateInput, "2026-04-23");
+      setInputValue(noteInput, "改成夜市購入");
+    });
+
+    await act(async () => {
+      Array.from(document.querySelectorAll("button"))
+        .find((button) => button.textContent === "儲存")
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(mocks.dispatch).toHaveBeenCalledWith({
+      type: "UPDATE_ITEM",
+      item: expect.objectContaining({
+        id: "pool-1",
+        purchases: [
+          {
+            id: "purchase-1",
+            date: "2026-04-23",
+            amount: "3900",
+            currency: "TWD",
+            tripName: "大阪",
+            note: "改成夜市購入",
+          },
+          expect.objectContaining({ id: "purchase-2" }),
+        ],
+      }),
+    });
   });
 
   it("detaches trip shopping references before deleting a pool item", async () => {

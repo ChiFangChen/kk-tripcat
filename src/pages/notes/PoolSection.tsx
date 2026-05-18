@@ -41,6 +41,10 @@ export function PoolSection() {
   } = useApp();
   const [editing, setEditing] = useState<Item | null>(null);
   const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null);
+  const [editingPurchase, setEditingPurchase] = useState<{
+    itemId: string;
+    purchase: Purchase;
+  } | null>(null);
   const [expandedPurchaseIds, setExpandedPurchaseIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -172,6 +176,21 @@ export function PoolSection() {
         ),
       },
     });
+  }
+
+  function updatePurchase(itemId: string, purchase: Purchase) {
+    const item = state.items.find((entry) => entry.id === itemId);
+    if (!item) return;
+    dispatch({
+      type: "UPDATE_ITEM",
+      item: {
+        ...item,
+        purchases: item.purchases.map((entry) =>
+          entry.id === purchase.id ? purchase : entry,
+        ),
+      },
+    });
+    setEditingPurchase(null);
   }
 
   function newPoolItem(): Item {
@@ -324,20 +343,35 @@ export function PoolSection() {
                             </span>
                           )}
                         </div>
-                        <button
-                          className="pool-item-icon-button"
-                          onClick={() =>
-                            setConfirmDelete({
-                              type: "purchase",
-                              itemId: item.id,
-                              purchaseId: purchase.id,
-                            })
-                          }
-                          aria-label="刪除購買紀錄"
-                          title="刪除購買紀錄"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
+                        <div className="pool-purchase-actions">
+                          <button
+                            className="pool-item-icon-button"
+                            onClick={() =>
+                              setEditingPurchase({
+                                itemId: item.id,
+                                purchase,
+                              })
+                            }
+                            aria-label="編輯購買紀錄"
+                            title="編輯購買紀錄"
+                          >
+                            <FontAwesomeIcon icon={faPen} />
+                          </button>
+                          <button
+                            className="pool-item-icon-button"
+                            onClick={() =>
+                              setConfirmDelete({
+                                type: "purchase",
+                                itemId: item.id,
+                                purchaseId: purchase.id,
+                              })
+                            }
+                            aria-label="刪除購買紀錄"
+                            title="刪除購買紀錄"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -378,6 +412,16 @@ export function PoolSection() {
         <Modal title="新增購買紀錄" onClose={() => setAddingPurchaseTo(null)}>
           <PurchaseForm
             onSave={(purchase) => addPurchase(addingPurchaseTo, purchase)}
+          />
+        </Modal>
+      )}
+      {editingPurchase && (
+        <Modal title="編輯購買紀錄" onClose={() => setEditingPurchase(null)}>
+          <PurchaseForm
+            purchase={editingPurchase.purchase}
+            onSave={(purchase) =>
+              updatePurchase(editingPurchase.itemId, purchase)
+            }
           />
         </Modal>
       )}
@@ -568,13 +612,21 @@ function ItemForm({
   );
 }
 
-function PurchaseForm({ onSave }: { onSave: (purchase: Purchase) => void }) {
-  const [form, setForm] = useState<Omit<Purchase, "id">>({
-    date: new Date().toISOString().split("T")[0],
-    amount: "",
-    currency: "",
-    note: "",
-  });
+function PurchaseForm({
+  purchase,
+  onSave,
+}: {
+  purchase?: Purchase;
+  onSave: (purchase: Purchase) => void;
+}) {
+  const [form, setForm] = useState<Omit<Purchase, "id">>(() => ({
+    date: purchase?.date ?? new Date().toISOString().split("T")[0],
+    amount: purchase?.amount ?? "",
+    currency: purchase?.currency ?? "",
+    tripId: purchase?.tripId,
+    tripName: purchase?.tripName,
+    note: purchase?.note ?? "",
+  }));
 
   return (
     <div>
@@ -615,7 +667,7 @@ function PurchaseForm({ onSave }: { onSave: (purchase: Purchase) => void }) {
       </div>
       <button
         className="btn btn-primary w-full"
-        onClick={() => onSave({ ...form, id: generateId() })}
+        onClick={() => onSave({ ...form, id: purchase?.id ?? generateId() })}
       >
         儲存
       </button>

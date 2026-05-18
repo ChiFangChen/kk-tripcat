@@ -1368,6 +1368,13 @@ textarea.form-input {
   line-height: 1.45;
 }
 
+.pool-purchase-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .pool-purchase-note {
   white-space: pre-wrap;
 }
