@@ -6,7 +6,7 @@ import {
   FIREBASE_STORAGE_IMAGE_CACHE_MAX_AGE_SECONDS,
   FIREBASE_STORAGE_IMAGE_CACHE_MAX_ENTRIES,
   FIREBASE_STORAGE_IMAGE_CACHE_NAME,
-  isFirebaseStorageImageUrl,
+  FIREBASE_STORAGE_IMAGE_URL_PATTERN,
 } from "./src/utils/imageCache";
 
 export default defineConfig({
@@ -23,7 +23,7 @@ export default defineConfig({
         skipWaiting: true,
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => isFirebaseStorageImageUrl(url.href),
+            urlPattern: FIREBASE_STORAGE_IMAGE_URL_PATTERN,
             handler: "CacheFirst",
             options: {
               cacheName: FIREBASE_STORAGE_IMAGE_CACHE_NAME,
