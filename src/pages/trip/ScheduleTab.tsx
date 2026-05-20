@@ -246,11 +246,11 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
                               {activity.time || ""}
                             </span>
                             <div className="flex-1">
-                              <span className="text-sm font-medium leading-5 block">
+                              <span className="text-xs text-slate-400 font-medium leading-5 block">
                                 {activity.name}
                               </span>
                               {activity.place && (
-                                <p className="text-xs text-slate-400 mt-0.5">
+                                <p className="text-sm mt-0.5">
                                   {activity.place}
                                 </p>
                               )}

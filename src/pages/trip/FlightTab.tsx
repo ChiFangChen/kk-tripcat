@@ -173,7 +173,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                 <div className="flight-card-meta">
                   {(flight.memberPlan || flight.memberNumber) && (
                     <span className="flight-meta-chip">
-                      {`${flight.memberPlan && flight.memberPlan} ${flight.memberNumber && flight.memberNumber}`}
+                      {`${flight.memberPlan ? flight.memberPlan : "會員"} ${flight.memberNumber && flight.memberNumber}`}
                     </span>
                   )}
                 </div>
