@@ -33,7 +33,9 @@ import {
   subscribeToTrips,
   subscribeToSharedTripData,
   subscribeToUserTripData,
+  getSharedTripDataFromServer,
   getUserTripDataOnce,
+  getUserTripDataFromServer,
   subscribeToTemplate,
   subscribeToTips,
   subscribeToItems,
@@ -52,6 +54,8 @@ import {
   normalizeTips,
   isClientVersionOutdated,
   shouldApplyIncomingSnapshot,
+  type SharedTripSnapshot,
+  type UserTripSnapshot,
 } from "../utils/firebase";
 import { defaultTemplate } from "../data/seed";
 import type { Firestore } from "firebase/firestore";
@@ -240,6 +244,12 @@ export function shouldApplyGlobalCollectionSnapshot({
   return !fromCache || currentCollection.length === 0;
 }
 
+export function shouldRefreshTripOnVisibility(
+  visibilityState: DocumentVisibilityState,
+) {
+  return visibilityState === "visible";
+}
+
 const WRITE_BLOCKED_ACTIONS = new Set<Action["type"]>([
   "ADD_USER",
   "UPDATE_USER",
@@ -414,6 +424,10 @@ interface AppContextType {
   updateTrip: (trip: Trip, fields?: Partial<Trip>) => void;
   deleteTrip: (tripId: string) => void;
   getTripData: (tripId: string) => TripData;
+  refreshTripData: (
+    tripId: string,
+    options?: { includeUserData?: boolean },
+  ) => Promise<void>;
   setSharedTripData: (tripId: string, data: Partial<SharedTripData>) => void;
   setUserTripData: (tripId: string, data: Partial<UserTripData>) => void;
   setTripMemberData: (
@@ -749,6 +763,72 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [currentUserId],
   );
 
+  const applySharedTripSnapshot = useCallback(
+    (tripId: string, snapshot: SharedTripSnapshot) => {
+      if (isClientVersionOutdated(snapshot.appVersion)) {
+        versionBlockedTripIdsRef.current.add(tripId);
+      }
+      const pendingUpdatedAt = pendingSharedTripUpdatedAtRef.current[tripId];
+      if (
+        pendingUpdatedAt &&
+        (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
+      ) {
+        return;
+      }
+      const currentUpdatedAt = sharedTripUpdatedAtRef.current[tripId];
+      if (!shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)) {
+        return;
+      }
+      if (
+        pendingUpdatedAt &&
+        snapshot.updatedAt &&
+        snapshot.updatedAt >= pendingUpdatedAt
+      ) {
+        delete pendingSharedTripUpdatedAtRef.current[tripId];
+      }
+      rawDispatch({
+        type: "SET_SHARED_TRIP_DATA",
+        tripId,
+        data: snapshot.data,
+      });
+      persistSharedTripCache(tripId, snapshot.data, snapshot.updatedAt);
+    },
+    [persistSharedTripCache],
+  );
+
+  const applyUserTripSnapshot = useCallback(
+    (tripId: string, snapshot: UserTripSnapshot) => {
+      if (isClientVersionOutdated(snapshot.appVersion)) {
+        versionBlockedTripIdsRef.current.add(tripId);
+      }
+      const pendingUpdatedAt = pendingUserTripUpdatedAtRef.current[tripId];
+      if (
+        pendingUpdatedAt &&
+        (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
+      ) {
+        return;
+      }
+      const currentUpdatedAt = userTripUpdatedAtRef.current[tripId];
+      if (!shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)) {
+        return;
+      }
+      if (
+        pendingUpdatedAt &&
+        snapshot.updatedAt &&
+        snapshot.updatedAt >= pendingUpdatedAt
+      ) {
+        delete pendingUserTripUpdatedAtRef.current[tripId];
+      }
+      rawDispatch({
+        type: "SET_USER_TRIP_DATA",
+        tripId,
+        data: snapshot.data,
+      });
+      persistUserTripCache(tripId, snapshot.data, snapshot.updatedAt);
+    },
+    [persistUserTripCache],
+  );
+
   // Initialize Firebase
   useEffect(() => {
     if (isFirebaseConfigured() && !firebaseListeningRef.current) {
@@ -910,36 +990,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!viewTripId || !dbReady || !dbRef.current) return;
     return subscribeToSharedTripData(dbRef.current, viewTripId, (snapshot) => {
-      if (isClientVersionOutdated(snapshot.appVersion)) {
-        versionBlockedTripIdsRef.current.add(viewTripId);
-      }
-      const pendingUpdatedAt =
-        pendingSharedTripUpdatedAtRef.current[viewTripId];
-      if (
-        pendingUpdatedAt &&
-        (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
-      ) {
-        return;
-      }
-      const currentUpdatedAt = sharedTripUpdatedAtRef.current[viewTripId];
-      if (!shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)) {
-        return;
-      }
-      if (
-        pendingUpdatedAt &&
-        snapshot.updatedAt &&
-        snapshot.updatedAt >= pendingUpdatedAt
-      ) {
-        delete pendingSharedTripUpdatedAtRef.current[viewTripId];
-      }
-      rawDispatch({
-        type: "SET_SHARED_TRIP_DATA",
-        tripId: viewTripId,
-        data: snapshot.data,
-      });
-      persistSharedTripCache(viewTripId, snapshot.data, snapshot.updatedAt);
+      applySharedTripSnapshot(viewTripId, snapshot);
     });
-  }, [viewTripId, dbReady, persistSharedTripCache]);
+  }, [viewTripId, dbReady, applySharedTripSnapshot]);
 
   // Cleanup all trip subscriptions on unmount only
   useEffect(() => {
@@ -1009,72 +1062,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     for (const tripId of currentTripIds) {
       if (!tripSubsRef.current[tripId]) {
         const unsub1 = subscribeToSharedTripData(db, tripId, (snapshot) => {
-          if (isClientVersionOutdated(snapshot.appVersion)) {
-            versionBlockedTripIdsRef.current.add(tripId);
-          }
-          const pendingUpdatedAt =
-            pendingSharedTripUpdatedAtRef.current[tripId];
-          if (
-            pendingUpdatedAt &&
-            (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
-          ) {
-            return;
-          }
-          const currentUpdatedAt = sharedTripUpdatedAtRef.current[tripId];
-          if (
-            !shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)
-          ) {
-            return;
-          }
-          if (
-            pendingUpdatedAt &&
-            snapshot.updatedAt &&
-            snapshot.updatedAt >= pendingUpdatedAt
-          ) {
-            delete pendingSharedTripUpdatedAtRef.current[tripId];
-          }
-          rawDispatch({
-            type: "SET_SHARED_TRIP_DATA",
-            tripId,
-            data: snapshot.data,
-          });
-          persistSharedTripCache(tripId, snapshot.data, snapshot.updatedAt);
+          applySharedTripSnapshot(tripId, snapshot);
         });
         const unsub2 = subscribeToUserTripData(
           db,
           tripId,
           userId,
           (snapshot) => {
-            if (isClientVersionOutdated(snapshot.appVersion)) {
-              versionBlockedTripIdsRef.current.add(tripId);
-            }
-            const pendingUpdatedAt =
-              pendingUserTripUpdatedAtRef.current[tripId];
-            if (
-              pendingUpdatedAt &&
-              (!snapshot.updatedAt || snapshot.updatedAt < pendingUpdatedAt)
-            ) {
-              return;
-            }
-            const currentUpdatedAt = userTripUpdatedAtRef.current[tripId];
-            if (
-              !shouldApplyIncomingSnapshot(currentUpdatedAt, snapshot.updatedAt)
-            ) {
-              return;
-            }
-            if (
-              pendingUpdatedAt &&
-              snapshot.updatedAt &&
-              snapshot.updatedAt >= pendingUpdatedAt
-            ) {
-              delete pendingUserTripUpdatedAtRef.current[tripId];
-            }
-            rawDispatch({
-              type: "SET_USER_TRIP_DATA",
-              tripId,
-              data: snapshot.data,
-            });
-            persistUserTripCache(tripId, snapshot.data, snapshot.updatedAt);
+            applyUserTripSnapshot(tripId, snapshot);
           },
         );
         tripSubsRef.current[tripId] = () => {
@@ -1086,8 +1081,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [
     state.trips,
     state.auth.currentUser?.id,
-    persistSharedTripCache,
-    persistUserTripCache,
+    applySharedTripSnapshot,
+    applyUserTripSnapshot,
   ]);
 
   // Save local cache. Remote writes happen only through explicit write APIs.
@@ -1340,6 +1335,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { ...shared, ...user };
   }
 
+  const refreshTripData = useCallback(
+    async (
+      tripId: string,
+      options: { includeUserData?: boolean } = {},
+    ): Promise<void> => {
+      const db = dbRef.current;
+      if (!db) return;
+
+      try {
+        const sharedSnapshot = await getSharedTripDataFromServer(db, tripId);
+        applySharedTripSnapshot(tripId, sharedSnapshot);
+
+        const includeUserData = options.includeUserData ?? true;
+        const userId = state.auth.currentUser?.id;
+        if (!includeUserData || !userId) return;
+
+        const userSnapshot = await getUserTripDataFromServer(
+          db,
+          tripId,
+          userId,
+        );
+        applyUserTripSnapshot(tripId, userSnapshot);
+      } catch (error) {
+        console.warn("Failed to refresh trip data from server:", error);
+      }
+    },
+    [
+      applySharedTripSnapshot,
+      applyUserTripSnapshot,
+      state.auth.currentUser?.id,
+    ],
+  );
+
   function setSharedTripData(tripId: string, data: Partial<SharedTripData>) {
     if (!firebaseConnected || !dbRef.current) return;
     if (versionBlockedTripIdsRef.current.has(tripId)) {
@@ -1475,6 +1503,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateTrip,
         deleteTrip,
         getTripData,
+        refreshTripData,
         setSharedTripData,
         setUserTripData,
         setTripMemberData,

@@ -3,6 +3,7 @@ import {
   getInitialLoadingState,
   shouldApplyGlobalCollectionSnapshot,
   shouldApplyUserCollectionSnapshot,
+  shouldRefreshTripOnVisibility,
   shouldSubscribeUserCollections,
   shouldSyncUserCollectionToRemote,
 } from "./AppContext";
@@ -93,6 +94,16 @@ describe("shouldApplyGlobalCollectionSnapshot", () => {
         fromCache: true,
       }),
     ).toBe(true);
+  });
+});
+
+describe("shouldRefreshTripOnVisibility", () => {
+  it("refreshes when the document becomes visible", () => {
+    expect(shouldRefreshTripOnVisibility("visible")).toBe(true);
+  });
+
+  it("does not refresh while the document is hidden", () => {
+    expect(shouldRefreshTripOnVisibility("hidden")).toBe(false);
   });
 });
 

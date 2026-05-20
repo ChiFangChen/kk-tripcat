@@ -22,6 +22,7 @@ import {
   deleteDoc,
   getDocs,
   getDoc,
+  getDocFromServer,
   query,
   where,
   type Firestore,
@@ -62,7 +63,7 @@ export interface CollectionSnapshot<T> {
   fromCache: boolean;
 }
 
-export const APP_WRITE_VERSION = 2026041602;
+export const APP_WRITE_VERSION = 2026052001;
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -291,6 +292,23 @@ export function subscribeToSharedTripData(
   });
 }
 
+export async function getSharedTripDataFromServer(
+  db: Firestore,
+  tripId: string,
+): Promise<SharedTripSnapshot> {
+  const snapshot = await getDocFromServer(doc(db, "tcTripShared", tripId));
+  if (!snapshot.exists()) {
+    return { data: normalizeSharedTripData(undefined) };
+  }
+
+  const data = snapshot.data() as Partial<SharedTripData> & DatedTripDoc;
+  return {
+    data: normalizeSharedTripData(data),
+    updatedAt: getDocUpdatedAt(data),
+    appVersion: getDocAppVersion(data),
+  };
+}
+
 export async function syncSharedTripData(
   db: Firestore,
   tripId: string,
@@ -368,6 +386,26 @@ export async function getUserTripDataOnce(
   userId: string,
 ): Promise<UserTripSnapshot> {
   const snapshot = await getDoc(
+    doc(db, "tcTripUser", userTripDocId(tripId, userId)),
+  );
+  if (!snapshot.exists()) {
+    return { data: normalizeUserTripData(undefined) };
+  }
+
+  const data = snapshot.data() as Partial<UserTripData> & DatedTripDoc;
+  return {
+    data: normalizeUserTripData(data),
+    updatedAt: getDocUpdatedAt(data),
+    appVersion: getDocAppVersion(data),
+  };
+}
+
+export async function getUserTripDataFromServer(
+  db: Firestore,
+  tripId: string,
+  userId: string,
+): Promise<UserTripSnapshot> {
+  const snapshot = await getDocFromServer(
     doc(db, "tcTripUser", userTripDocId(tripId, userId)),
   );
   if (!snapshot.exists()) {

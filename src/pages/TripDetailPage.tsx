@@ -7,7 +7,7 @@ import {
   faShareNodes,
   faCircleCheck,
 } from "@fortawesome/free-solid-svg-icons";
-import { useApp } from "../context/AppContext";
+import { shouldRefreshTripOnVisibility, useApp } from "../context/AppContext";
 import { MemberMenu } from "../components/MemberMenu";
 import { UserMenu } from "../components/UserMenu";
 import { Modal } from "../components/Modal";
@@ -43,6 +43,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     loading,
     isTripAdmin,
     getTripData,
+    refreshTripData,
     setUserTripData,
     setTemplate,
     updateTrip,
@@ -105,6 +106,22 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   useEffect(() => {
     if (!viewOnly) storage.setItem(storageKey, effectiveActiveTab);
   }, [effectiveActiveTab, storageKey, viewOnly]);
+
+  useEffect(() => {
+    void refreshTripData(tripId, { includeUserData: !viewOnly });
+  }, [refreshTripData, tripId, viewOnly]);
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (!shouldRefreshTripOnVisibility(document.visibilityState)) return;
+      void refreshTripData(tripId, { includeUserData: !viewOnly });
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshTripData, tripId, viewOnly]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
