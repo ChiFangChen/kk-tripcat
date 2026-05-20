@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getInitialLoadingState,
+  shouldApplyGlobalCollectionSnapshot,
   shouldApplyUserCollectionSnapshot,
   shouldSubscribeUserCollections,
   shouldSyncUserCollectionToRemote,
@@ -58,6 +59,38 @@ describe("shouldApplyUserCollectionSnapshot", () => {
         incomingUpdatedAt: "2026-05-18T15:14:33.675Z",
         currentCollection: [],
         incomingCollection: [{ id: "tip-songkran" }],
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("shouldApplyGlobalCollectionSnapshot", () => {
+  it("keeps local data when Firestore only has an empty cache snapshot", () => {
+    expect(
+      shouldApplyGlobalCollectionSnapshot({
+        currentCollection: [{ id: "trip-1" }],
+        incomingCollection: [],
+        fromCache: true,
+      }),
+    ).toBe(false);
+  });
+
+  it("applies server-confirmed empty snapshots because remote is source of truth", () => {
+    expect(
+      shouldApplyGlobalCollectionSnapshot({
+        currentCollection: [{ id: "trip-1" }],
+        incomingCollection: [],
+        fromCache: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("uses Firestore cache snapshots when there is no local data yet", () => {
+    expect(
+      shouldApplyGlobalCollectionSnapshot({
+        currentCollection: [],
+        incomingCollection: [{ id: "trip-1" }],
+        fromCache: true,
       }),
     ).toBe(true);
   });

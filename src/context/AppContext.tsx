@@ -227,6 +227,19 @@ export function shouldApplyUserCollectionSnapshot({
   return shouldApplyIncomingSnapshot(currentUpdatedAt, incomingUpdatedAt);
 }
 
+export function shouldApplyGlobalCollectionSnapshot({
+  currentCollection,
+  incomingCollection: _incomingCollection,
+  fromCache,
+}: {
+  currentCollection: unknown[];
+  incomingCollection: unknown[];
+  fromCache: boolean;
+}) {
+  void _incomingCollection;
+  return !fromCache || currentCollection.length === 0;
+}
+
 const WRITE_BLOCKED_ACTIONS = new Set<Action["type"]>([
   "ADD_USER",
   "UPDATE_USER",
@@ -518,6 +531,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const pendingItemsUpdatedAtRef = useRef<string | undefined>(undefined);
   const hydratedTipsRef = useRef<TipNote[] | undefined>(undefined);
   const hydratedItemsRef = useRef<Item[] | undefined>(undefined);
+  const latestUsersRef = useRef(state.users);
+  const latestTripsRef = useRef(state.trips);
   const latestTipsRef = useRef(state.tips);
   const latestItemsRef = useRef(state.items);
   const versionBlockedTripIdsRef = useRef<Set<string>>(new Set());
@@ -606,6 +621,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     userTripDataRef.current = state.userTripData;
   }, [state.userTripData]);
+
+  useEffect(() => {
+    latestUsersRef.current = state.users;
+  }, [state.users]);
+
+  useEffect(() => {
+    latestTripsRef.current = state.trips;
+  }, [state.trips]);
 
   useEffect(() => {
     latestTipsRef.current = state.tips;
@@ -740,15 +763,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const checkReady = () => {
             if (usersLoaded && tripsLoaded) setLoading(false);
           };
-          const unsub1 = subscribeToUsers(db, (users) => {
-            rawDispatch({ type: "SET_USERS", users });
-            storage.setItem("users", users);
+          const unsub1 = subscribeToUsers(db, (snapshot) => {
+            if (
+              !shouldApplyGlobalCollectionSnapshot({
+                currentCollection: latestUsersRef.current,
+                incomingCollection: snapshot.data,
+                fromCache: snapshot.fromCache,
+              })
+            ) {
+              usersLoaded = true;
+              checkReady();
+              return;
+            }
+            rawDispatch({ type: "SET_USERS", users: snapshot.data });
+            storage.setItem("users", snapshot.data);
             usersLoaded = true;
             checkReady();
           });
-          const unsub2 = subscribeToTrips(db, (trips) => {
-            rawDispatch({ type: "SET_TRIPS", trips });
-            storage.setItem("trips", trips);
+          const unsub2 = subscribeToTrips(db, (snapshot) => {
+            if (
+              !shouldApplyGlobalCollectionSnapshot({
+                currentCollection: latestTripsRef.current,
+                incomingCollection: snapshot.data,
+                fromCache: snapshot.fromCache,
+              })
+            ) {
+              tripsLoaded = true;
+              checkReady();
+              return;
+            }
+            rawDispatch({ type: "SET_TRIPS", trips: snapshot.data });
+            storage.setItem("trips", snapshot.data);
             tripsLoaded = true;
             checkReady();
           });

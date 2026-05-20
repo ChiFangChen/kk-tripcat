@@ -57,6 +57,11 @@ export interface ItemsSnapshot {
   updatedAt?: string;
 }
 
+export interface CollectionSnapshot<T> {
+  data: T[];
+  fromCache: boolean;
+}
+
 export const APP_WRITE_VERSION = 2026041602;
 
 const firebaseConfig = {
@@ -208,12 +213,12 @@ export async function initFirebase(): Promise<Firestore | null> {
 
 export function subscribeToUsers(
   db: Firestore,
-  callback: (users: User[]) => void,
+  callback: (snapshot: CollectionSnapshot<User>) => void,
 ): () => void {
   return onSnapshot(collection(db, "ccUsers"), (snapshot) => {
     const users = snapshot.docs.map((doc) => doc.data() as User);
     users.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    callback(users);
+    callback({ data: users, fromCache: snapshot.metadata.fromCache });
   });
 }
 
@@ -235,12 +240,12 @@ export async function findUserByUsername(
 
 export function subscribeToTrips(
   db: Firestore,
-  callback: (trips: Trip[]) => void,
+  callback: (snapshot: CollectionSnapshot<Trip>) => void,
 ): () => void {
   return onSnapshot(collection(db, "tcTrips"), (snapshot) => {
     const trips = snapshot.docs.map((doc) => doc.data() as Trip);
     trips.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    callback(trips);
+    callback({ data: trips, fromCache: snapshot.metadata.fromCache });
   });
 }
 
