@@ -12,6 +12,10 @@ import { Modal } from "../components/Modal";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { generateId } from "../utils/id";
 import type { TemplateCategory, TemplateItem } from "../types";
+import {
+  buildTemplateItemDeleteMessage,
+  updateTemplateItem,
+} from "./settingsTemplate";
 
 export function SettingsPage() {
   const { state, setTemplate, showToast } = useApp();
@@ -33,6 +37,13 @@ export function SettingsPage() {
   const [newItemSubcategory, setNewItemSubcategory] = useState("");
   const [creatingNewSub, setCreatingNewSub] = useState(false);
   const [newSubName, setNewSubName] = useState("");
+  const [editingItem, setEditingItem] = useState<{
+    categoryName: string;
+    itemId: string;
+  } | null>(null);
+  const [editItemText, setEditItemText] = useState("");
+  const [editItemSubcategory, setEditItemSubcategory] = useState("");
+  const [editingItemNewSub, setEditingItemNewSub] = useState(false);
 
   // Edit category state (rename + manage subcategories)
   const [editingCatName, setEditingCatName] = useState<string | null>(null);
@@ -185,6 +196,34 @@ export function SettingsPage() {
     void saveTemplate({ ...template, categories: updated });
   }
 
+  function openEditItem(catName: string, item: TemplateItem) {
+    setEditingItem({ categoryName: catName, itemId: item.id });
+    setEditItemText(item.text);
+    setEditItemSubcategory(item.subcategory || "");
+    setEditingItemNewSub(false);
+  }
+
+  function saveEditItem() {
+    if (!editingItem || !editItemText.trim()) return;
+    void saveTemplate(
+      updateTemplateItem(
+        template,
+        editingItem.categoryName,
+        editingItem.itemId,
+        {
+          text: editItemText.trim(),
+          subcategory: editItemSubcategory,
+        },
+      ),
+      () => {
+        setEditingItem(null);
+        setEditItemText("");
+        setEditItemSubcategory("");
+        setEditingItemNewSub(false);
+      },
+    );
+  }
+
   // Open edit category
   function openEditCategory(catName: string) {
     setEditingCatName(catName);
@@ -288,21 +327,34 @@ export function SettingsPage() {
                       <span className={hasSubs && sub ? "ml-3" : ""}>
                         {item.text}
                       </span>
-                      <button
-                        className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
-                        onClick={() =>
-                          setConfirmDelete({
-                            type: "item",
-                            categoryName: cat.name,
-                            itemId: item.id,
-                          })
-                        }
-                      >
-                        <FontAwesomeIcon
-                          icon={faTrash}
-                          className="text-[10px]"
-                        />
-                      </button>
+                      <div className="flex gap-1">
+                        <button
+                          className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
+                          data-e2e-id={`template_item_edit_button--${item.id}`}
+                          onClick={() => openEditItem(cat.name, item)}
+                        >
+                          <FontAwesomeIcon
+                            icon={faPen}
+                            className="text-[10px]"
+                          />
+                        </button>
+                        <button
+                          className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
+                          data-e2e-id={`template_item_delete_button--${item.id}`}
+                          onClick={() =>
+                            setConfirmDelete({
+                              type: "item",
+                              categoryName: cat.name,
+                              itemId: item.id,
+                            })
+                          }
+                        >
+                          <FontAwesomeIcon
+                            icon={faTrash}
+                            className="text-[10px]"
+                          />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -598,6 +650,94 @@ export function SettingsPage() {
           })()}
         </FullScreenModal>
       )}
+      {editingItem && (
+        <FullScreenModal
+          title="編輯準備事項"
+          onClose={() => setEditingItem(null)}
+        >
+          {(() => {
+            const subs = getSubcategories(editingItem.categoryName);
+            return (
+              <>
+                {subs.length > 0 && (
+                  <div className="form-group">
+                    <label className="form-label">次項目分類</label>
+                    {!editingItemNewSub ? (
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          className={`btn btn-sm ${!editItemSubcategory ? "btn-primary" : "btn-secondary"}`}
+                          data-e2e-id="template_item_subcategory_button--none"
+                          onClick={() => setEditItemSubcategory("")}
+                        >
+                          無
+                        </button>
+                        {subs.map((sub) => (
+                          <button
+                            key={sub}
+                            className={`btn btn-sm ${editItemSubcategory === sub ? "btn-primary" : "btn-secondary"}`}
+                            data-e2e-id={`template_item_subcategory_button--${sub}`}
+                            onClick={() => setEditItemSubcategory(sub)}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          data-e2e-id="template_item_new_subcategory_button"
+                          onClick={() => {
+                            setEditItemSubcategory("");
+                            setEditingItemNewSub(true);
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faPlus} className="mr-1" />
+                          新次項目
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          className="form-input flex-1"
+                          data-e2e-id="template_item_subcategory_field"
+                          value={editItemSubcategory}
+                          onChange={(e) =>
+                            setEditItemSubcategory(e.target.value)
+                          }
+                          autoFocus
+                        />
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          data-e2e-id="template_item_cancel_new_subcategory_button"
+                          onClick={() => setEditingItemNewSub(false)}
+                        >
+                          取消
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="form-group">
+                  <label className="form-label">項目名稱</label>
+                  <input
+                    className="form-input"
+                    data-e2e-id="template_item_name_field"
+                    value={editItemText}
+                    onChange={(e) => setEditItemText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveEditItem()}
+                    autoFocus={subs.length === 0}
+                  />
+                </div>
+                <button
+                  className="btn btn-primary w-full"
+                  data-e2e-id="template_item_save_button"
+                  onClick={saveEditItem}
+                >
+                  儲存
+                </button>
+              </>
+            );
+          })()}
+        </FullScreenModal>
+      )}
       {confirmDelete && (
         <ConfirmDeleteModal
           title={
@@ -611,7 +751,11 @@ export function SettingsPage() {
             confirmDelete.type === "category"
               ? `確定要刪除「${confirmDelete.categoryName}」分類嗎？分類內的項目也會一起刪除。`
               : confirmDelete.type === "item"
-                ? "確定要刪除這個準備事項項目嗎？"
+                ? buildTemplateItemDeleteMessage(
+                    template,
+                    confirmDelete.categoryName,
+                    confirmDelete.itemId,
+                  )
                 : `確定要刪除「${confirmDelete.subcategoryName}」次項目分類嗎？項目會保留，但會移除此分類。`
           }
           onCancel={() => setConfirmDelete(null)}
