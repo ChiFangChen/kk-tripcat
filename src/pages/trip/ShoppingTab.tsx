@@ -174,6 +174,20 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     };
   }
 
+  function renderShoppingItemTitle(
+    name: string,
+    brand?: string,
+    spec?: string,
+  ) {
+    return (
+      <span className="shopping-item-title">
+        {brand && <span className="shopping-item-brand">{brand}</span>}
+        <span className="shopping-item-name">{name}</span>
+        {spec && <span className="shopping-item-spec">{spec}</span>}
+      </span>
+    );
+  }
+
   function addPoolItemToTrip(item: Item) {
     const tripItem: TripShoppingItem = {
       id: generateId(),
@@ -413,7 +427,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                   />
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm">{item.name}</span>
+                  {renderShoppingItemTitle(item.name, item.brand, item.spec)}
                   {(item.estimatedAmount || item.currency) && (
                     <span className="block text-xs text-slate-400">
                       {item.estimatedAmount || "-"}
@@ -479,7 +493,11 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                       handleTitleDoubleClick,
                     )}
                   >
-                    {titleText}
+                    {renderShoppingItemTitle(
+                      resolvedItem.name,
+                      resolvedItem.brand,
+                      resolvedItem.spec,
+                    )}
                   </button>
                 ) : (
                   titleText
@@ -572,7 +590,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                     />
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block font-semibold">{item.name}</span>
+                    {renderShoppingItemTitle(item.name, item.brand, item.spec)}
                     {(item.estimatedAmount || item.currency) && (
                       <span className="block text-sm text-slate-500">
                         {item.estimatedAmount || "-"}
@@ -625,6 +643,13 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                     <div className="text-sm text-slate-500 mb-2">
                       {entry.item.estimatedAmount || "-"}
                       {entry.item.currency ? ` ${entry.item.currency}` : ""}
+                    </div>
+                  )}
+                  {(entry.item.brand || entry.item.spec) && (
+                    <div className="text-sm text-slate-500 mb-2">
+                      {[entry.item.brand, entry.item.spec]
+                        .filter(Boolean)
+                        .join(" / ")}
                     </div>
                   )}
                   {entry.item.note && (
@@ -705,6 +730,24 @@ function DraftShoppingForm({
             setForm({ ...form, textSnapshot: event.target.value })
           }
           autoFocus
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">品牌</label>
+        <input
+          className="form-input"
+          value={form.brand || ""}
+          onChange={(event) =>
+            setForm({ ...form, brand: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">規格</label>
+        <input
+          className="form-input"
+          value={form.spec || ""}
+          onChange={(event) => setForm({ ...form, spec: event.target.value })}
         />
       </div>
       <div className="form-group">
@@ -831,6 +874,24 @@ function PoolItemForm({
           value={form.name}
           onChange={(event) => setForm({ ...form, name: event.target.value })}
           autoFocus
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">品牌</label>
+        <input
+          className="form-input"
+          value={form.brand || ""}
+          onChange={(event) =>
+            setForm({ ...form, brand: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">規格</label>
+        <input
+          className="form-input"
+          value={form.spec || ""}
+          onChange={(event) => setForm({ ...form, spec: event.target.value })}
         />
       </div>
       <div className="form-group">

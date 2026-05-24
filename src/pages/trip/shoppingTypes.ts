@@ -4,6 +4,8 @@ import type { ImageAsset } from "../../types/images";
 export interface Item {
   id: string;
   name: string;
+  brand?: string;
+  spec?: string;
   images: ImageAsset[];
   estimatedAmount?: string;
   currency?: string;
@@ -17,6 +19,8 @@ export interface TripShoppingItem {
   id: string;
   itemId?: string;
   textSnapshot: string;
+  brand?: string;
+  spec?: string;
   images: ImageAsset[];
   estimatedAmount?: string;
   currency?: string;
@@ -32,6 +36,8 @@ export interface ResolvedTripShoppingItem {
   id: string;
   source: TripShoppingItem;
   name: string;
+  brand?: string;
+  spec?: string;
   images: ImageAsset[];
   estimatedAmount?: string;
   currency?: string;
@@ -57,6 +63,8 @@ export function getTripShoppingResolvedContent(
       id: item.id,
       source: item,
       name: linkedItem.name,
+      brand: linkedItem.brand,
+      spec: linkedItem.spec,
       images: linkedItem.images,
       estimatedAmount: linkedItem.estimatedAmount,
       currency: linkedItem.currency,
@@ -70,6 +78,8 @@ export function getTripShoppingResolvedContent(
     id: item.id,
     source: item,
     name: item.textSnapshot,
+    brand: item.brand,
+    spec: item.spec,
     images: item.images,
     estimatedAmount: item.estimatedAmount,
     currency: item.currency,
@@ -121,6 +131,12 @@ export function buildPoolItemFromTripShopping({
   if (source.estimatedAmount !== undefined) {
     item.estimatedAmount = source.estimatedAmount;
   }
+  if (source.brand !== undefined) {
+    item.brand = source.brand;
+  }
+  if (source.spec !== undefined) {
+    item.spec = source.spec;
+  }
   if (source.currency !== undefined) {
     item.currency = source.currency;
   }
@@ -151,6 +167,8 @@ export function detachTripShoppingItemFromPoolItem({
   return {
     ...rest,
     textSnapshot: poolItem.name,
+    brand: poolItem.brand,
+    spec: poolItem.spec,
     images: poolItem.images,
     estimatedAmount: poolItem.estimatedAmount,
     currency: poolItem.currency,

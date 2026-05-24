@@ -291,7 +291,21 @@ export function PoolSection() {
                     )}
                     <div className="pool-item-content">
                       <div className="pool-item-title-row">
-                        <h3 className="pool-item-title">{item.name}</h3>
+                        <h3 className="pool-item-title">
+                          {item.brand && (
+                            <span className="shopping-item-brand">
+                              {item.brand}
+                            </span>
+                          )}
+                          <span className="shopping-item-name">
+                            {item.name}
+                          </span>
+                          {item.spec && (
+                            <span className="shopping-item-spec">
+                              {item.spec}
+                            </span>
+                          )}
+                        </h3>
                       </div>
                       <div className="pool-item-meta">
                         {(item.estimatedAmount || item.currency) && (
@@ -621,6 +635,24 @@ function ItemForm({
           className="form-input"
           value={form.name}
           onChange={(event) => setForm({ ...form, name: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">品牌</label>
+        <input
+          className="form-input"
+          value={form.brand || ""}
+          onChange={(event) =>
+            setForm({ ...form, brand: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">規格</label>
+        <input
+          className="form-input"
+          value={form.spec || ""}
+          onChange={(event) => setForm({ ...form, spec: event.target.value })}
         />
       </div>
       <div className="form-group">

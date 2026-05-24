@@ -14,6 +14,8 @@ import {
 const poolItem: Item = {
   id: "pool-1",
   name: "吹風機",
+  brand: "Panasonic",
+  spec: "EH-NA9M",
   images: [],
   estimatedAmount: "3000",
   currency: "JPY",
@@ -52,6 +54,8 @@ describe("shoppingTypes", () => {
     expect(getTripShoppingResolvedContent(tripItem, [poolItem])).toMatchObject({
       id: "trip-1",
       name: "吹風機",
+      brand: "Panasonic",
+      spec: "EH-NA9M",
       estimatedAmount: "3000",
       currency: "JPY",
       checked: true,
@@ -62,6 +66,8 @@ describe("shoppingTypes", () => {
     const tripItem: TripShoppingItem = {
       id: "trip-2",
       textSnapshot: "泡麵",
+      brand: "日清",
+      spec: "海鮮杯麵",
       images: [],
       estimatedAmount: "120",
       currency: "TWD",
@@ -74,6 +80,8 @@ describe("shoppingTypes", () => {
     expect(getTripShoppingResolvedContent(tripItem, [poolItem])).toMatchObject({
       id: "trip-2",
       name: "泡麵",
+      brand: "日清",
+      spec: "海鮮杯麵",
       estimatedAmount: "120",
       currency: "TWD",
       note: "宵夜",
@@ -165,6 +173,8 @@ describe("shoppingTypes", () => {
     const tripItem: TripShoppingItem = {
       id: "trip-2",
       textSnapshot: "草莓巧克力",
+      brand: "Meiji",
+      spec: "12 入",
       images: [
         {
           id: "img-1",
@@ -202,6 +212,8 @@ describe("shoppingTypes", () => {
     ).toEqual({
       id: "pool-new",
       name: "草莓巧克力",
+      brand: "Meiji",
+      spec: "12 入",
       images: [
         {
           id: "img-new",
@@ -278,6 +290,8 @@ describe("shoppingTypes", () => {
         poolItem: {
           ...poolItem,
           name: "最新吹風機",
+          brand: "Dyson",
+          spec: "HD08",
           images: copiedImages,
           estimatedAmount: "3500",
           notes: "最新備註",
@@ -286,6 +300,8 @@ describe("shoppingTypes", () => {
     ).toEqual({
       id: "trip-1",
       textSnapshot: "最新吹風機",
+      brand: "Dyson",
+      spec: "HD08",
       images: copiedImages,
       estimatedAmount: "3500",
       currency: "JPY",

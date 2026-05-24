@@ -316,6 +316,49 @@ body {
   color: var(--color-text-secondary);
 }
 
+.shopping-item-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  align-items: center;
+}
+
+.shopping-item-brand {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  color: color-mix(in srgb, var(--color-text) 82%, var(--color-primary));
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.shopping-item-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.shopping-item-spec {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 /* Schedule table */
 .schedule-table-wrapper {
   overflow-x: auto;
@@ -1285,6 +1328,10 @@ textarea.form-input {
 }
 
 .pool-item-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
   margin: 0;
   color: var(--color-text);
   font-size: 14px;

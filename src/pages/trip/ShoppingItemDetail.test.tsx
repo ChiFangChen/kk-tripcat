@@ -33,6 +33,8 @@ function renderShoppingItemDetail() {
       createdAt: "2026-05-08T10:00:00.000Z",
     },
     name: "襪子",
+    brand: "Tabio",
+    spec: "23-25cm",
     images: [],
     checked: false,
     isLinked: false,
@@ -52,6 +54,8 @@ describe("ShoppingItemDetail", () => {
     const { root } = renderShoppingItemDetail();
 
     expect(container!.textContent).not.toContain("襪子");
+    expect(container!.textContent).not.toContain("Tabio");
+    expect(container!.textContent).not.toContain("23-25cm");
     expect(container!.textContent).toContain("100 JPY");
     expect(container!.querySelector("button")).toBeNull();
 
