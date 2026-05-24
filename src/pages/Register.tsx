@@ -19,8 +19,12 @@ export function Register({ onSwitchToLogin }: Props) {
       setError('帳號已存在')
       return
     }
-    const user = await register(username, password, displayName || username)
-    login(user)
+    try {
+      const user = await register(username, password, displayName || username)
+      login(user)
+    } catch {
+      setError('帳號沒有建立成功，請確認網路後再試一次')
+    }
   }
 
   return (

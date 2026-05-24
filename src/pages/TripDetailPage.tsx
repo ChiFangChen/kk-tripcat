@@ -47,6 +47,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     setUserTripData,
     setTemplate,
     updateTrip,
+    showToast,
   } = useApp();
   const trip = state.trips.find((t) => t.id === tripId);
   const tripData = getTripData(tripId);
@@ -127,11 +128,23 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [tripId, firstEntryMode]);
 
-  function handleSetupComplete(
+  async function handleSetupComplete(
     checklist: ChecklistItem[],
     notes: string,
     updatedTemplate: Template | null,
   ) {
+    if (updatedTemplate) {
+      try {
+        await setTemplate(updatedTemplate);
+      } catch {
+        showToast({
+          type: "error",
+          message: "模板沒有同步成功，請確認網路後再試一次",
+        });
+        return;
+      }
+    }
+
     setUserTripData(tripId, {
       checklist,
       shopping: [],
@@ -140,7 +153,6 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       skipPreparation: false,
       gotReady: false,
     });
-    if (updatedTemplate) setTemplate(updatedTemplate);
     setSetupChoice(null);
     setActiveTab("preparation");
     window.scrollTo({ top: 0, behavior: "auto" });

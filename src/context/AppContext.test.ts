@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertCanWriteToCloud,
   getInitialLoadingState,
   shouldApplyGlobalCollectionSnapshot,
   shouldApplyUserCollectionSnapshot,
@@ -150,5 +151,51 @@ describe("shouldSyncUserCollectionToRemote", () => {
         previousCollection: previousItems,
       }),
     ).toBe(false);
+  });
+});
+
+describe("assertCanWriteToCloud", () => {
+  it("throws a consistent error when Firebase is unavailable", () => {
+    expect(() =>
+      assertCanWriteToCloud({
+        firebaseConnected: false,
+        hasDb: true,
+        operation: "template",
+      }),
+    ).toThrow("Cannot sync template while Firebase is unavailable.");
+  });
+
+  it("throws a consistent error when the database handle is unavailable", () => {
+    expect(() =>
+      assertCanWriteToCloud({
+        firebaseConnected: true,
+        hasDb: false,
+        operation: "trip",
+      }),
+    ).toThrow("Cannot sync trip while Firebase is unavailable.");
+  });
+
+  it("throws a consistent error when the current user is required but missing", () => {
+    expect(() =>
+      assertCanWriteToCloud({
+        firebaseConnected: true,
+        hasDb: true,
+        hasCurrentUser: false,
+        operation: "user trip data",
+        requireCurrentUser: true,
+      }),
+    ).toThrow("Cannot sync user trip data while Firebase is unavailable.");
+  });
+
+  it("passes when all required write dependencies are available", () => {
+    expect(() =>
+      assertCanWriteToCloud({
+        firebaseConnected: true,
+        hasDb: true,
+        hasCurrentUser: true,
+        operation: "template",
+        requireCurrentUser: true,
+      }),
+    ).not.toThrow();
   });
 });

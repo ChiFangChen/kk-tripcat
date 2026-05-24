@@ -36,9 +36,13 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
     setRegError('')
     if (!username.trim()) { setRegError('請輸入帳號'); return }
     if (state.users.some(u => u.username === username && !u.deleted)) { setRegError('帳號已存在'); return }
-    await register(username, password, displayName || username)
-    setUsername(''); setPassword(''); setDisplayName('')
-    setView('menu')
+    try {
+      await register(username, password, displayName || username)
+      setUsername(''); setPassword(''); setDisplayName('')
+      setView('menu')
+    } catch {
+      setRegError('帳號沒有建立成功，請確認網路後再試一次')
+    }
   }
 
   const handleSaveName = (userId: string) => {

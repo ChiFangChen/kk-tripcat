@@ -196,6 +196,24 @@ export function shouldSyncUserCollectionToRemote({
   return false;
 }
 
+export function assertCanWriteToCloud({
+  firebaseConnected,
+  hasDb,
+  hasCurrentUser,
+  operation,
+  requireCurrentUser = false,
+}: {
+  firebaseConnected: boolean;
+  hasDb: boolean;
+  hasCurrentUser?: boolean;
+  operation: string;
+  requireCurrentUser?: boolean;
+}) {
+  if (!firebaseConnected || !hasDb || (requireCurrentUser && !hasCurrentUser)) {
+    throw new Error(`Cannot sync ${operation} while Firebase is unavailable.`);
+  }
+}
+
 export function shouldSubscribeUserCollections({
   hasCurrentUser,
   dbReady,
@@ -416,20 +434,26 @@ interface AppContextType {
     password: string,
     displayName: string,
   ) => Promise<User>;
-  updateUser: (user: User) => void;
+  updateUser: (user: User) => Promise<void>;
   setTips: (tips: TipNote[]) => Promise<void>;
   setItems: (items: Item[]) => Promise<void>;
-  setTemplate: (template: Template) => void;
-  addTrip: (trip: Trip) => void;
-  updateTrip: (trip: Trip, fields?: Partial<Trip>) => void;
-  deleteTrip: (tripId: string) => void;
+  setTemplate: (template: Template) => Promise<void>;
+  addTrip: (trip: Trip) => Promise<void>;
+  updateTrip: (trip: Trip, fields?: Partial<Trip>) => Promise<void>;
+  deleteTrip: (tripId: string) => Promise<void>;
   getTripData: (tripId: string) => TripData;
   refreshTripData: (
     tripId: string,
     options?: { includeUserData?: boolean },
   ) => Promise<void>;
-  setSharedTripData: (tripId: string, data: Partial<SharedTripData>) => void;
-  setUserTripData: (tripId: string, data: Partial<UserTripData>) => void;
+  setSharedTripData: (
+    tripId: string,
+    data: Partial<SharedTripData>,
+  ) => Promise<void>;
+  setUserTripData: (
+    tripId: string,
+    data: Partial<UserTripData>,
+  ) => Promise<void>;
   setTripMemberData: (
     tripId: string,
     userId: string,
@@ -585,6 +609,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }, 3000);
     },
     [],
+  );
+
+  const showSyncError = useCallback(
+    (message = "沒有同步成功，請確認網路後再試一次") => {
+      showToast({ type: "error", message });
+    },
+    [showToast],
   );
 
   useEffect(() => {
@@ -1167,28 +1198,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isAdmin: false,
         createdAt: new Date().toISOString(),
       };
-      dispatch({ type: "ADD_USER", user });
-      if (firebaseConnected && dbRef.current)
-        await syncUser(dbRef.current, user);
+      try {
+        assertCanWriteToCloud({
+          firebaseConnected,
+          hasDb: Boolean(dbRef.current),
+          operation: "user",
+        });
+        await syncUser(dbRef.current!, user);
+        dispatch({ type: "ADD_USER", user });
+      } catch (error) {
+        showSyncError("帳號沒有建立成功，請確認網路後再試一次");
+        throw error;
+      }
       return user;
     },
-    [state.users, dispatch, firebaseConnected],
+    [state.users, dispatch, firebaseConnected, showSyncError],
   );
 
   const updateUser = useCallback(
-    (user: User) => {
-      dispatch({ type: "UPDATE_USER", user });
-      if (user.id === state.auth.currentUser?.id) storage.saveAuth(user);
-      if (firebaseConnected && dbRef.current) syncUser(dbRef.current, user);
+    async (user: User) => {
+      try {
+        assertCanWriteToCloud({
+          firebaseConnected,
+          hasDb: Boolean(dbRef.current),
+          operation: "user",
+        });
+        await syncUser(dbRef.current!, user);
+        dispatch({ type: "UPDATE_USER", user });
+        if (user.id === state.auth.currentUser?.id) storage.saveAuth(user);
+      } catch (error) {
+        showSyncError("使用者資料沒有同步成功，請確認網路後再試一次");
+        console.error("Failed to sync user:", error);
+      }
     },
-    [dispatch, firebaseConnected, state.auth.currentUser],
+    [dispatch, firebaseConnected, showSyncError, state.auth.currentUser],
   );
 
   const setTips = useCallback(
     async (tips: TipNote[]) => {
-      if (!firebaseConnected || !dbRef.current || !currentUserId) {
-        throw new Error("Cannot sync tips while Firebase is unavailable.");
-      }
+      assertCanWriteToCloud({
+        firebaseConnected,
+        hasDb: Boolean(dbRef.current),
+        hasCurrentUser: Boolean(currentUserId),
+        operation: "tips",
+        requireCurrentUser: true,
+      });
+      const userId = currentUserId!;
 
       const updatedAt = new Date().toISOString();
       const previousUpdatedAt = tipsUpdatedAtRef.current;
@@ -1196,11 +1251,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       tipsUpdatedAtRef.current = updatedAt;
 
       try {
-        await syncTips(dbRef.current, currentUserId, tips, updatedAt);
+        await syncTips(dbRef.current!, userId, tips, updatedAt);
         hydratedTipsRef.current = tips;
         rawDispatch({ type: "SET_TIPS", tips });
-        storage.setItem(getTipsStorageKey(currentUserId), tips);
-        storage.setItem(getTipsUpdatedAtStorageKey(currentUserId), updatedAt);
+        storage.setItem(getTipsStorageKey(userId), tips);
+        storage.setItem(getTipsUpdatedAtStorageKey(userId), updatedAt);
       } catch (error) {
         if (pendingTipsUpdatedAtRef.current === updatedAt) {
           pendingTipsUpdatedAtRef.current = undefined;
@@ -1214,9 +1269,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const setItems = useCallback(
     async (items: Item[]) => {
-      if (!firebaseConnected || !dbRef.current || !currentUserId) {
-        throw new Error("Cannot sync item pool while Firebase is unavailable.");
-      }
+      assertCanWriteToCloud({
+        firebaseConnected,
+        hasDb: Boolean(dbRef.current),
+        hasCurrentUser: Boolean(currentUserId),
+        operation: "item pool",
+        requireCurrentUser: true,
+      });
+      const userId = currentUserId!;
 
       const updatedAt = new Date().toISOString();
       const previousUpdatedAt = itemsUpdatedAtRef.current;
@@ -1224,11 +1284,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       itemsUpdatedAtRef.current = updatedAt;
 
       try {
-        await syncItems(dbRef.current, currentUserId, items, updatedAt);
+        await syncItems(dbRef.current!, userId, items, updatedAt);
         hydratedItemsRef.current = items;
         rawDispatch({ type: "SET_ITEMS", items });
-        storage.setItem(getItemsStorageKey(currentUserId), items);
-        storage.setItem(getItemsUpdatedAtStorageKey(currentUserId), updatedAt);
+        storage.setItem(getItemsStorageKey(userId), items);
+        storage.setItem(getItemsUpdatedAtStorageKey(userId), updatedAt);
       } catch (error) {
         if (pendingItemsUpdatedAtRef.current === updatedAt) {
           pendingItemsUpdatedAtRef.current = undefined;
@@ -1240,93 +1300,122 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [currentUserId, firebaseConnected],
   );
 
-  function setTemplate(template: Template) {
-    if (!firebaseConnected) return;
-    dispatch({ type: "SET_TEMPLATE", template });
-    if (dbRef.current && state.auth.currentUser) {
-      syncTemplate(dbRef.current, state.auth.currentUser.id, template);
+  const setTemplate = useCallback(
+    async (template: Template) => {
+      assertCanWriteToCloud({
+        firebaseConnected,
+        hasDb: Boolean(dbRef.current),
+        hasCurrentUser: Boolean(state.auth.currentUser),
+        operation: "template",
+        requireCurrentUser: true,
+      });
+
+      await syncTemplate(dbRef.current!, state.auth.currentUser!.id, template);
+      dispatch({ type: "SET_TEMPLATE", template });
       storage.setItem(
-        getTemplateStorageKey(state.auth.currentUser.id),
+        getTemplateStorageKey(state.auth.currentUser!.id),
         template,
       );
-    }
-  }
+    },
+    [dispatch, firebaseConnected, state.auth.currentUser],
+  );
 
   const addTrip = useCallback(
-    (trip: Trip) => {
-      if (!firebaseConnected) return;
-      dispatch({ type: "ADD_TRIP", trip });
-      if (dbRef.current) syncTrip(dbRef.current, trip);
+    async (trip: Trip) => {
+      try {
+        assertCanWriteToCloud({
+          firebaseConnected,
+          hasDb: Boolean(dbRef.current),
+          operation: "trip",
+        });
+        await syncTrip(dbRef.current!, trip);
+        dispatch({ type: "ADD_TRIP", trip });
+      } catch (error) {
+        showSyncError("旅程沒有建立成功，請確認網路後再試一次");
+        throw error;
+      }
     },
-    [dispatch, firebaseConnected],
+    [dispatch, firebaseConnected, showSyncError],
   );
 
   const updateTrip = useCallback(
-    (trip: Trip, fields?: Partial<Trip>) => {
-      if (!firebaseConnected) return;
-      const currentTrip =
-        state.trips.find((item) => item.id === trip.id) || trip;
-      const nextTrip = fields ? { ...currentTrip, ...fields } : trip;
-      const removedMemberIds = currentTrip.members.filter(
-        (memberId) => !nextTrip.members.includes(memberId),
-      );
-      if (fields) {
+    async (trip: Trip, fields?: Partial<Trip>) => {
+      try {
+        assertCanWriteToCloud({
+          firebaseConnected,
+          hasDb: Boolean(dbRef.current),
+          operation: "trip",
+        });
+        const currentTrip =
+          state.trips.find((item) => item.id === trip.id) || trip;
+        const nextTrip = fields ? { ...currentTrip, ...fields } : trip;
+        const removedMemberIds = currentTrip.members.filter(
+          (memberId) => !nextTrip.members.includes(memberId),
+        );
+        if (fields) await syncTripPartial(dbRef.current!, trip.id, fields);
+        else await syncTrip(dbRef.current!, nextTrip);
+        await Promise.all(
+          removedMemberIds.map((memberId) =>
+            deleteUserTripData(dbRef.current!, trip.id, memberId),
+          ),
+        );
         dispatch({ type: "UPDATE_TRIP", trip: nextTrip });
-        if (dbRef.current) {
-          syncTripPartial(dbRef.current, trip.id, fields);
-          removedMemberIds.forEach((memberId) => {
-            deleteUserTripData(dbRef.current!, trip.id, memberId);
-          });
-        }
-      } else {
-        dispatch({ type: "UPDATE_TRIP", trip: nextTrip });
-        if (dbRef.current) {
-          syncTrip(dbRef.current, nextTrip);
-          removedMemberIds.forEach((memberId) => {
-            deleteUserTripData(dbRef.current!, trip.id, memberId);
-          });
-        }
+      } catch (error) {
+        showSyncError("旅程沒有同步成功，請確認網路後再試一次");
+        console.error("Failed to sync trip:", error);
       }
     },
-    [dispatch, firebaseConnected, state.trips],
+    [dispatch, firebaseConnected, showSyncError, state.trips],
   );
 
   const deleteTrip = useCallback(
-    (tripId: string) => {
-      if (!firebaseConnected) return;
-      const userId = state.auth.currentUser?.id;
-      dispatch({ type: "DELETE_TRIP", tripId });
-      const { [tripId]: _shared, ...restShared } = sharedTripDataRef.current;
-      const { [tripId]: _user, ...restUser } = userTripDataRef.current;
-      const { [tripId]: _sharedAt, ...restSharedAt } =
-        sharedTripUpdatedAtRef.current;
-      const { [tripId]: _userAt, ...restUserAt } = userTripUpdatedAtRef.current;
-      void _shared;
-      void _user;
-      void _sharedAt;
-      void _userAt;
-      sharedTripDataRef.current = restShared;
-      userTripDataRef.current = restUser;
-      syncedSharedTripDataRef.current = restShared;
-      syncedUserTripDataRef.current = restUser;
-      sharedTripUpdatedAtRef.current = restSharedAt;
-      userTripUpdatedAtRef.current = restUserAt;
-      delete pendingSharedTripUpdatedAtRef.current[tripId];
-      delete pendingUserTripUpdatedAtRef.current[tripId];
-      versionBlockedTripIdsRef.current.delete(tripId);
-      storage.setItem("sharedTripData", restShared);
-      storage.setItem("sharedTripUpdatedAt", restSharedAt);
-      if (userId) {
-        storage.setItem(getUserTripDataStorageKey(userId), restUser);
-        storage.setItem(getUserTripUpdatedAtStorageKey(userId), restUserAt);
-      }
-      if (dbRef.current) {
-        deleteTripFromFirestore(dbRef.current, tripId);
-        deleteSharedTripData(dbRef.current, tripId);
-        if (userId) deleteUserTripData(dbRef.current, tripId, userId);
+    async (tripId: string) => {
+      try {
+        assertCanWriteToCloud({
+          firebaseConnected,
+          hasDb: Boolean(dbRef.current),
+          operation: "trip",
+        });
+        const userId = state.auth.currentUser?.id;
+        await Promise.all([
+          deleteTripFromFirestore(dbRef.current!, tripId),
+          deleteSharedTripData(dbRef.current!, tripId),
+          ...(userId
+            ? [deleteUserTripData(dbRef.current!, tripId, userId)]
+            : []),
+        ]);
+        dispatch({ type: "DELETE_TRIP", tripId });
+        const { [tripId]: _shared, ...restShared } = sharedTripDataRef.current;
+        const { [tripId]: _user, ...restUser } = userTripDataRef.current;
+        const { [tripId]: _sharedAt, ...restSharedAt } =
+          sharedTripUpdatedAtRef.current;
+        const { [tripId]: _userAt, ...restUserAt } =
+          userTripUpdatedAtRef.current;
+        void _shared;
+        void _user;
+        void _sharedAt;
+        void _userAt;
+        sharedTripDataRef.current = restShared;
+        userTripDataRef.current = restUser;
+        syncedSharedTripDataRef.current = restShared;
+        syncedUserTripDataRef.current = restUser;
+        sharedTripUpdatedAtRef.current = restSharedAt;
+        userTripUpdatedAtRef.current = restUserAt;
+        delete pendingSharedTripUpdatedAtRef.current[tripId];
+        delete pendingUserTripUpdatedAtRef.current[tripId];
+        versionBlockedTripIdsRef.current.delete(tripId);
+        storage.setItem("sharedTripData", restShared);
+        storage.setItem("sharedTripUpdatedAt", restSharedAt);
+        if (userId) {
+          storage.setItem(getUserTripDataStorageKey(userId), restUser);
+          storage.setItem(getUserTripUpdatedAtStorageKey(userId), restUserAt);
+        }
+      } catch (error) {
+        showSyncError("旅程沒有刪除成功，請確認網路後再試一次");
+        console.error("Failed to delete trip:", error);
       }
     },
-    [dispatch, firebaseConnected, state.auth.currentUser?.id],
+    [dispatch, firebaseConnected, showSyncError, state.auth.currentUser?.id],
   );
 
   function getTripData(tripId: string): TripData {
@@ -1368,10 +1457,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  function setSharedTripData(tripId: string, data: Partial<SharedTripData>) {
-    if (!firebaseConnected || !dbRef.current) return;
+  async function setSharedTripData(
+    tripId: string,
+    data: Partial<SharedTripData>,
+  ): Promise<void> {
+    try {
+      assertCanWriteToCloud({
+        firebaseConnected,
+        hasDb: Boolean(dbRef.current),
+        operation: "shared trip data",
+      });
+    } catch (error) {
+      showSyncError();
+      console.error("Failed to start shared trip data sync:", error);
+      return;
+    }
     if (versionBlockedTripIdsRef.current.has(tripId)) {
-      console.warn("Blocked shared trip write from outdated client:", tripId);
+      const error = new Error("Blocked shared trip write from outdated client.");
+      console.warn(error.message, tripId);
+      showSyncError("資料版本較新，請重新整理後再試一次");
       return;
     }
     const updatedAt = new Date().toISOString();
@@ -1380,21 +1484,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
       [tripId]: updatedAt,
     };
     dispatch({ type: "UPDATE_SHARED_TRIP_DATA", tripId, data });
-    syncSharedTripData(dbRef.current, tripId, data, updatedAt).catch(
-      (error) => {
-        if (pendingSharedTripUpdatedAtRef.current[tripId] !== updatedAt) return;
+    try {
+      await syncSharedTripData(dbRef.current!, tripId, data, updatedAt);
+    } catch (error) {
+      if (pendingSharedTripUpdatedAtRef.current[tripId] === updatedAt) {
         delete pendingSharedTripUpdatedAtRef.current[tripId];
         const fallback = syncedSharedTripDataRef.current[tripId] || emptyShared;
         rawDispatch({ type: "SET_SHARED_TRIP_DATA", tripId, data: fallback });
-        console.error("Failed to sync shared trip data:", error);
-      },
-    );
+      }
+      showSyncError();
+      console.error("Failed to sync shared trip data:", error);
+    }
   }
 
-  function setUserTripData(tripId: string, data: Partial<UserTripData>) {
-    if (!firebaseConnected || !dbRef.current || !state.auth.currentUser) return;
+  async function setUserTripData(
+    tripId: string,
+    data: Partial<UserTripData>,
+  ): Promise<void> {
+    try {
+      assertCanWriteToCloud({
+        firebaseConnected,
+        hasDb: Boolean(dbRef.current),
+        hasCurrentUser: Boolean(state.auth.currentUser),
+        operation: "user trip data",
+        requireCurrentUser: true,
+      });
+    } catch (error) {
+      showSyncError();
+      console.error("Failed to start user trip data sync:", error);
+      return;
+    }
     if (versionBlockedTripIdsRef.current.has(tripId)) {
-      console.warn("Blocked user trip write from outdated client:", tripId);
+      const error = new Error("Blocked user trip write from outdated client.");
+      console.warn(error.message, tripId);
+      showSyncError("資料版本較新，請重新整理後再試一次");
       return;
     }
     const updatedAt = new Date().toISOString();
@@ -1403,19 +1526,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       [tripId]: updatedAt,
     };
     dispatch({ type: "UPDATE_USER_TRIP_DATA", tripId, data });
-    syncUserTripData(
-      dbRef.current,
-      tripId,
-      state.auth.currentUser.id,
-      data,
-      updatedAt,
-    ).catch((error) => {
-      if (pendingUserTripUpdatedAtRef.current[tripId] !== updatedAt) return;
-      delete pendingUserTripUpdatedAtRef.current[tripId];
-      const fallback = syncedUserTripDataRef.current[tripId] || emptyUser;
-      rawDispatch({ type: "SET_USER_TRIP_DATA", tripId, data: fallback });
+    try {
+      await syncUserTripData(
+        dbRef.current!,
+        tripId,
+        state.auth.currentUser!.id,
+        data,
+        updatedAt,
+      );
+    } catch (error) {
+      if (pendingUserTripUpdatedAtRef.current[tripId] === updatedAt) {
+        delete pendingUserTripUpdatedAtRef.current[tripId];
+        const fallback = syncedUserTripDataRef.current[tripId] || emptyUser;
+        rawDispatch({ type: "SET_USER_TRIP_DATA", tripId, data: fallback });
+      }
+      showSyncError();
       console.error("Failed to sync user trip data:", error);
-    });
+    }
   }
 
   async function setTripMemberData(
@@ -1423,9 +1550,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     userId: string,
     data: Partial<UserTripData>,
   ): Promise<void> {
-    if (!firebaseConnected || !dbRef.current) return;
-    const updatedAt = new Date().toISOString();
-    await syncUserTripData(dbRef.current, tripId, userId, data, updatedAt);
+    try {
+      assertCanWriteToCloud({
+        firebaseConnected,
+        hasDb: Boolean(dbRef.current),
+        operation: "trip member data",
+      });
+      const updatedAt = new Date().toISOString();
+      await syncUserTripData(dbRef.current!, tripId, userId, data, updatedAt);
+    } catch (error) {
+      showSyncError();
+      throw error;
+    }
   }
 
   const getUserName = useCallback(

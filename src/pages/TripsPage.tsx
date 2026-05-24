@@ -32,6 +32,7 @@ export function TripsPage({ onSelectTrip }: Props) {
     setSharedTripData,
     setUserTripData,
     getUserColor,
+    showToast,
   } = useApp();
   const [step, setStep] = useState<Step>("list");
 
@@ -57,18 +58,29 @@ export function TripsPage({ onSelectTrip }: Props) {
     ? sortedTrips.filter((trip) => trip.members.includes(currentUserId))
     : [];
 
-  function handleTemplateConfirm(
+  async function handleTemplateConfirm(
     checklist: ChecklistItem[],
     notes: string,
     updatedTemplate: Template | null,
   ) {
+    if (updatedTemplate) {
+      try {
+        await setTemplate(updatedTemplate);
+      } catch {
+        showToast({
+          type: "error",
+          message: "模板沒有同步成功，請確認網路後再試一次",
+        });
+        return;
+      }
+    }
+
     setPendingChecklist(checklist);
     setPendingNotes(notes);
-    if (updatedTemplate) setTemplate(updatedTemplate);
     setStep("info");
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!form.name || !form.startDate || !state.auth.currentUser) return;
 
     const tripId = generateId();
@@ -93,20 +105,28 @@ export function TripsPage({ onSelectTrip }: Props) {
       isCompleted: false,
     };
 
-    addTrip(trip);
-    setSharedTripData(tripId, {
-      schedule: [],
-      scheduleNotes: [],
-      flights: [],
-      hotels: [],
-      transport: [],
-    });
-    setUserTripData(tripId, {
-      checklist: pendingChecklist,
-      shopping: [],
-      preparationNotes: pendingNotes,
-      setupComplete: true,
-    });
+    try {
+      await addTrip(trip);
+      await setSharedTripData(tripId, {
+        schedule: [],
+        scheduleNotes: [],
+        flights: [],
+        hotels: [],
+        transport: [],
+      });
+      await setUserTripData(tripId, {
+        checklist: pendingChecklist,
+        shopping: [],
+        preparationNotes: pendingNotes,
+        setupComplete: true,
+      });
+    } catch {
+      showToast({
+        type: "error",
+        message: "旅程沒有建立成功，請確認網路後再試一次",
+      });
+      return;
+    }
 
     // Reset
     setForm({

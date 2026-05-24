@@ -14,7 +14,7 @@ import { generateId } from "../utils/id";
 import type { TemplateCategory, TemplateItem } from "../types";
 
 export function SettingsPage() {
-  const { state, setTemplate } = useApp();
+  const { state, setTemplate, showToast } = useApp();
   const template = state.template;
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState(template.notes);
@@ -44,17 +44,37 @@ export function SettingsPage() {
     new: string;
   } | null>(null);
 
+  async function saveTemplate(
+    nextTemplate: typeof template,
+    onSuccess?: () => void,
+  ) {
+    try {
+      await setTemplate(nextTemplate);
+      onSuccess?.();
+    } catch {
+      showToast({
+        type: "error",
+        message: "模板沒有同步成功，請確認網路後再試一次",
+      });
+    }
+  }
+
   function saveNotes() {
-    setTemplate({ ...template, notes: notesText });
-    setEditingNotes(false);
+    void saveTemplate({ ...template, notes: notesText }, () => {
+      setEditingNotes(false);
+    });
   }
 
   function addCategory() {
     if (!newCatName.trim()) return;
     const cat: TemplateCategory = { name: newCatName.trim(), items: [] };
-    setTemplate({ ...template, categories: [...template.categories, cat] });
-    setNewCatName("");
-    setAddingCategory(false);
+    void saveTemplate(
+      { ...template, categories: [...template.categories, cat] },
+      () => {
+        setNewCatName("");
+        setAddingCategory(false);
+      },
+    );
   }
 
   function saveRenameCategory() {
@@ -71,12 +91,13 @@ export function SettingsPage() {
           }
         : c,
     );
-    setTemplate({ ...template, categories: updated });
-    setEditingCatName(editCatNewName.trim());
+    void saveTemplate({ ...template, categories: updated }, () => {
+      setEditingCatName(editCatNewName.trim());
+    });
   }
 
   function deleteCategory(name: string) {
-    setTemplate({
+    void saveTemplate({
       ...template,
       categories: template.categories.filter((c) => c.name !== name),
     });
@@ -107,8 +128,9 @@ export function SettingsPage() {
         ),
       };
     });
-    setTemplate({ ...template, categories: updated });
-    setRenamingSub(null);
+    void saveTemplate({ ...template, categories: updated }, () => {
+      setRenamingSub(null);
+    });
   }
 
   function deleteSubcategory(catName: string, subName: string) {
@@ -121,7 +143,7 @@ export function SettingsPage() {
         ),
       };
     });
-    setTemplate({ ...template, categories: updated });
+    void saveTemplate({ ...template, categories: updated });
   }
 
   // Add item with subcategory
@@ -148,9 +170,10 @@ export function SettingsPage() {
     const updated = template.categories.map((c) =>
       c.name === catName ? { ...c, items: [...c.items, item] } : c,
     );
-    setTemplate({ ...template, categories: updated });
-    setNewItemText("");
-    setAddingItemTo(null);
+    void saveTemplate({ ...template, categories: updated }, () => {
+      setNewItemText("");
+      setAddingItemTo(null);
+    });
   }
 
   function deleteItem(catName: string, itemId: string) {
@@ -159,7 +182,7 @@ export function SettingsPage() {
         ? { ...c, items: c.items.filter((i) => i.id !== itemId) }
         : c,
     );
-    setTemplate({ ...template, categories: updated });
+    void saveTemplate({ ...template, categories: updated });
   }
 
   // Open edit category
@@ -382,9 +405,13 @@ export function SettingsPage() {
                           ? { ...c, items: [...c.items, item] }
                           : c,
                       );
-                      setTemplate({ ...template, categories: updated });
-                      setAddSubName("");
-                      setAddingSubTo(false);
+                      void saveTemplate(
+                        { ...template, categories: updated },
+                        () => {
+                          setAddSubName("");
+                          setAddingSubTo(false);
+                        },
+                      );
                     }
                   }}
                 />
@@ -403,9 +430,13 @@ export function SettingsPage() {
                         ? { ...c, items: [...c.items, item] }
                         : c,
                     );
-                    setTemplate({ ...template, categories: updated });
-                    setAddSubName("");
-                    setAddingSubTo(false);
+                    void saveTemplate(
+                      { ...template, categories: updated },
+                      () => {
+                        setAddSubName("");
+                        setAddingSubTo(false);
+                      },
+                    );
                   }}
                 >
                   新增
