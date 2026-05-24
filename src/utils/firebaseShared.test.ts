@@ -6,6 +6,7 @@ import {
   normalizeSharedTripData,
   normalizeTips,
   normalizeUserTripData,
+  prepareTemplateForSync,
   stripUndefinedDeep,
   shouldApplyIncomingSnapshot,
 } from "./firebase";
@@ -243,6 +244,47 @@ describe("stripUndefinedDeep", () => {
               booking: {
                 platform: "Klook",
               },
+            },
+          ],
+        },
+      ],
+    });
+  });
+});
+
+describe("prepareTemplateForSync", () => {
+  it("removes undefined optional item fields before writing templates", () => {
+    expect(
+      prepareTemplateForSync({
+        id: "test-template",
+        notes: "",
+        shoppingItems: [],
+        categories: [
+          {
+            name: "必要",
+            items: [
+              {
+                id: "tp-neck-pillow",
+                text: "頸枕 & 靠枕",
+                category: "必要",
+                subcategory: undefined,
+              },
+            ],
+          },
+        ],
+      }),
+    ).toEqual({
+      id: "test-template",
+      notes: "",
+      shoppingItems: [],
+      categories: [
+        {
+          name: "必要",
+          items: [
+            {
+              id: "tp-neck-pillow",
+              text: "頸枕 & 靠枕",
+              category: "必要",
             },
           ],
         },

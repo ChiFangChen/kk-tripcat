@@ -191,6 +191,10 @@ export function stripUndefinedDeep<T>(value: T): T {
   return value;
 }
 
+export function prepareTemplateForSync(template: Template): Template {
+  return stripUndefinedDeep(template);
+}
+
 export function isFirebaseConfigured(): boolean {
   return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 }
@@ -449,7 +453,7 @@ export async function syncTemplate(
   userId: string,
   template: Template,
 ): Promise<void> {
-  await setDoc(doc(db, "tcTemplates", userId), template);
+  await setDoc(doc(db, "tcTemplates", userId), prepareTemplateForSync(template));
 }
 
 // --- Tips per user ---
