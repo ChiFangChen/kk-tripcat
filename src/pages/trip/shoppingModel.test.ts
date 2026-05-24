@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPoolItemFromTripShopping,
+  buildShoppingPriceBadges,
   detachTripShoppingItemFromPoolItem,
   getOwnPoolPromotionCandidates,
   getPoolPromotionCandidates,
@@ -26,6 +27,33 @@ const poolItem: Item = {
 };
 
 describe("shoppingTypes", () => {
+  it("builds price badges with suggested, lowest, and latest labels", () => {
+    expect(
+      buildShoppingPriceBadges({
+        estimatedAmount: "3000",
+        currency: "JPY",
+        purchases: [
+          {
+            id: "purchase-latest",
+            date: "2026-05-01",
+            amount: "2500",
+            currency: "JPY",
+          },
+          {
+            id: "purchase-lowest",
+            date: "2026-04-01",
+            amount: "2199",
+            currency: "JPY",
+          },
+        ],
+      }),
+    ).toEqual([
+      { label: "suggested", value: "3000 JPY" },
+      { label: "lowest", value: "2199 JPY" },
+      { label: "latest", value: "2500 JPY" },
+    ]);
+  });
+
   it("identifies linked trip shopping items by itemId", () => {
     expect(
       isLinkedTripShoppingItem({
@@ -51,11 +79,33 @@ describe("shoppingTypes", () => {
       createdAt: "2026-04-25T00:00:00.000Z",
     };
 
-    expect(getTripShoppingResolvedContent(tripItem, [poolItem])).toMatchObject({
+    expect(
+      getTripShoppingResolvedContent(tripItem, [
+        {
+          ...poolItem,
+          purchases: [
+            {
+              id: "purchase-latest",
+              date: "2026-05-01",
+              amount: "219",
+              currency: "JPY",
+            },
+            {
+              id: "purchase-old",
+              date: "2026-04-01",
+              amount: "250",
+              currency: "JPY",
+            },
+          ],
+        },
+      ]),
+    ).toMatchObject({
       id: "trip-1",
       name: "吹風機",
       brand: "Panasonic",
       spec: "EH-NA9M",
+      purchaseAmount: "219",
+      purchaseCurrency: "JPY",
       estimatedAmount: "3000",
       currency: "JPY",
       checked: true,
@@ -69,6 +119,8 @@ describe("shoppingTypes", () => {
       brand: "日清",
       spec: "海鮮杯麵",
       images: [],
+      purchaseAmount: "99",
+      purchaseCurrency: "TWD",
       estimatedAmount: "120",
       currency: "TWD",
       note: "宵夜",
@@ -82,6 +134,8 @@ describe("shoppingTypes", () => {
       name: "泡麵",
       brand: "日清",
       spec: "海鮮杯麵",
+      purchaseAmount: "99",
+      purchaseCurrency: "TWD",
       estimatedAmount: "120",
       currency: "TWD",
       note: "宵夜",
@@ -175,6 +229,8 @@ describe("shoppingTypes", () => {
       textSnapshot: "草莓巧克力",
       brand: "Meiji",
       spec: "12 入",
+      purchaseAmount: "199",
+      purchaseCurrency: "TWD",
       images: [
         {
           id: "img-1",
@@ -208,6 +264,9 @@ describe("shoppingTypes", () => {
           },
         ],
         now: "2026-04-25T01:00:00.000Z",
+        purchaseId: "purchase-pool-new",
+        tripId: "trip-1",
+        tripName: "東京",
       }),
     ).toEqual({
       id: "pool-new",
@@ -227,7 +286,16 @@ describe("shoppingTypes", () => {
       estimatedAmount: "250",
       currency: "TWD",
       notes: "伴手禮",
-      purchases: [],
+      purchases: [
+        {
+          id: "purchase-pool-new",
+          date: "2026-04-25",
+          amount: "199",
+          currency: "TWD",
+          tripId: "trip-1",
+          tripName: "東京",
+        },
+      ],
       createdAt: "2026-04-25T01:00:00.000Z",
       updatedAt: "2026-04-25T01:00:00.000Z",
     });
@@ -292,6 +360,14 @@ describe("shoppingTypes", () => {
           name: "最新吹風機",
           brand: "Dyson",
           spec: "HD08",
+          purchases: [
+            {
+              id: "purchase-latest",
+              date: "2026-05-01",
+              amount: "4300",
+              currency: "JPY",
+            },
+          ],
           images: copiedImages,
           estimatedAmount: "3500",
           notes: "最新備註",
@@ -302,6 +378,8 @@ describe("shoppingTypes", () => {
       textSnapshot: "最新吹風機",
       brand: "Dyson",
       spec: "HD08",
+      purchaseAmount: "4300",
+      purchaseCurrency: "JPY",
       images: copiedImages,
       estimatedAmount: "3500",
       currency: "JPY",

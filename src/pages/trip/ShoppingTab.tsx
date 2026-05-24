@@ -2,6 +2,8 @@ import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
+  faPen,
+  faReceipt,
   faStar,
   faTrash,
   faBoxesStacked,
@@ -23,6 +25,7 @@ import {
   createPendingImages,
   persistImagesForRecord,
 } from "../../utils/imageUpload";
+import type { Purchase } from "../../types";
 import type { ImageAsset, PendingImageFile } from "../../types/images";
 import {
   canShowShoppingModalRemoveAction,
@@ -33,6 +36,7 @@ import {
 } from "./shoppingModal";
 import {
   buildPoolItemFromTripShopping,
+  buildShoppingPriceBadges,
   getOwnPoolPromotionCandidates,
   getPoolPromotionCandidates,
   getTripShoppingResolvedContent,
@@ -72,6 +76,14 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(
     null,
   );
+  const [purchaseHistoryItemId, setPurchaseHistoryItemId] = useState<
+    string | null
+  >(null);
+  const [addingPurchaseTo, setAddingPurchaseTo] = useState<string | null>(null);
+  const [editingPurchase, setEditingPurchase] = useState<{
+    itemId: string;
+    purchase: Purchase;
+  } | null>(null);
   const modalTitleDoubleTap = useDoubleTap();
   const [reviewItems, setReviewItems] = useState<
     Array<{ userId: string; item: TripShoppingItem }>
@@ -228,6 +240,9 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         itemId: poolItemId,
         images: candidate.item.images,
         now,
+        purchaseId: generateId(),
+        tripId,
+        tripName: trip?.name,
       });
 
       await setItems([poolItem, ...state.items]);
@@ -283,6 +298,9 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         itemId: poolItemId,
         images: item.images,
         now,
+        purchaseId: generateId(),
+        tripId,
+        tripName: trip?.name,
       });
 
       await setItems([poolItem, ...state.items]);
@@ -313,6 +331,67 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   const confirmDeleteItem = confirmDeleteItemId
     ? items.find((item) => item.id === confirmDeleteItemId)
     : undefined;
+  const purchaseHistoryItem = purchaseHistoryItemId
+    ? state.items.find((item) => item.id === purchaseHistoryItemId)
+    : undefined;
+  const addingPurchaseItem = addingPurchaseTo
+    ? state.items.find((item) => item.id === addingPurchaseTo)
+    : undefined;
+
+  async function addPoolPurchase(itemId: string, purchase: Purchase) {
+    await setItems(
+      state.items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              purchases: [
+                {
+                  ...purchase,
+                  tripId: purchase.tripId ?? tripId,
+                  tripName: purchase.tripName ?? trip?.name,
+                },
+                ...item.purchases,
+              ],
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    );
+    setAddingPurchaseTo(null);
+  }
+
+  async function updatePoolPurchase(itemId: string, purchase: Purchase) {
+    await setItems(
+      state.items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              purchases: item.purchases.map((entry) =>
+                entry.id === purchase.id ? purchase : entry,
+              ),
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    );
+    setEditingPurchase(null);
+  }
+
+  async function deletePoolPurchase(itemId: string, purchaseId: string) {
+    await setItems(
+      state.items.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              purchases: item.purchases.filter(
+                (purchase) => purchase.id !== purchaseId,
+              ),
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+    );
+  }
 
   return (
     <div>
@@ -390,6 +469,20 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
           const canPromoteOwnItem = canShowStar && !linked;
           const promoting = promotingItemIds.has(item.source.id);
           const promoted = linked;
+          const linkedPoolItemForRow = item.source.itemId
+            ? state.items.find((poolItem) => poolItem.id === item.source.itemId)
+            : undefined;
+          const priceBadges = buildShoppingPriceBadges({
+            estimatedAmount: item.estimatedAmount,
+            currency: item.currency,
+            purchases:
+              linkedPoolItemForRow?.purchases ??
+              draftPurchaseSnapshot({
+                ...item.source,
+                purchaseAmount: item.purchaseAmount,
+                purchaseCurrency: item.purchaseCurrency,
+              }),
+          });
           const starLabel = promoting
             ? "加入魚池中"
             : promoted
@@ -428,14 +521,23 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                 )}
                 <span className="min-w-0 flex-1">
                   {renderShoppingItemTitle(item.name, item.brand, item.spec)}
-                  {(item.estimatedAmount || item.currency) && (
-                    <span className="block text-xs text-slate-400">
-                      {item.estimatedAmount || "-"}
-                      {item.currency ? ` ${item.currency}` : ""}
-                    </span>
-                  )}
+                  <PriceBadges badges={priceBadges} />
                 </span>
               </button>
+              {linked && item.source.itemId && (
+                <button
+                  type="button"
+                  className="star-btn"
+                  aria-label="查看購買紀錄"
+                  title="查看購買紀錄"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setPurchaseHistoryItemId(item.source.itemId!);
+                  }}
+                >
+                  <FontAwesomeIcon icon={faReceipt} />
+                </button>
+              )}
               {canShowStar && (
                 <button
                   type="button"
@@ -591,12 +693,13 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                   )}
                   <span className="min-w-0 flex-1">
                     {renderShoppingItemTitle(item.name, item.brand, item.spec)}
-                    {(item.estimatedAmount || item.currency) && (
-                      <span className="block text-sm text-slate-500">
-                        {item.estimatedAmount || "-"}
-                        {item.currency ? ` ${item.currency}` : ""}
-                      </span>
-                    )}
+                    <PriceBadges
+                      badges={buildShoppingPriceBadges({
+                        estimatedAmount: item.estimatedAmount,
+                        currency: item.currency,
+                        purchases: item.purchases,
+                      })}
+                    />
                   </span>
                 </button>
               ))
@@ -639,12 +742,15 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                       </button>
                     )}
                   </div>
-                  {(entry.item.estimatedAmount || entry.item.currency) && (
-                    <div className="text-sm text-slate-500 mb-2">
-                      {entry.item.estimatedAmount || "-"}
-                      {entry.item.currency ? ` ${entry.item.currency}` : ""}
-                    </div>
-                  )}
+                  <div className="mb-2">
+                    <PriceBadges
+                      badges={buildShoppingPriceBadges({
+                        estimatedAmount: entry.item.estimatedAmount,
+                        currency: entry.item.currency,
+                        purchases: draftPurchaseSnapshot(entry.item),
+                      })}
+                    />
+                  </div>
                   {(entry.item.brand || entry.item.spec) && (
                     <div className="text-sm text-slate-500 mb-2">
                       {[entry.item.brand, entry.item.spec]
@@ -679,6 +785,221 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
           }}
         />
       )}
+      {purchaseHistoryItem && (
+        <Modal
+          title="購買紀錄"
+          onClose={() => setPurchaseHistoryItemId(null)}
+        >
+          <PurchaseHistoryView
+            item={purchaseHistoryItem}
+            viewOnly={viewOnly}
+            onAdd={() => setAddingPurchaseTo(purchaseHistoryItem.id)}
+            onEdit={(purchase) =>
+              setEditingPurchase({ itemId: purchaseHistoryItem.id, purchase })
+            }
+            onDelete={(purchaseId) =>
+              void deletePoolPurchase(purchaseHistoryItem.id, purchaseId)
+            }
+          />
+        </Modal>
+      )}
+      {addingPurchaseItem && (
+        <Modal title="新增購買紀錄" onClose={() => setAddingPurchaseTo(null)}>
+          <PurchaseForm
+            onSave={(purchase) =>
+              addPoolPurchase(addingPurchaseItem.id, purchase)
+            }
+          />
+        </Modal>
+      )}
+      {editingPurchase && (
+        <Modal title="編輯購買紀錄" onClose={() => setEditingPurchase(null)}>
+          <PurchaseForm
+            purchase={editingPurchase.purchase}
+            onSave={(purchase) =>
+              updatePoolPurchase(editingPurchase.itemId, purchase)
+            }
+          />
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function formatPurchaseAmount({
+  amount,
+  currency,
+}: {
+  amount?: string;
+  currency?: string;
+}): string {
+  return [amount, currency].filter(Boolean).join(" ");
+}
+
+function draftPurchaseSnapshot(item: TripShoppingItem): Purchase[] {
+  return item.purchaseAmount
+    ? [
+        {
+          id: `${item.id}-purchase`,
+          date: item.createdAt.split("T")[0],
+          amount: item.purchaseAmount,
+          currency: item.purchaseCurrency,
+        },
+      ]
+    : [];
+}
+
+function PriceBadges({
+  badges,
+}: {
+  badges: ReturnType<typeof buildShoppingPriceBadges>;
+}) {
+  if (badges.length === 0) return null;
+  return (
+    <span className="price-badge-row">
+      {badges.map((badge) => (
+        <span key={badge.label}>
+          <span className="price-badge">{badge.label}</span>
+          <span>{badge.value}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function PurchaseHistoryView({
+  item,
+  viewOnly,
+  onAdd,
+  onEdit,
+  onDelete,
+}: {
+  item: Item;
+  viewOnly?: boolean;
+  onAdd: () => void;
+  onEdit: (purchase: Purchase) => void;
+  onDelete: (purchaseId: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      {!viewOnly && (
+        <button className="btn btn-primary w-full" onClick={onAdd}>
+          <FontAwesomeIcon icon={faPlus} className="mr-1" />
+          新增購買紀錄
+        </button>
+      )}
+      {item.purchases.length === 0 ? (
+        <div className="empty-state">
+          <p>目前沒有購買紀錄</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {item.purchases.map((purchase) => (
+            <div key={purchase.id} className="card flex items-center gap-3">
+              <div className="min-w-0 flex-1 text-sm text-slate-500">
+                <div className="font-medium text-slate-700 dark:text-slate-200">
+                  {formatPurchaseAmount({
+                    amount: purchase.amount,
+                    currency: purchase.currency,
+                  }) || "-"}
+                </div>
+                <div>{formatDate(purchase.date)}</div>
+                {purchase.tripName && <div>{purchase.tripName}</div>}
+                {purchase.note && (
+                  <div className="whitespace-pre-wrap">{purchase.note}</div>
+                )}
+              </div>
+              {!viewOnly && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="pool-item-icon-button"
+                    aria-label="編輯購買紀錄"
+                    title="編輯購買紀錄"
+                    onClick={() => onEdit(purchase)}
+                  >
+                    <FontAwesomeIcon icon={faPen} />
+                  </button>
+                  <button
+                    type="button"
+                    className="pool-item-icon-button"
+                    aria-label="刪除購買紀錄"
+                    title="刪除購買紀錄"
+                    onClick={() => onDelete(purchase.id)}
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PurchaseForm({
+  purchase,
+  onSave,
+}: {
+  purchase?: Purchase;
+  onSave: (purchase: Purchase) => void | Promise<void>;
+}) {
+  const [form, setForm] = useState<Omit<Purchase, "id">>(() => ({
+    date: purchase?.date ?? new Date().toISOString().split("T")[0],
+    amount: purchase?.amount ?? "",
+    currency: purchase?.currency ?? "",
+    tripId: purchase?.tripId,
+    tripName: purchase?.tripName,
+    note: purchase?.note ?? "",
+  }));
+
+  return (
+    <div>
+      <div className="form-group">
+        <label className="form-label">金額</label>
+        <input
+          className="form-input"
+          value={form.amount}
+          onChange={(event) => setForm({ ...form, amount: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">幣別</label>
+        <input
+          className="form-input"
+          value={form.currency || ""}
+          onChange={(event) =>
+            setForm({ ...form, currency: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">日期</label>
+        <input
+          className="form-input"
+          type="date"
+          value={form.date}
+          onChange={(event) => setForm({ ...form, date: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">備註</label>
+        <input
+          className="form-input"
+          value={form.note || ""}
+          onChange={(event) => setForm({ ...form, note: event.target.value })}
+        />
+      </div>
+      <button
+        className="btn btn-primary w-full"
+        onClick={() => {
+          void onSave({ ...form, id: purchase?.id ?? generateId() });
+        }}
+      >
+        儲存
+      </button>
     </div>
   );
 }
@@ -748,6 +1069,26 @@ function DraftShoppingForm({
           className="form-input"
           value={form.spec || ""}
           onChange={(event) => setForm({ ...form, spec: event.target.value })}
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">購買價格</label>
+        <input
+          className="form-input"
+          value={form.purchaseAmount || ""}
+          onChange={(event) =>
+            setForm({ ...form, purchaseAmount: event.target.value })
+          }
+        />
+      </div>
+      <div className="form-group">
+        <label className="form-label">購買幣別</label>
+        <input
+          className="form-input"
+          value={form.purchaseCurrency || ""}
+          onChange={(event) =>
+            setForm({ ...form, purchaseCurrency: event.target.value })
+          }
         />
       </div>
       <div className="form-group">

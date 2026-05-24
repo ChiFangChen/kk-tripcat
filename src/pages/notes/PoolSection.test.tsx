@@ -156,8 +156,9 @@ describe("PoolSection", () => {
       root.render(<PoolSection />);
     });
 
-    expect(document.body.textContent).toContain("最低：$3,100 JPY");
-    expect(document.body.textContent).toContain("最後：$3,100 JPY");
+    expect(document.body.textContent).toContain("suggested3500 JPY");
+    expect(document.body.textContent).toContain("lowest$3,100 JPY");
+    expect(document.body.textContent).toContain("latest$3,100 JPY");
     expect(document.body.textContent).not.toContain("特價購入");
 
     const toggleButton = document.querySelector(

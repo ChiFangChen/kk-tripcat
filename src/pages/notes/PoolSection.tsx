@@ -25,6 +25,7 @@ import { shoppingThumbnailClassName } from "../../utils/imageDisplayClasses";
 import type { Purchase } from "../../types";
 import type { ImageAsset, PendingImageFile } from "../../types/images";
 import {
+  buildShoppingPriceBadges,
   detachTripShoppingItemFromPoolItem,
   type Item,
   type TripShoppingItem,
@@ -268,7 +269,11 @@ export function PoolSection() {
       ) : (
         <div className="pool-item-list">
           {poolItems.map((item) => {
-            const purchaseSummary = getPurchaseSummary(item.purchases);
+            const priceBadges = buildShoppingPriceBadges({
+              estimatedAmount: item.estimatedAmount,
+              currency: item.currency,
+              purchases: item.purchases,
+            });
             const purchaseHistoryExpanded = expandedPurchaseIds.has(item.id);
 
             return (
@@ -308,18 +313,12 @@ export function PoolSection() {
                         </h3>
                       </div>
                       <div className="pool-item-meta">
-                        {(item.estimatedAmount || item.currency) && (
-                          <span>
-                            建議：{item.estimatedAmount || "-"}
-                            {item.currency ? ` ${item.currency}` : ""}
+                        {priceBadges.map((badge) => (
+                          <span key={badge.label}>
+                            <span className="price-badge">{badge.label}</span>
+                            <span>{badge.value}</span>
                           </span>
-                        )}
-                        {purchaseSummary.lowest && (
-                          <span>最低：{purchaseSummary.lowest}</span>
-                        )}
-                        {purchaseSummary.latest && (
-                          <span>最後：{purchaseSummary.latest}</span>
-                        )}
+                        ))}
                       </div>
                       {item.notes && (
                         <p className="pool-item-note">{item.notes}</p>
@@ -539,55 +538,6 @@ export function PoolSection() {
       )}
     </div>
   );
-}
-
-function getPurchaseSummary(purchases: Purchase[]): {
-  lowest?: string;
-  latest?: string;
-} {
-  const purchasesWithAmount = purchases
-    .map((purchase) => ({
-      purchase,
-      numericAmount: parsePurchaseAmount(purchase.amount),
-    }))
-    .filter(
-      (entry): entry is { purchase: Purchase; numericAmount: number } =>
-        entry.numericAmount !== null,
-    );
-
-  const lowestPurchase = purchasesWithAmount.reduce<Purchase | null>(
-    (currentLowest, entry) => {
-      if (!currentLowest) return entry.purchase;
-      const currentAmount = parsePurchaseAmount(currentLowest.amount);
-      if (currentAmount === null) return entry.purchase;
-      return entry.numericAmount < currentAmount
-        ? entry.purchase
-        : currentLowest;
-    },
-    null,
-  );
-
-  const latestPurchase = purchasesWithAmount.reduce<Purchase | null>(
-    (currentLatest, entry) => {
-      if (!currentLatest) return entry.purchase;
-      return entry.purchase.date > currentLatest.date
-        ? entry.purchase
-        : currentLatest;
-    },
-    null,
-  );
-
-  return {
-    lowest: lowestPurchase ? formatPurchaseAmount(lowestPurchase) : undefined,
-    latest: latestPurchase ? formatPurchaseAmount(latestPurchase) : undefined,
-  };
-}
-
-function parsePurchaseAmount(amount: string): number | null {
-  const normalizedAmount = amount.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
-  if (!normalizedAmount) return null;
-  const numericAmount = Number(normalizedAmount[0]);
-  return Number.isFinite(numericAmount) ? numericAmount : null;
 }
 
 function formatPurchaseAmount(purchase: Purchase): string {

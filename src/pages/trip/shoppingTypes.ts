@@ -22,6 +22,8 @@ export interface TripShoppingItem {
   brand?: string;
   spec?: string;
   images: ImageAsset[];
+  purchaseAmount?: string;
+  purchaseCurrency?: string;
   estimatedAmount?: string;
   currency?: string;
   note?: string;
@@ -39,6 +41,8 @@ export interface ResolvedTripShoppingItem {
   brand?: string;
   spec?: string;
   images: ImageAsset[];
+  purchaseAmount?: string;
+  purchaseCurrency?: string;
   estimatedAmount?: string;
   currency?: string;
   note?: string;
@@ -50,6 +54,85 @@ export function isLinkedTripShoppingItem(item: TripShoppingItem): boolean {
   return Boolean(item.itemId);
 }
 
+function getLatestPurchase(item: Item): Purchase | undefined {
+  return item.purchases[0];
+}
+
+function parsePurchaseAmount(amount?: string): number | null {
+  if (!amount) return null;
+  const normalizedAmount = amount.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+  if (!normalizedAmount) return null;
+  const numeric = Number(normalizedAmount[0]);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function formatAmount(amount?: string, currency?: string): string {
+  return [amount, currency].filter(Boolean).join(" ");
+}
+
+export function buildShoppingPriceBadges({
+  estimatedAmount,
+  currency,
+  purchases,
+}: {
+  estimatedAmount?: string;
+  currency?: string;
+  purchases: Purchase[];
+}): Array<{ label: "suggested" | "lowest" | "latest"; value: string }> {
+  const badges: Array<{
+    label: "suggested" | "lowest" | "latest";
+    value: string;
+  }> = [];
+  if (estimatedAmount || currency) {
+    badges.push({
+      label: "suggested",
+      value: formatAmount(estimatedAmount || "-", currency),
+    });
+  }
+
+  const purchasesWithAmount = purchases
+    .map((purchase) => ({
+      purchase,
+      numericAmount: parsePurchaseAmount(purchase.amount),
+    }))
+    .filter(
+      (entry): entry is { purchase: Purchase; numericAmount: number } =>
+        entry.numericAmount !== null,
+    );
+
+  const lowestPurchase = purchasesWithAmount.reduce<Purchase | null>(
+    (currentLowest, entry) => {
+      if (!currentLowest) return entry.purchase;
+      const currentAmount = parsePurchaseAmount(currentLowest.amount);
+      if (currentAmount === null) return entry.purchase;
+      return entry.numericAmount < currentAmount ? entry.purchase : currentLowest;
+    },
+    null,
+  );
+  const latestPurchase = purchasesWithAmount.reduce<Purchase | null>(
+    (currentLatest, entry) => {
+      if (!currentLatest) return entry.purchase;
+      return entry.purchase.date > currentLatest.date ? entry.purchase : currentLatest;
+    },
+    null,
+  );
+
+  if (lowestPurchase) {
+    badges.push({
+      label: "lowest",
+      value: formatAmount(lowestPurchase.amount, lowestPurchase.currency),
+    });
+  }
+  if (latestPurchase) {
+    badges.push({
+      label: "latest",
+      value: formatAmount(latestPurchase.amount, latestPurchase.currency),
+    });
+  }
+
+  return badges;
+}
+
 export function getTripShoppingResolvedContent(
   item: TripShoppingItem,
   poolItems: Item[],
@@ -59,6 +142,7 @@ export function getTripShoppingResolvedContent(
     : undefined;
 
   if (linkedItem) {
+    const latestPurchase = getLatestPurchase(linkedItem);
     return {
       id: item.id,
       source: item,
@@ -66,6 +150,8 @@ export function getTripShoppingResolvedContent(
       brand: linkedItem.brand,
       spec: linkedItem.spec,
       images: linkedItem.images,
+      purchaseAmount: latestPurchase?.amount,
+      purchaseCurrency: latestPurchase?.currency,
       estimatedAmount: linkedItem.estimatedAmount,
       currency: linkedItem.currency,
       note: linkedItem.notes,
@@ -81,6 +167,8 @@ export function getTripShoppingResolvedContent(
     brand: item.brand,
     spec: item.spec,
     images: item.images,
+    purchaseAmount: item.purchaseAmount,
+    purchaseCurrency: item.purchaseCurrency,
     estimatedAmount: item.estimatedAmount,
     currency: item.currency,
     note: item.note,
@@ -113,11 +201,17 @@ export function buildPoolItemFromTripShopping({
   itemId,
   images,
   now,
+  purchaseId,
+  tripId,
+  tripName,
 }: {
   source: TripShoppingItem;
   itemId: string;
   images: ImageAsset[];
   now: string;
+  purchaseId?: string;
+  tripId?: string;
+  tripName?: string;
 }): Item {
   const item: Item = {
     id: itemId,
@@ -128,6 +222,18 @@ export function buildPoolItemFromTripShopping({
     updatedAt: now,
   };
 
+  if (source.purchaseAmount?.trim()) {
+    item.purchases = [
+      {
+        id: purchaseId ?? itemId,
+        date: now.split("T")[0],
+        amount: source.purchaseAmount.trim(),
+        currency: source.purchaseCurrency,
+        tripId,
+        tripName,
+      },
+    ];
+  }
   if (source.estimatedAmount !== undefined) {
     item.estimatedAmount = source.estimatedAmount;
   }
@@ -170,6 +276,8 @@ export function detachTripShoppingItemFromPoolItem({
     brand: poolItem.brand,
     spec: poolItem.spec,
     images: poolItem.images,
+    purchaseAmount: getLatestPurchase(poolItem)?.amount,
+    purchaseCurrency: getLatestPurchase(poolItem)?.currency,
     estimatedAmount: poolItem.estimatedAmount,
     currency: poolItem.currency,
     note: poolItem.notes,

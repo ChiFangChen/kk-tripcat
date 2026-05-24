@@ -441,6 +441,32 @@ body {
   color: #b8906a;
 }
 
+.price-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.price-badge-row > span {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.price-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+}
+
 .theme-dark .tag-country {
   background: rgba(99, 102, 241, 0.15);
   color: #9b9dd4;
@@ -1342,11 +1368,17 @@ textarea.form-input {
 .pool-item-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 10px;
+  gap: 2px 4px;
   margin-top: 2px;
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.45;
+}
+
+.pool-item-meta > span {
+  display: flex;
+  gap: 2px;
+  align-items: center;
 }
 
 .pool-item-note {
