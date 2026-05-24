@@ -155,11 +155,23 @@ describe("shouldSyncUserCollectionToRemote", () => {
 });
 
 describe("assertCanWriteToCloud", () => {
-  it("throws a consistent error when Firebase is unavailable", () => {
+  it("does not block writes when the browser connection flag is stale", () => {
     expect(() =>
       assertCanWriteToCloud({
         firebaseConnected: false,
         hasDb: true,
+        hasCurrentUser: true,
+        operation: "template",
+        requireCurrentUser: true,
+      }),
+    ).not.toThrow();
+  });
+
+  it("throws a consistent error when Firebase is unavailable", () => {
+    expect(() =>
+      assertCanWriteToCloud({
+        firebaseConnected: false,
+        hasDb: false,
         operation: "template",
       }),
     ).toThrow("Cannot sync template while Firebase is unavailable.");

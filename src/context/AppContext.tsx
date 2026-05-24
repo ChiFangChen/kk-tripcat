@@ -197,7 +197,7 @@ export function shouldSyncUserCollectionToRemote({
 }
 
 export function assertCanWriteToCloud({
-  firebaseConnected,
+  firebaseConnected: _firebaseConnected,
   hasDb,
   hasCurrentUser,
   operation,
@@ -209,7 +209,8 @@ export function assertCanWriteToCloud({
   operation: string;
   requireCurrentUser?: boolean;
 }) {
-  if (!firebaseConnected || !hasDb || (requireCurrentUser && !hasCurrentUser)) {
+  void _firebaseConnected;
+  if (!hasDb || (requireCurrentUser && !hasCurrentUser)) {
     throw new Error(`Cannot sync ${operation} while Firebase is unavailable.`);
   }
 }
@@ -1311,13 +1312,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       await syncTemplate(dbRef.current!, state.auth.currentUser!.id, template);
-      dispatch({ type: "SET_TEMPLATE", template });
+      rawDispatch({ type: "SET_TEMPLATE", template });
       storage.setItem(
         getTemplateStorageKey(state.auth.currentUser!.id),
         template,
       );
     },
-    [dispatch, firebaseConnected, state.auth.currentUser],
+    [firebaseConnected, state.auth.currentUser],
   );
 
   const addTrip = useCallback(
