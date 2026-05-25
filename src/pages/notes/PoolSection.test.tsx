@@ -68,6 +68,7 @@ vi.mock("../../context/AppContext", () => ({
         {
           id: "pool-1",
           name: "最新吹風機",
+          tags: ["日本", "電器"],
           images: [
             {
               id: "pool-img-1",
@@ -145,6 +146,8 @@ describe("PoolSection", () => {
     });
 
     expect(document.body.textContent).toContain("最新吹風機");
+    expect(document.body.textContent).toContain("日本");
+    expect(document.body.textContent).toContain("電器");
   });
 
   it("shows compact purchase price summaries and expands purchase history on demand", async () => {

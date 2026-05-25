@@ -6,6 +6,7 @@ export interface Item {
   name: string;
   brand?: string;
   spec?: string;
+  tags?: string[];
   images: ImageAsset[];
   estimatedAmount?: string;
   currency?: string;
@@ -48,6 +49,37 @@ export interface ResolvedTripShoppingItem {
   note?: string;
   checked: boolean;
   isLinked: boolean;
+}
+
+export function normalizePoolItemTags(tags?: string[]): string[] {
+  const normalizedTags: string[] = [];
+  const seen = new Set<string>();
+
+  for (const tag of tags ?? []) {
+    const normalizedTag = tag.trim();
+    if (!normalizedTag || seen.has(normalizedTag)) continue;
+    seen.add(normalizedTag);
+    normalizedTags.push(normalizedTag);
+  }
+
+  return normalizedTags;
+}
+
+export function getPoolItemTags(items: Item[]): string[] {
+  return normalizePoolItemTags(items.flatMap((item) => item.tags ?? []));
+}
+
+export function filterPoolItemsByTags(
+  items: Item[],
+  selectedTags: string[],
+): Item[] {
+  const normalizedSelectedTags = normalizePoolItemTags(selectedTags);
+  if (normalizedSelectedTags.length === 0) return items;
+
+  const selectedTagSet = new Set(normalizedSelectedTags);
+  return items.filter((item) =>
+    normalizePoolItemTags(item.tags).some((tag) => selectedTagSet.has(tag)),
+  );
 }
 
 export function isLinkedTripShoppingItem(item: TripShoppingItem): boolean {
@@ -204,6 +236,7 @@ export function buildPoolItemFromTripShopping({
   purchaseId,
   tripId,
   tripName,
+  tags,
 }: {
   source: TripShoppingItem;
   itemId: string;
@@ -212,6 +245,7 @@ export function buildPoolItemFromTripShopping({
   purchaseId?: string;
   tripId?: string;
   tripName?: string;
+  tags?: string[];
 }): Item {
   const item: Item = {
     id: itemId,
@@ -242,6 +276,10 @@ export function buildPoolItemFromTripShopping({
   }
   if (source.spec !== undefined) {
     item.spec = source.spec;
+  }
+  const normalizedTags = normalizePoolItemTags(tags);
+  if (normalizedTags.length > 0) {
+    item.tags = normalizedTags;
   }
   if (source.currency !== undefined) {
     item.currency = source.currency;

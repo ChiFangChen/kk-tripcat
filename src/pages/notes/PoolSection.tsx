@@ -27,9 +27,11 @@ import type { ImageAsset, PendingImageFile } from "../../types/images";
 import {
   buildShoppingPriceBadges,
   detachTripShoppingItemFromPoolItem,
+  getPoolItemTags,
   type Item,
   type TripShoppingItem,
 } from "../trip/shoppingTypes";
+import { PoolItemTagsField } from "../trip/PoolItemTagsField";
 
 export function PoolSection() {
   const {
@@ -320,6 +322,15 @@ export function PoolSection() {
                           </span>
                         ))}
                       </div>
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="pool-tag-row mt-1">
+                          {item.tags.map((tag) => (
+                            <span key={tag} className="pool-tag-chip">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {item.notes && (
                         <p className="pool-item-note">{item.notes}</p>
                       )}
@@ -476,6 +487,7 @@ export function PoolSection() {
         >
           <ItemForm
             item={editing}
+            tagSuggestions={getPoolItemTags(state.items)}
             onSave={async (item) => {
               if (!firebaseConnected) {
                 warnReadOnly();
@@ -546,9 +558,11 @@ function formatPurchaseAmount(purchase: Purchase): string {
 
 function ItemForm({
   item,
+  tagSuggestions,
   onSave,
 }: {
   item: Item;
+  tagSuggestions?: string[];
   onSave: (item: Item) => void | Promise<void>;
 }) {
   const { state } = useApp();
@@ -605,6 +619,11 @@ function ItemForm({
           onChange={(event) => setForm({ ...form, spec: event.target.value })}
         />
       </div>
+      <PoolItemTagsField
+        tags={form.tags}
+        suggestions={tagSuggestions}
+        onChange={(tags) => setForm({ ...form, tags })}
+      />
       <div className="form-group">
         <label className="form-label">建議售價</label>
         <input

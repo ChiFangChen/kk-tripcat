@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
       {
         id: "trip-1",
         name: "Tokyo",
+        country: "日本",
         creatorId: "admin-1",
         members: ["admin-1"],
       },
@@ -38,6 +39,7 @@ const mocks = vi.hoisted(() => ({
     items: [] as Array<{
       id: string;
       name: string;
+      tags?: string[];
       images: Array<{
         id: string;
         url: string;
@@ -217,6 +219,7 @@ describe("ShoppingTab", () => {
       {
         id: "pool-1",
         name: "已加入的魚池項目",
+        tags: ["日本"],
         images: [],
         purchases: [],
         createdAt: "2026-04-25T00:00:00.000Z",
@@ -225,6 +228,7 @@ describe("ShoppingTab", () => {
       {
         id: "pool-2",
         name: "尚未加入的魚池項目",
+        tags: ["日本"],
         images: [
           {
             id: "pool-img-2",
@@ -274,6 +278,60 @@ describe("ShoppingTab", () => {
         'img[src="https://files.local/pool-2.jpg"]',
       ),
     ).not.toBeNull();
+  });
+
+  it("defaults the add-from-pool filter to the trip country and matches any selected tag", async () => {
+    mocks.state.items = [
+      {
+        id: "pool-jp",
+        name: "日本限定眼罩",
+        tags: ["日本", "藥妝"],
+        images: [],
+        purchases: [],
+        createdAt: "2026-04-25T00:00:00.000Z",
+        updatedAt: "2026-04-25T00:00:00.000Z",
+      },
+      {
+        id: "pool-kr",
+        name: "韓國保養品",
+        tags: ["韓國"],
+        images: [],
+        purchases: [],
+        createdAt: "2026-04-25T00:00:00.000Z",
+        updatedAt: "2026-04-25T00:00:00.000Z",
+      },
+    ];
+    mocks.tripShopping = [];
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    await act(async () => {
+      Array.from(document.querySelectorAll("button"))
+        .find((button) => button.textContent?.includes("從魚池加入"))
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    const modalBody = document.querySelector(".fullscreen-modal-body");
+    expect(modalBody?.textContent).toContain("日本限定眼罩");
+    expect(modalBody?.textContent).not.toContain("韓國保養品");
+
+    const koreaTagButton = Array.from(
+      modalBody?.querySelectorAll("button") ?? [],
+    ).find((button) => button.textContent === "韓國");
+    expect(koreaTagButton).not.toBeNull();
+
+    await act(async () => {
+      koreaTagButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(modalBody?.textContent).toContain("日本限定眼罩");
+    expect(modalBody?.textContent).toContain("韓國保養品");
   });
 
   it("edits linked items through the pool item and deletes only the trip item", async () => {

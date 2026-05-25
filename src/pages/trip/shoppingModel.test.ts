@@ -3,7 +3,9 @@ import {
   buildPoolItemFromTripShopping,
   buildShoppingPriceBadges,
   detachTripShoppingItemFromPoolItem,
+  filterPoolItemsByTags,
   getOwnPoolPromotionCandidates,
+  getPoolItemTags,
   getPoolPromotionCandidates,
   getTripShoppingResolvedContent,
   isLinkedTripShoppingItem,
@@ -51,6 +53,34 @@ describe("shoppingTypes", () => {
       { label: "suggested", value: "3000 JPY" },
       { label: "lowest", value: "2199 JPY" },
       { label: "latest", value: "2500 JPY" },
+    ]);
+  });
+
+  it("collects unique pool item tags", () => {
+    expect(
+      getPoolItemTags([
+        { ...poolItem, tags: ["日本", "藥妝", "日本"] },
+        { ...poolItem, id: "pool-2", tags: [" 韓國 ", ""] },
+        { ...poolItem, id: "pool-3" },
+      ]),
+    ).toEqual(["日本", "藥妝", "韓國"]);
+  });
+
+  it("filters pool items by matching any selected tag", () => {
+    const items: Item[] = [
+      { ...poolItem, id: "pool-jp", tags: ["日本", "藥妝"] },
+      { ...poolItem, id: "pool-kr", tags: ["韓國"] },
+      { ...poolItem, id: "pool-empty" },
+    ];
+
+    expect(filterPoolItemsByTags(items, ["韓國", "美國"]).map((item) => item.id))
+      .toEqual(["pool-kr"]);
+    expect(filterPoolItemsByTags(items, ["日本", "韓國"]).map((item) => item.id))
+      .toEqual(["pool-jp", "pool-kr"]);
+    expect(filterPoolItemsByTags(items, []).map((item) => item.id)).toEqual([
+      "pool-jp",
+      "pool-kr",
+      "pool-empty",
     ]);
   });
 
@@ -267,12 +297,14 @@ describe("shoppingTypes", () => {
         purchaseId: "purchase-pool-new",
         tripId: "trip-1",
         tripName: "東京",
+        tags: ["日本", "伴手禮", "日本"],
       }),
     ).toEqual({
       id: "pool-new",
       name: "草莓巧克力",
       brand: "Meiji",
       spec: "12 入",
+      tags: ["日本", "伴手禮"],
       images: [
         {
           id: "img-new",

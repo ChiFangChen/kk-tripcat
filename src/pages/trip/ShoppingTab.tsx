@@ -34,14 +34,18 @@ import {
   getShoppingModalModeAfterTitleDoubleClick,
   type ShoppingModalMode,
 } from "./shoppingModal";
+import { PoolItemTagsField } from "./PoolItemTagsField";
 import {
   buildPoolItemFromTripShopping,
   buildShoppingPriceBadges,
+  filterPoolItemsByTags,
   getOwnPoolPromotionCandidates,
+  getPoolItemTags,
   getPoolPromotionCandidates,
   getTripShoppingResolvedContent,
   isLinkedTripShoppingItem,
   linkTripShoppingItemToPoolItem,
+  normalizePoolItemTags,
   type Item,
   type TripShoppingItem,
 } from "./shoppingTypes";
@@ -72,6 +76,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     useState<ShoppingModalMode>("view");
   const [showAddDraftModal, setShowAddDraftModal] = useState(false);
   const [showPoolModal, setShowPoolModal] = useState(false);
+  const [selectedPoolTags, setSelectedPoolTags] = useState<string[]>([]);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(
     null,
@@ -106,6 +111,14 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
   );
   const availablePoolItems = state.items.filter(
     (item) => !linkedPoolItemIds.has(item.id),
+  );
+  const poolTagOptions = normalizePoolItemTags([
+    ...selectedPoolTags,
+    ...getPoolItemTags(state.items),
+  ]);
+  const filteredAvailablePoolItems = filterPoolItemsByTags(
+    availablePoolItems,
+    selectedPoolTags,
   );
   const ownPromotionCandidateIds = new Set(
     state.auth.currentUser
@@ -214,6 +227,20 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
     setShowPoolModal(false);
   }
 
+  function openPoolModal() {
+    setSelectedPoolTags(normalizePoolItemTags([trip?.country ?? ""]));
+    setShowPoolModal(true);
+  }
+
+  function toggleSelectedPoolTag(tag: string) {
+    setSelectedPoolTags((current) => {
+      if (current.includes(tag)) {
+        return current.filter((entry) => entry !== tag);
+      }
+      return normalizePoolItemTags([...current, tag]);
+    });
+  }
+
   async function openReviewModal() {
     if (!trip || !state.auth.currentUser) return;
     const memberData = await loadTripMemberData(tripId);
@@ -243,6 +270,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         purchaseId: generateId(),
         tripId,
         tripName: trip?.name,
+        tags: trip?.country ? [trip.country] : [],
       });
 
       await setItems([poolItem, ...state.items]);
@@ -301,6 +329,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         purchaseId: generateId(),
         tripId,
         tripName: trip?.name,
+        tags: trip?.country ? [trip.country] : [],
       });
 
       await setItems([poolItem, ...state.items]);
@@ -430,7 +459,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         <div className="flex gap-2 mb-3">
           <button
             className="btn btn-secondary btn-sm"
-            onClick={() => setShowPoolModal(true)}
+            onClick={openPoolModal}
           >
             <FontAwesomeIcon icon={faBoxesStacked} className="mr-1" />
             從魚池加入
@@ -613,6 +642,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
               {shoppingModalMode === "edit" && linkedPoolItem ? (
                 <PoolItemForm
                   item={linkedPoolItem}
+                  tagSuggestions={getPoolItemTags(state.items)}
                   onSave={savePoolItem}
                   onCancel={() => setShoppingModalMode("view")}
                   onDelete={
@@ -667,12 +697,36 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
           onClose={() => setShowPoolModal(false)}
         >
           <div className="space-y-3">
+            {poolTagOptions.length > 0 && (
+              <div className="pool-filter-panel">
+                <div className="pool-tag-row">
+                  {poolTagOptions.map((tag) => {
+                    const active = selectedPoolTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={`tag-filter-chip ${active ? "active" : ""}`}
+                        aria-pressed={active}
+                        onClick={() => toggleSelectedPoolTag(tag)}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {availablePoolItems.length === 0 ? (
               <div className="empty-state">
                 <p>魚池目前沒有項目</p>
               </div>
+            ) : filteredAvailablePoolItems.length === 0 ? (
+              <div className="empty-state">
+                <p>沒有符合分類標籤的魚池項目</p>
+              </div>
             ) : (
-              availablePoolItems.map((item) => (
+              filteredAvailablePoolItems.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -693,6 +747,15 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                   )}
                   <span className="min-w-0 flex-1">
                     {renderShoppingItemTitle(item.name, item.brand, item.spec)}
+                    {item.tags && item.tags.length > 0 && (
+                      <span className="pool-tag-row mt-1">
+                        {item.tags.map((tag) => (
+                          <span key={tag} className="pool-tag-chip">
+                            {tag}
+                          </span>
+                        ))}
+                      </span>
+                    )}
                     <PriceBadges
                       badges={buildShoppingPriceBadges({
                         estimatedAmount: item.estimatedAmount,
@@ -1173,11 +1236,13 @@ function DraftShoppingForm({
 
 function PoolItemForm({
   item,
+  tagSuggestions,
   onSave,
   onCancel,
   onDelete,
 }: {
   item: Item;
+  tagSuggestions?: string[];
   onSave: (item: Item) => void;
   onCancel: () => void;
   onDelete?: () => void;
@@ -1235,6 +1300,11 @@ function PoolItemForm({
           onChange={(event) => setForm({ ...form, spec: event.target.value })}
         />
       </div>
+      <PoolItemTagsField
+        tags={form.tags}
+        suggestions={tagSuggestions}
+        onChange={(tags) => setForm({ ...form, tags })}
+      />
       <div className="form-group">
         <label className="form-label">建議售價</label>
         <input
