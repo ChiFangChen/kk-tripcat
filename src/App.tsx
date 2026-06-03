@@ -30,6 +30,9 @@ function AppContent() {
         ? "dark"
         : "light"),
   );
+  const [textScale, setTextScale] = useState(
+    () => storage.getItem<number>("textScale") || 100,
+  );
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
     () => storage.getItem<TabType>("activeTab") || "trips",
@@ -77,6 +80,10 @@ function AppContent() {
       );
     }
   }, [theme]);
+
+  useEffect(() => {
+    storage.setItem("textScale", textScale);
+  }, [textScale]);
 
   // Join trip via URL: ?join=<tripId>
   const [joinTripId, setJoinTripId] = useState<string | null>(() => {
@@ -247,7 +254,12 @@ function AppContent() {
       )}
       {effectiveActiveTab === "notes" && canAccessNotes && <NotesPage />}
       {effectiveActiveTab === "settings" && (
-        <SettingsPage theme={theme} onThemeChange={setTheme} />
+        <SettingsPage
+          theme={theme}
+          onThemeChange={setTheme}
+          textScale={textScale}
+          onTextScaleChange={setTextScale}
+        />
       )}
       <BottomTabBar activeTab={effectiveActiveTab} onTabChange={setActiveTab} />
 

@@ -28,46 +28,27 @@ type SettingsView = "index" | "ui" | "template";
 interface SettingsPageProps {
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
+  textScale: number;
+  onTextScaleChange: (scale: number) => void;
 }
 
-export function SettingsPage({ theme, onThemeChange }: SettingsPageProps) {
+export function SettingsPage({
+  theme,
+  onThemeChange,
+  textScale,
+  onTextScaleChange,
+}: SettingsPageProps) {
   const [view, setView] = useState<SettingsView>("index");
 
   if (view === "ui") {
     return (
-      <div className="page-container">
-        <button className="page-back-btn mb-3" onClick={() => setView("index")}>
-          ← 返回
-        </button>
-        <h2 className="text-xl font-bold mb-4">UI 設置</h2>
-        <div className="settings-list">
-          <div className="settings-list-item">
-            <div className="settings-list-icon">
-              <FontAwesomeIcon icon={theme === "dark" ? faMoon : faSun} />
-            </div>
-            <div className="settings-list-content">
-              <div className="settings-list-title">主題</div>
-              <div className="settings-list-description">
-                {theme === "dark" ? "深色模式" : "淺色模式"}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                className={`btn btn-sm ${theme === "light" ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => onThemeChange("light")}
-              >
-                淺色
-              </button>
-              <button
-                className={`btn btn-sm ${theme === "dark" ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => onThemeChange("dark")}
-              >
-                深色
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <UiSettingsPage
+        theme={theme}
+        onThemeChange={onThemeChange}
+        textScale={textScale}
+        onTextScaleChange={onTextScaleChange}
+        onBack={() => setView("index")}
+      />
     );
   }
 
@@ -99,6 +80,81 @@ export function SettingsPage({ theme, onThemeChange }: SettingsPageProps) {
           </div>
           <FontAwesomeIcon icon={faChevronRight} className="settings-list-chevron" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+function UiSettingsPage({
+  theme,
+  onThemeChange,
+  textScale,
+  onTextScaleChange,
+  onBack,
+}: SettingsPageProps & { onBack: () => void }) {
+  const [draftTextScale, setDraftTextScale] = useState(textScale);
+
+  return (
+    <div className="page-container">
+      <button className="page-back-btn mb-3" onClick={onBack}>
+        ← 返回
+      </button>
+      <h2 className="text-xl font-bold mb-4">UI 設置</h2>
+      <div className="settings-list">
+        <div className="settings-list-item">
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={theme === "dark" ? faMoon : faSun} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">主題</div>
+            <div className="settings-list-description">
+              {theme === "dark" ? "深色模式" : "淺色模式"}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className={`btn btn-sm ${theme === "light" ? "btn-primary" : "btn-secondary"}`}
+              onClick={() => onThemeChange("light")}
+            >
+              淺色
+            </button>
+            <button
+              className={`btn btn-sm ${theme === "dark" ? "btn-primary" : "btn-secondary"}`}
+              onClick={() => onThemeChange("dark")}
+            >
+              深色
+            </button>
+          </div>
+        </div>
+        <div className="settings-list-item settings-list-item-stacked">
+          <div className="settings-list-row">
+            <div className="settings-list-icon">
+              <span className="settings-text-size-icon">Aa</span>
+            </div>
+            <div className="settings-list-content">
+              <div className="settings-list-title">文字尺寸</div>
+              <div className="settings-list-description">
+                目前 {draftTextScale}%
+              </div>
+            </div>
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={() => onTextScaleChange(draftTextScale)}
+              disabled={draftTextScale === textScale}
+            >
+              存檔
+            </button>
+          </div>
+          <input
+            className="settings-range"
+            type="range"
+            min="100"
+            max="200"
+            step="1"
+            value={draftTextScale}
+            onChange={(e) => setDraftTextScale(Number(e.target.value))}
+          />
+        </div>
       </div>
     </div>
   );

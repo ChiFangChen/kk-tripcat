@@ -1018,6 +1018,28 @@ button.settings-list-item {
   font-size: 12px;
 }
 
+.settings-list-item-stacked {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.settings-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.settings-text-size-icon {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.settings-range {
+  width: 100%;
+  accent-color: var(--color-primary-dark);
+}
+
 .page-back-btn {
   border: none;
   background: transparent;
