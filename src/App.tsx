@@ -83,6 +83,10 @@ function AppContent() {
 
   useEffect(() => {
     storage.setItem("textScale", textScale);
+    document.documentElement.style.setProperty(
+      "--text-scale",
+      String(textScale / 100),
+    );
   }, [textScale]);
 
   // Join trip via URL: ?join=<tripId>
