@@ -80,6 +80,12 @@ export function TripsPage({ onSelectTrip }: Props) {
     setStep("info");
   }
 
+  function handleSkipPreparation() {
+    setPendingChecklist([]);
+    setPendingNotes("");
+    setStep("info");
+  }
+
   async function handleCreate() {
     if (!form.name || !form.startDate || !state.auth.currentUser) return;
 
@@ -154,6 +160,12 @@ export function TripsPage({ onSelectTrip }: Props) {
           <h1 className="text-lg font-bold">選擇準備項目</h1>
           <div className="w-8" />
         </div>
+        <button
+          className="btn btn-secondary w-full mb-4"
+          onClick={handleSkipPreparation}
+        >
+          跳過準備事項
+        </button>
         <TemplateSelector
           template={state.template}
           onConfirm={handleTemplateConfirm}
