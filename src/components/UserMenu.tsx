@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSync, faTrash, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
+import { PasswordInput } from './PasswordInput'
 
 interface Props {
   onClose: () => void
@@ -133,7 +134,7 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div className="form-group"><label className="form-label">帳號</label><input className="form-input" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" autoFocus required /></div>
               <div className="form-group">
-                <label className="form-label">密碼</label><input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required />
+                <label className="form-label">密碼</label><PasswordInput value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required />
                 <p className="text-xs text-slate-400 mt-1">此為簡易帳號系統，密碼以明碼儲存，請勿使用重要密碼</p>
               </div>
               <div className="form-group"><label className="form-label">顯示名稱</label><input className="form-input" value={displayName} onChange={e => setDisplayName(e.target.value)} /></div>
@@ -212,7 +213,7 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
               <form onSubmit={e => { e.preventDefault(); if (!newPassword) return; updateUser({ ...currentUser, password: newPassword }); setResetSuccess(true) }}>
                 <div className="form-group">
                   <label className="form-label">新密碼</label>
-                  <input className="form-input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} autoFocus required />
+                  <PasswordInput value={newPassword} onChange={e => setNewPassword(e.target.value)} autoFocus required />
                   <p className="text-xs text-slate-400 mt-1">此為簡易帳號系統，密碼以明碼儲存，請勿使用重要密碼</p>
                 </div>
                 <div className="flex gap-2">

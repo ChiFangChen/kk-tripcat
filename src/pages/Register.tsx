@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { PasswordInput } from '../components/PasswordInput'
 
 interface Props {
   onSwitchToLogin: () => void
@@ -37,7 +38,7 @@ export function Register({ onSwitchToLogin }: Props) {
         <div className="form-group"><label className="form-label">帳號</label><input className="form-input" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" required /></div>
         <div className="form-group">
           <label className="form-label">密碼</label>
-          <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required />
+          <PasswordInput value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required />
           <p className="text-xs text-slate-400 mt-1">此為簡易帳號系統，密碼以明碼儲存，請勿使用重要密碼</p>
         </div>
         <div className="form-group"><label className="form-label">顯示名稱</label><input className="form-input" value={displayName} onChange={e => setDisplayName(e.target.value)} /></div>

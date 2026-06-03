@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useApp } from '../context/AppContext'
+import { PasswordInput } from '../components/PasswordInput'
 
 interface Props {
   onSwitchToRegister: () => void
@@ -76,7 +77,7 @@ export function Login({ onSwitchToRegister }: Props) {
             <div className="form-group"><label className="form-label">顯示名稱</label><input className="form-input" value={forgotDisplayName} onChange={e => setForgotDisplayName(e.target.value)} autoComplete="off" required /></div>
             <div className="form-group">
               <label className="form-label">新密碼</label>
-              <input className="form-input" type="password" value={forgotNewPassword} onChange={e => setForgotNewPassword(e.target.value)} autoComplete="off" required />
+              <PasswordInput value={forgotNewPassword} onChange={e => setForgotNewPassword(e.target.value)} autoComplete="off" required />
               <p className="text-xs text-slate-400 mt-1">此為簡易帳號系統，密碼以明碼儲存，請勿使用重要密碼</p>
             </div>
             {forgotError && <div className="auth-error">{forgotError}</div>}
@@ -88,7 +89,7 @@ export function Login({ onSwitchToRegister }: Props) {
         <>
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group"><label className="form-label">帳號</label><input className="form-input" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" required /></div>
-            <div className="form-group"><label className="form-label">密碼</label><input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required /></div>
+            <div className="form-group"><label className="form-label">密碼</label><PasswordInput value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required /></div>
             {error && <div className="auth-error">{error}</div>}
             <button type="submit" className="btn btn-primary w-full">登入</button>
           </form>

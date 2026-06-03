@@ -913,6 +913,42 @@ body {
   color: var(--color-text);
 }
 
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input {
+  padding-right: 44px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.password-toggle-btn:hover,
+.password-toggle-btn:focus-visible {
+  color: var(--color-primary-dark);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
 /* In modals/cards (card bg), use bg color for contrast */
 .modal-content .form-input,
 .dialog .form-input {
