@@ -134,7 +134,7 @@ function UiSettingsPage({
             <div className="settings-list-content">
               <div className="settings-list-title">文字尺寸</div>
               <div className="settings-list-description">
-                目前 {draftTextScale}%
+                {draftTextScale}%
               </div>
             </div>
             <button
