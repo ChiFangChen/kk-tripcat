@@ -18,8 +18,6 @@ import {
   getEffectiveSelectedTripId,
 } from "./navigationState";
 import type { TabType } from "./types";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
 import "./App.css";
 
 function AppContent() {
@@ -232,13 +230,6 @@ function AppContent() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="header-icon-btn"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            title="切換主題"
-          >
-            <FontAwesomeIcon icon={theme === "dark" ? faSun : faMoon} />
-          </button>
-          <button
             className="identity-badge"
             onClick={() => setShowUserMenu(true)}
             style={{
@@ -255,7 +246,9 @@ function AppContent() {
         <TripsPage onSelectTrip={setSelectedTripId} />
       )}
       {effectiveActiveTab === "notes" && canAccessNotes && <NotesPage />}
-      {effectiveActiveTab === "settings" && <SettingsPage />}
+      {effectiveActiveTab === "settings" && (
+        <SettingsPage theme={theme} onThemeChange={setTheme} />
+      )}
       <BottomTabBar activeTab={effectiveActiveTab} onTabChange={setActiveTab} />
 
       {showUserMenu && (

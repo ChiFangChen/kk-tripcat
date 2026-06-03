@@ -1,9 +1,14 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faChevronRight,
+  faGear,
+  faMoon,
+  faPalette,
   faThumbtack,
   faPlus,
   faPen,
+  faSun,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../context/AppContext";
@@ -17,7 +22,89 @@ import {
   updateTemplateItem,
 } from "./settingsTemplate";
 
-export function SettingsPage() {
+type Theme = "light" | "dark";
+type SettingsView = "index" | "ui" | "template";
+
+interface SettingsPageProps {
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
+}
+
+export function SettingsPage({ theme, onThemeChange }: SettingsPageProps) {
+  const [view, setView] = useState<SettingsView>("index");
+
+  if (view === "ui") {
+    return (
+      <div className="page-container">
+        <button className="page-back-btn mb-3" onClick={() => setView("index")}>
+          ← 返回
+        </button>
+        <h2 className="text-xl font-bold mb-4">UI 設置</h2>
+        <div className="settings-list">
+          <div className="settings-list-item">
+            <div className="settings-list-icon">
+              <FontAwesomeIcon icon={theme === "dark" ? faMoon : faSun} />
+            </div>
+            <div className="settings-list-content">
+              <div className="settings-list-title">主題</div>
+              <div className="settings-list-description">
+                {theme === "dark" ? "深色模式" : "淺色模式"}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className={`btn btn-sm ${theme === "light" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => onThemeChange("light")}
+              >
+                淺色
+              </button>
+              <button
+                className={`btn btn-sm ${theme === "dark" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => onThemeChange("dark")}
+              >
+                深色
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "template") {
+    return <TemplateSettingsPage onBack={() => setView("index")} />;
+  }
+
+  return (
+    <div className="page-container">
+      <h2 className="text-xl font-bold mb-4">設置</h2>
+      <div className="settings-list">
+        <button className="settings-list-item" onClick={() => setView("ui")}>
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={faPalette} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">UI 設置</div>
+            <div className="settings-list-description">主題與介面偏好</div>
+          </div>
+          <FontAwesomeIcon icon={faChevronRight} className="settings-list-chevron" />
+        </button>
+        <button className="settings-list-item" onClick={() => setView("template")}>
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={faGear} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">模板設置</div>
+            <div className="settings-list-description">準備事項模板與注意事項</div>
+          </div>
+          <FontAwesomeIcon icon={faChevronRight} className="settings-list-chevron" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
   const { state, setTemplate, showToast } = useApp();
   const template = state.template;
   const [editingNotes, setEditingNotes] = useState(false);
@@ -235,6 +322,9 @@ export function SettingsPage() {
 
   return (
     <div className="page-container">
+      <button className="page-back-btn mb-3" onClick={onBack}>
+        ← 返回
+      </button>
       <h2 className="text-xl font-bold mb-4">模板設定</h2>
 
       {/* Notes */}

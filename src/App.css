@@ -960,6 +960,74 @@ textarea.form-input {
   min-height: 80px;
 }
 
+/* Settings */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-list-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-card);
+  color: var(--color-text);
+  text-align: left;
+}
+
+button.settings-list-item {
+  cursor: pointer;
+}
+
+.settings-list-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(126, 200, 227, 0.16);
+  color: var(--color-primary-dark);
+}
+
+.settings-list-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-list-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.settings-list-description {
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.settings-list-chevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.page-back-btn {
+  border: none;
+  background: transparent;
+  color: var(--color-primary-dark);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
 /* Info row - for displaying field:value pairs, hide when empty */
 .info-row {
   display: grid;
