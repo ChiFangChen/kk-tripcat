@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faChevronLeft,
   faChevronRight,
   faGear,
   faMoon,
@@ -96,10 +97,12 @@ function UiSettingsPage({
 
   return (
     <div className="page-container">
-      <button className="page-back-btn mb-3" onClick={onBack}>
-        ← 返回
-      </button>
-      <h2 className="text-xl font-bold mb-4">UI 設置</h2>
+      <div className="page-title-group mb-4">
+        <button className="page-back-btn" onClick={onBack}>
+          <FontAwesomeIcon icon={faChevronLeft} />
+        </button>
+        <h2 className="text-xl font-bold">UI 設置</h2>
+      </div>
       <div className="settings-list">
         <div className="settings-list-item">
           <div className="settings-list-icon">
@@ -381,10 +384,12 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="page-container">
-      <button className="page-back-btn mb-3" onClick={onBack}>
-        ← 返回
-      </button>
-      <h2 className="text-xl font-bold mb-4">模板設定</h2>
+      <div className="page-title-group mb-4">
+        <button className="page-back-btn" onClick={onBack}>
+          <FontAwesomeIcon icon={faChevronLeft} />
+        </button>
+        <h2 className="text-xl font-bold">模板設定</h2>
+      </div>
 
       {/* Notes */}
       <div className="card mb-4">

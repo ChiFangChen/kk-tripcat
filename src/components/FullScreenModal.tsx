@@ -17,10 +17,12 @@ export function FullScreenModal({ title, onClose, children }: Props) {
   return (
     <div className="fullscreen-modal">
       <div className="fullscreen-modal-header">
-        <button onClick={onClose} className="text-sky-600">
-          <FontAwesomeIcon icon={faChevronLeft} />
-        </button>
-        <h2>{title}</h2>
+        <div className="page-title-group">
+          <button onClick={onClose} className="text-sky-600">
+            <FontAwesomeIcon icon={faChevronLeft} />
+          </button>
+          <h2>{title}</h2>
+        </div>
         <div className="w-8" />
       </div>
       <div className="fullscreen-modal-body">{children}</div>

@@ -176,10 +176,12 @@ export function TripsPage({ onSelectTrip }: Props) {
     return (
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
-          <button className="text-sky-600" onClick={() => setStep("list")}>
-            <FontAwesomeIcon icon={faChevronLeft} />
-          </button>
-          <h1 className="text-lg font-bold">選擇準備項目</h1>
+          <div className="page-title-group">
+            <button className="text-sky-600" onClick={() => setStep("list")}>
+              <FontAwesomeIcon icon={faChevronLeft} />
+            </button>
+            <h1 className="text-lg font-bold">選擇準備項目</h1>
+          </div>
           <div className="w-8" />
         </div>
         <button
@@ -203,10 +205,12 @@ export function TripsPage({ onSelectTrip }: Props) {
     return (
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
-          <button className="text-sky-600" onClick={() => setStep("template")}>
-            <FontAwesomeIcon icon={faChevronLeft} />
-          </button>
-          <h1 className="text-lg font-bold">旅程資訊</h1>
+          <div className="page-title-group">
+            <button className="text-sky-600" onClick={() => setStep("template")}>
+              <FontAwesomeIcon icon={faChevronLeft} />
+            </button>
+            <h1 className="text-lg font-bold">旅程資訊</h1>
+          </div>
           <div className="w-12" />
         </div>
 

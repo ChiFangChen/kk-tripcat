@@ -643,6 +643,18 @@ body {
   font-weight: 600;
 }
 
+.page-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.page-title-group h1,
+.page-title-group h2 {
+  min-width: 0;
+}
+
 .header-icon-btn {
   width: 32px;
   height: 32px;

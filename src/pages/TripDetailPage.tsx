@@ -209,16 +209,18 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     return (
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
-          <button
-            className="text-sky-600"
-            onClick={() => {
-              setSetupChoice(null);
-              onBack();
-            }}
-          >
-            <FontAwesomeIcon icon={faChevronLeft} />
-          </button>
-          <h1 className="text-lg font-bold">選擇準備項目</h1>
+          <div className="page-title-group">
+            <button
+              className="text-sky-600"
+              onClick={() => {
+                setSetupChoice(null);
+                onBack();
+              }}
+            >
+              <FontAwesomeIcon icon={faChevronLeft} />
+            </button>
+            <h1 className="text-lg font-bold">選擇準備項目</h1>
+          </div>
           <div className="w-8" />
         </div>
         <p className="text-sm text-slate-400 mb-4">請編輯準備事項</p>
@@ -251,23 +253,25 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   return (
     <div>
       <div className="page-header">
-        {viewOnly ? (
-          <div className="w-10" />
-        ) : (
-          <button onClick={onBack} className="text-sky-600">
-            <FontAwesomeIcon icon={faChevronLeft} />
-          </button>
-        )}
-        <h1
-          className={admin && !readOnly ? "cursor-pointer" : undefined}
-          onClick={
-            admin && !readOnly
-              ? doubleTap(`trip-title-${trip.id}`, () => setEditingTrip(true))
-              : undefined
-          }
-        >
-          {trip.name}
-        </h1>
+        <div className="page-title-group">
+          {viewOnly ? (
+            <div className="w-10" />
+          ) : (
+            <button onClick={onBack} className="text-sky-600">
+              <FontAwesomeIcon icon={faChevronLeft} />
+            </button>
+          )}
+          <h1
+            className={admin && !readOnly ? "cursor-pointer" : undefined}
+            onClick={
+              admin && !readOnly
+                ? doubleTap(`trip-title-${trip.id}`, () => setEditingTrip(true))
+                : undefined
+            }
+          >
+            {trip.name}
+          </h1>
+        </div>
         <div className="flex items-center gap-1">
           {!viewOnly && (
             <>
