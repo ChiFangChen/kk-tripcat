@@ -267,9 +267,9 @@ export function TripsPage({ onSelectTrip }: Props) {
             className="card !p-3 cursor-pointer"
             onClick={() => onSelectTrip(trip.id)}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold text-base">{trip.name}</h3>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-400 whitespace-nowrap">
                 {formatTripDateRange(trip.startDate, trip.endDate)}
               </span>
             </div>
