@@ -7,12 +7,25 @@ export function formatDate(dateStr: string): string {
 }
 
 /** Format ISO date string (YYYY-MM-DD) to YYYY/M/D（weekday） */
-export function formatDateWithWeekday(dateStr: string): string {
+export function formatDateWithWeekday(
+  dateStr: string,
+  language = "zh-TW",
+): string {
   if (!dateStr) return "";
-  const d = new Date(dateStr);
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const d = match
+    ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    : new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
-  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
-  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（${weekdays[d.getDay()]}）`;
+  const zhWeekdays = ["日", "一", "二", "三", "四", "五", "六"];
+  const enWeekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+
+  if (language === "en") {
+    return `${date} (${enWeekdays[d.getDay()]})`;
+  }
+
+  return `${date}（${zhWeekdays[d.getDay()]}）`;
 }
 
 /** Check if a date string (YYYY-MM-DD) is today */

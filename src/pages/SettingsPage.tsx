@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useTranslation } from "react-i18next";
 import {
   faChevronLeft,
   faChevronRight,
@@ -23,9 +24,9 @@ import {
   buildTemplateItemDeleteMessage,
   updateTemplateItem,
 } from "./settingsTemplate";
+import type { Language } from "../i18n";
 
 type Theme = "light" | "dark";
-type Language = "zh-TW" | "en";
 type SettingsView = "index" | "ui" | "template";
 
 interface SettingsPageProps {
@@ -45,6 +46,7 @@ export function SettingsPage({
   language,
   onLanguageChange,
 }: SettingsPageProps) {
+  const { t } = useTranslation();
   const [view, setView] = useState<SettingsView>("index");
 
   if (view === "ui") {
@@ -67,15 +69,15 @@ export function SettingsPage({
 
   return (
     <div className="page-container">
-      <h2 className="text-xl font-bold mb-4">設置</h2>
+      <h2 className="text-xl font-bold mb-4">{t("settings.title")}</h2>
       <div className="settings-list">
         <button className="settings-list-item" onClick={() => setView("ui")}>
           <div className="settings-list-icon">
             <FontAwesomeIcon icon={faPalette} />
           </div>
           <div className="settings-list-content">
-            <div className="settings-list-title">UI 設置</div>
-            <div className="settings-list-description">主題與介面偏好</div>
+            <div className="settings-list-title">{t("settings.ui.title")}</div>
+            <div className="settings-list-description">{t("settings.ui.description")}</div>
           </div>
           <FontAwesomeIcon icon={faChevronRight} className="settings-list-chevron" />
         </button>
@@ -84,8 +86,10 @@ export function SettingsPage({
             <FontAwesomeIcon icon={faGear} />
           </div>
           <div className="settings-list-content">
-            <div className="settings-list-title">模板設置</div>
-            <div className="settings-list-description">準備事項模板與注意事項</div>
+            <div className="settings-list-title">{t("settings.template.menuTitle")}</div>
+            <div className="settings-list-description">
+              {t("settings.template.description")}
+            </div>
           </div>
           <FontAwesomeIcon icon={faChevronRight} className="settings-list-chevron" />
         </button>
@@ -103,6 +107,7 @@ function UiSettingsPage({
   onLanguageChange,
   onBack,
 }: SettingsPageProps & { onBack: () => void }) {
+  const { t } = useTranslation();
   const [draftTextScale, setDraftTextScale] = useState(textScale);
 
   return (
@@ -111,7 +116,7 @@ function UiSettingsPage({
         <button className="page-back-btn" onClick={onBack}>
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
-        <h2 className="text-xl font-bold">UI 設置</h2>
+        <h2 className="text-xl font-bold">{t("settings.ui.title")}</h2>
       </div>
       <div className="settings-list">
         <div className="settings-list-item">
@@ -119,9 +124,9 @@ function UiSettingsPage({
             <FontAwesomeIcon icon={theme === "dark" ? faMoon : faSun} />
           </div>
           <div className="settings-list-content">
-            <div className="settings-list-title">主題</div>
+            <div className="settings-list-title">{t("settings.ui.theme")}</div>
             <div className="settings-list-description">
-              {theme === "dark" ? "深色模式" : "淺色模式"}
+              {theme === "dark" ? t("settings.ui.darkMode") : t("settings.ui.lightMode")}
             </div>
           </div>
           <div className="flex gap-2">
@@ -129,13 +134,13 @@ function UiSettingsPage({
               className={`btn btn-sm ${theme === "light" ? "btn-primary" : "btn-secondary"}`}
               onClick={() => onThemeChange("light")}
             >
-              淺色
+              {t("settings.ui.light")}
             </button>
             <button
               className={`btn btn-sm ${theme === "dark" ? "btn-primary" : "btn-secondary"}`}
               onClick={() => onThemeChange("dark")}
             >
-              深色
+              {t("settings.ui.dark")}
             </button>
           </div>
         </div>
@@ -144,9 +149,9 @@ function UiSettingsPage({
             <FontAwesomeIcon icon={faGlobe} />
           </div>
           <div className="settings-list-content">
-            <div className="settings-list-title">語言</div>
+            <div className="settings-list-title">{t("settings.ui.language")}</div>
             <div className="settings-list-description">
-              {language === "zh-TW" ? "繁體中文" : "English"}
+              {language === "zh-TW" ? t("settings.ui.traditionalChinese") : t("settings.ui.english")}
             </div>
           </div>
           <div className="flex gap-2">
@@ -170,7 +175,7 @@ function UiSettingsPage({
               <span className="settings-text-size-icon">Aa</span>
             </div>
             <div className="settings-list-content">
-              <div className="settings-list-title">文字尺寸</div>
+              <div className="settings-list-title">{t("settings.ui.textSize")}</div>
               <div className="settings-list-description">
                 {draftTextScale}%
               </div>
@@ -180,7 +185,7 @@ function UiSettingsPage({
               onClick={() => onTextScaleChange(draftTextScale)}
               disabled={draftTextScale === textScale}
             >
-              存檔
+              {t("common.save")}
             </button>
           </div>
           <input
@@ -202,6 +207,7 @@ function UiSettingsPage({
 }
 
 function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
+  const { t } = useTranslation();
   const { state, setTemplate, showToast } = useApp();
   const template = state.template;
   const [editingNotes, setEditingNotes] = useState(false);
@@ -249,7 +255,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     } catch {
       showToast({
         type: "error",
-        message: "模板沒有同步成功，請確認網路後再試一次",
+        message: t("settings.template.syncFailed"),
       });
     }
   }
@@ -423,7 +429,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
         <button className="page-back-btn" onClick={onBack}>
           <FontAwesomeIcon icon={faChevronLeft} />
         </button>
-        <h2 className="text-xl font-bold">模板設定</h2>
+        <h2 className="text-xl font-bold">{t("settings.template.title")}</h2>
       </div>
 
       {/* Notes */}
@@ -431,7 +437,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-semibold text-sm">
             <FontAwesomeIcon icon={faThumbtack} className="mr-1" />
-            注意事項
+            {t("settings.template.notes")}
           </h3>
           <button
             className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
@@ -444,13 +450,13 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
           </button>
         </div>
         <p className="text-xs whitespace-pre-wrap text-slate-400 dark:text-slate-500">
-          {template.notes || "(無)"}
+          {template.notes || t("common.empty")}
         </p>
       </div>
 
       {/* Categories */}
       <div className="flex justify-between items-center mb-3">
-        <h3 className="font-semibold">準備事項分類</h3>
+        <h3 className="font-semibold">{t("settings.template.categories")}</h3>
         <button
           className="btn-round-add"
           onClick={() => setAddingCategory(true)}
@@ -555,7 +561,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
 
       {/* Edit notes modal */}
       {editingNotes && (
-        <Modal title="編輯注意事項" onClose={() => setEditingNotes(false)}>
+        <Modal title={t("settings.template.editNotes")} onClose={() => setEditingNotes(false)}>
           <textarea
             className="form-input"
             rows={5}
@@ -563,14 +569,14 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
             onChange={(e) => setNotesText(e.target.value)}
           />
           <button className="btn btn-primary w-full mt-3" onClick={saveNotes}>
-            儲存
+            {t("common.save")}
           </button>
         </Modal>
       )}
 
       {/* Add category modal */}
       {addingCategory && (
-        <Modal title="新增分類" onClose={() => setAddingCategory(false)}>
+        <Modal title={t("settings.template.addCategory")} onClose={() => setAddingCategory(false)}>
           <input
             className="form-input"
             value={newCatName}
@@ -579,7 +585,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
             autoFocus
           />
           <button className="btn btn-primary w-full mt-3" onClick={addCategory}>
-            新增
+            {t("common.add")}
           </button>
         </Modal>
       )}
@@ -587,12 +593,12 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
       {/* Edit category full-screen modal (rename + subcategory management) */}
       {editingCatName && (
         <FullScreenModal
-          title={`編輯「${editingCatName}」`}
+          title={t("settings.template.editNamed", { name: editingCatName })}
           onClose={() => setEditingCatName(null)}
         >
           {/* Rename */}
           <div className="form-group">
-            <label className="form-label">分類名稱</label>
+            <label className="form-label">{t("settings.template.categoryName")}</label>
             <div className="flex gap-2">
               <input
                 className="form-input flex-1"
@@ -604,7 +610,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                   className="btn btn-primary btn-sm"
                   onClick={saveRenameCategory}
                 >
-                  儲存
+                  {t("common.save")}
                 </button>
               )}
             </div>
@@ -613,7 +619,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
           {/* Subcategories */}
           <div className="mt-4">
             <div className="flex justify-between items-center mb-2">
-              <label className="form-label !mb-0">次項目分類</label>
+              <label className="form-label !mb-0">{t("settings.template.subcategory")}</label>
               <button
                 className="btn-round-add !w-6 !h-6"
                 onClick={() => {
@@ -680,19 +686,19 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                     );
                   }}
                 >
-                  新增
+                  {t("common.add")}
                 </button>
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => setAddingSubTo(false)}
                 >
-                  取消
+                  {t("common.cancel")}
                 </button>
               </div>
             )}
 
             {getSubcategories(editingCatName).length === 0 && !addingSubTo ? (
-              <p className="text-xs text-slate-400">尚無次項目分類</p>
+              <p className="text-xs text-slate-400">{t("settings.template.noSubcategories")}</p>
             ) : (
               getSubcategories(editingCatName).map((sub) => (
                 <div
@@ -719,13 +725,13 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                         className="btn btn-primary btn-sm"
                         onClick={() => renameSubcategory(editingCatName)}
                       >
-                        儲存
+                        {t("common.save")}
                       </button>
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => setRenamingSub(null)}
                       >
-                        取消
+                        {t("common.cancel")}
                       </button>
                     </div>
                   ) : (
@@ -763,7 +769,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
       {/* Add item full-screen modal */}
       {addingItemTo && (
         <FullScreenModal
-          title={`新增項目到「${addingItemTo}」`}
+          title={t("settings.template.addItemTo", { name: addingItemTo })}
           onClose={() => setAddingItemTo(null)}
         >
           {(() => {
@@ -772,14 +778,14 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
               <>
                 {subs.length > 0 && (
                   <div className="form-group">
-                    <label className="form-label">次項目分類</label>
+                    <label className="form-label">{t("settings.template.subcategory")}</label>
                     {!creatingNewSub ? (
                       <div className="flex gap-2 flex-wrap">
                         <button
                           className={`btn btn-sm ${!newItemSubcategory ? "btn-primary" : "btn-secondary"}`}
                           onClick={() => setNewItemSubcategory("")}
                         >
-                          無
+                          {t("common.none")}
                         </button>
                         {subs.map((sub) => (
                           <button
@@ -795,7 +801,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                           onClick={() => setCreatingNewSub(true)}
                         >
                           <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                          新次項目
+                          {t("settings.template.newSubitem")}
                         </button>
                       </div>
                     ) : (
@@ -810,14 +816,14 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                           className="btn btn-sm btn-secondary"
                           onClick={() => setCreatingNewSub(false)}
                         >
-                          取消
+                          {t("common.cancel")}
                         </button>
                       </div>
                     )}
                   </div>
                 )}
                 <div className="form-group">
-                  <label className="form-label">項目名稱</label>
+                  <label className="form-label">{t("settings.template.itemName")}</label>
                   <input
                     className="form-input"
                     value={newItemText}
@@ -832,7 +838,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                   className="btn btn-primary w-full"
                   onClick={() => addItem(addingItemTo)}
                 >
-                  新增
+                  {t("common.add")}
                 </button>
               </>
             );
@@ -841,7 +847,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
       )}
       {editingItem && (
         <FullScreenModal
-          title="編輯準備事項"
+          title={t("settings.template.editPreparationItem")}
           onClose={() => setEditingItem(null)}
         >
           {(() => {
@@ -850,7 +856,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
               <>
                 {subs.length > 0 && (
                   <div className="form-group">
-                    <label className="form-label">次項目分類</label>
+                    <label className="form-label">{t("settings.template.subcategory")}</label>
                     {!editingItemNewSub ? (
                       <div className="flex gap-2 flex-wrap">
                         <button
@@ -858,7 +864,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                           data-e2e-id="template_item_subcategory_button--none"
                           onClick={() => setEditItemSubcategory("")}
                         >
-                          無
+                          {t("common.none")}
                         </button>
                         {subs.map((sub) => (
                           <button
@@ -879,7 +885,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                           }}
                         >
                           <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                          新次項目
+                          {t("settings.template.newSubitem")}
                         </button>
                       </div>
                     ) : (
@@ -898,14 +904,14 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                           data-e2e-id="template_item_cancel_new_subcategory_button"
                           onClick={() => setEditingItemNewSub(false)}
                         >
-                          取消
+                          {t("common.cancel")}
                         </button>
                       </div>
                     )}
                   </div>
                 )}
                 <div className="form-group">
-                  <label className="form-label">項目名稱</label>
+                  <label className="form-label">{t("settings.template.itemName")}</label>
                   <input
                     className="form-input"
                     data-e2e-id="template_item_name_field"
@@ -920,7 +926,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                   data-e2e-id="template_item_save_button"
                   onClick={saveEditItem}
                 >
-                  儲存
+                  {t("common.save")}
                 </button>
               </>
             );
@@ -931,21 +937,27 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
         <ConfirmDeleteModal
           title={
             confirmDelete.type === "category"
-              ? "刪除分類"
+              ? t("settings.template.deleteCategory")
               : confirmDelete.type === "item"
-                ? "刪除項目"
-                : "刪除次項目分類"
+                ? t("settings.template.deleteItem")
+                : t("settings.template.deleteSubcategory")
           }
           message={
             confirmDelete.type === "category"
-              ? `確定要刪除「${confirmDelete.categoryName}」分類嗎？分類內的項目也會一起刪除。`
+              ? t("settings.template.deleteCategoryConfirm", {
+                  name: confirmDelete.categoryName,
+                })
               : confirmDelete.type === "item"
                 ? buildTemplateItemDeleteMessage(
                     template,
                     confirmDelete.categoryName,
                     confirmDelete.itemId,
+                    (name) =>
+                      t("settings.template.deleteItemConfirm", { name }),
                   )
-                : `確定要刪除「${confirmDelete.subcategoryName}」次項目分類嗎？項目會保留，但會移除此分類。`
+                : t("settings.template.deleteSubcategoryConfirm", {
+                    name: confirmDelete.subcategoryName,
+                  })
           }
           onCancel={() => setConfirmDelete(null)}
           onConfirm={() => {

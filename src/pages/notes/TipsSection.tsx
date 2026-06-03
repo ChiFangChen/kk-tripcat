@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
@@ -17,6 +18,7 @@ import type { TipNote } from "../../types";
 import type { ImageAsset, PendingImageFile } from "../../types/images";
 
 export function TipsSection() {
+  const { t } = useTranslation();
   const { state, firebaseConnected, setTips, showToast } = useApp();
   const [editing, setEditing] = useState<TipNote | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export function TipsSection() {
   });
 
   function warnReadOnly() {
-    showToast({ type: "info", message: "離線時只能查看筆記" });
+    showToast({ type: "info", message: t("notes.readOnlyOffline") });
   }
 
   async function save(tip: TipNote) {
@@ -90,7 +92,7 @@ export function TipsSection() {
       <div className="flex justify-between items-center mb-4">
         <input
           className="form-input mr-3"
-          placeholder="搜尋筆記..."
+          placeholder={t("notes.searchPlaceholder")}
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
@@ -105,7 +107,9 @@ export function TipsSection() {
           }}
           disabled={!firebaseConnected}
           aria-disabled={!firebaseConnected}
-          title={firebaseConnected ? "新增筆記" : "離線時只能查看筆記"}
+          title={
+            firebaseConnected ? t("notes.addTip") : t("notes.readOnlyOffline")
+          }
         >
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
@@ -117,7 +121,7 @@ export function TipsSection() {
             className={`tag cursor-pointer ${!filterTag ? "opacity-100" : "opacity-50"}`}
             onClick={() => setFilterTag(null)}
           >
-            全部
+            {t("notes.all")}
           </button>
           {allTags.map((tag) => (
             <button
@@ -133,7 +137,7 @@ export function TipsSection() {
 
       {filtered.length === 0 ? (
         <div className="empty-state">
-          <p>還沒有筆記</p>
+          <p>{t("notes.empty")}</p>
         </div>
       ) : (
         filtered.map((tip) => (
@@ -166,7 +170,7 @@ export function TipsSection() {
 
       {editing && (
         <FullScreenModal
-          title={editing.title ? "編輯筆記" : "新筆記"}
+          title={editing.title ? t("notes.editTip") : t("notes.newTip")}
           onClose={() => setEditing(null)}
         >
           <TipForm
@@ -179,8 +183,8 @@ export function TipsSection() {
       )}
       {confirmDeleteId && (
         <ConfirmDeleteModal
-          title="刪除筆記"
-          message="確定要刪除這則筆記嗎？圖片也會一起刪除。"
+          title={t("notes.deleteTip")}
+          message={t("notes.deleteTipConfirm")}
           onCancel={() => setConfirmDeleteId(null)}
           onConfirm={() => {
             remove(confirmDeleteId);
@@ -204,6 +208,7 @@ function TipForm({
   onCancel: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const { state } = useApp();
   const [form, setForm] = useState(tip);
   const [tagsInput, setTagsInput] = useState(tip.tags.join(", "));
@@ -241,7 +246,7 @@ function TipForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">標題</label>
+        <label className="form-label">{t("notes.titleLabel")}</label>
         <input
           className="form-input"
           value={form.title}
@@ -249,7 +254,7 @@ function TipForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">內容</label>
+        <label className="form-label">{t("notes.content")}</label>
         <textarea
           className="form-input"
           rows={6}
@@ -258,7 +263,7 @@ function TipForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">標籤（逗號分隔）</label>
+        <label className="form-label">{t("notes.tagsCommaSeparated")}</label>
         <input
           className="form-input"
           value={tagsInput}
@@ -266,7 +271,7 @@ function TipForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("notes.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -294,18 +299,18 @@ function TipForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
         {tip.title && (
           <button className="btn btn-danger" onClick={onDelete}>
-            刪除
+            {t("common.delete")}
           </button>
         )}
       </div>

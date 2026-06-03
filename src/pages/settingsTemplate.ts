@@ -43,7 +43,8 @@ export function buildTemplateItemDeleteMessage(
   template: Template,
   categoryName: string,
   itemId: string,
+  formatMessage: (itemName: string) => string,
 ): string {
   const itemName = getTemplateItemName(template, categoryName, itemId);
-  return `確定要刪除準備事項『${itemName}』嗎？`;
+  return formatMessage(itemName);
 }

@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSync, faTrash, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { PasswordInput } from './PasswordInput'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   onClose: () => void
@@ -12,6 +13,7 @@ interface Props {
 const ADMIN_SESSION_KEY = 'kk-tripcat-admin-session'
 
 export function UserMenu({ onClose, onSwitchUser }: Props) {
+  const { t } = useTranslation()
   const { state, login, logout, register, updateUser, isCurrentUserAdmin } = useApp()
   const currentUser = state.auth.currentUser
   const admin = isCurrentUserAdmin()
@@ -35,14 +37,14 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setRegError('')
-    if (!username.trim()) { setRegError('請輸入帳號'); return }
-    if (state.users.some(u => u.username === username && !u.deleted)) { setRegError('帳號已存在'); return }
+    if (!username.trim()) { setRegError('auth.errors.missingUsername'); return }
+    if (state.users.some(u => u.username === username && !u.deleted)) { setRegError('auth.errors.usernameExists'); return }
     try {
       await register(username, password, displayName || username)
       setUsername(''); setPassword(''); setDisplayName('')
       setView('menu')
     } catch {
-      setRegError('帳號沒有建立成功，請確認網路後再試一次')
+      setRegError('auth.errors.createFailed')
     }
   }
 
@@ -112,36 +114,36 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
             </div>
 
             {adminSessionId && (
-              <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleSwitchBackToAdmin}>返回管理員</button>
+              <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleSwitchBackToAdmin}>{t('userMenu.returnToAdmin')}</button>
             )}
-            {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('manage')}>管理使用者</button>}
-            {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('register')}>新增使用者</button>}
-            {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('switch')}>切換使用者</button>}
-            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setNewPassword(''); setResetSuccess(false); setView('resetpw') }}>重置密碼</button>
+            {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('manage')}>{t('userMenu.manageUsers')}</button>}
+            {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('register')}>{t('userMenu.addUser')}</button>}
+            {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('switch')}>{t('userMenu.switchUser')}</button>}
+            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setNewPassword(''); setResetSuccess(false); setView('resetpw') }}>{t('auth.resetPassword')}</button>
             <button className="btn w-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" onClick={() => {
               localStorage.removeItem(ADMIN_SESSION_KEY)
               localStorage.removeItem('kk-tripcat-route-trip')
               onSwitchUser?.()
               logout()
-            }}>登出</button>
-            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={onClose}>關閉</button>
+            }}>{t('auth.logout')}</button>
+            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={onClose}>{t('common.close')}</button>
           </>
         )}
 
         {view === 'register' && (
           <>
-            <h3 style={{ fontWeight: 600 }}>新增使用者</h3>
+            <h3 style={{ fontWeight: 600 }}>{t('userMenu.addUser')}</h3>
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div className="form-group"><label className="form-label">帳號</label><input className="form-input" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" autoFocus required /></div>
+              <div className="form-group"><label className="form-label">{t('auth.username')}</label><input className="form-input" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" autoFocus required /></div>
               <div className="form-group">
-                <label className="form-label">密碼</label><PasswordInput value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required />
-                <p className="text-xs text-slate-400 mt-1">此為簡易帳號系統，密碼以明碼儲存，請勿使用重要密碼</p>
+                <label className="form-label">{t('auth.password')}</label><PasswordInput value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required />
+                <p className="text-xs text-slate-400 mt-1">{t('auth.passwordWarning')}</p>
               </div>
-              <div className="form-group"><label className="form-label">顯示名稱</label><input className="form-input" value={displayName} onChange={e => setDisplayName(e.target.value)} /></div>
-              {regError && <div className="auth-error">{regError}</div>}
+              <div className="form-group"><label className="form-label">{t('auth.displayName')}</label><input className="form-input" value={displayName} onChange={e => setDisplayName(e.target.value)} /></div>
+              {regError && <div className="auth-error">{t(regError)}</div>}
               <div className="flex gap-2">
-                <button type="button" className="btn btn-secondary flex-1" onClick={() => setView('menu')}>取消</button>
-                <button type="submit" className="btn btn-primary flex-1">建立</button>
+                <button type="button" className="btn btn-secondary flex-1" onClick={() => setView('menu')}>{t('common.cancel')}</button>
+                <button type="submit" className="btn btn-primary flex-1">{t('common.create')}</button>
               </div>
             </form>
           </>
@@ -149,7 +151,7 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
 
         {view === 'manage' && (
           <>
-            <h3 style={{ fontWeight: 600 }}>管理使用者</h3>
+            <h3 style={{ fontWeight: 600 }}>{t('userMenu.manageUsers')}</h3>
             <div className="member-list-settings">
               {activeUsers.map(u => (
                 <div key={u.id} className="member-row">
@@ -171,14 +173,14 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
                 </div>
               ))}
             </div>
-            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('menu')}>返回</button>
+            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('menu')}>{t('common.back')}</button>
 
             {confirmDelete && deleteTarget && (
               <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                <p className="text-sm mb-2">確定要刪除「{deleteTarget.displayName}」嗎？</p>
+                <p className="text-sm mb-2">{t('userMenu.deleteUserConfirm', { name: deleteTarget.displayName })}</p>
                 <div className="flex gap-2">
-                  <button className="btn btn-secondary flex-1 btn-sm" onClick={() => setConfirmDelete(null)}>取消</button>
-                  <button className="btn btn-sm flex-1 bg-red-500 text-white" onClick={() => handleDeleteUser(confirmDelete)}>刪除</button>
+                  <button className="btn btn-secondary flex-1 btn-sm" onClick={() => setConfirmDelete(null)}>{t('common.cancel')}</button>
+                  <button className="btn btn-sm flex-1 bg-red-500 text-white" onClick={() => handleDeleteUser(confirmDelete)}>{t('common.delete')}</button>
                 </div>
               </div>
             )}
@@ -187,7 +189,7 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
 
         {view === 'switch' && (
           <>
-            <h3 style={{ fontWeight: 600 }}>切換使用者</h3>
+            <h3 style={{ fontWeight: 600 }}>{t('userMenu.switchUser')}</h3>
             <div className="member-list-settings">
               {otherUsers.map(u => (
                 <button key={u.id} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'flex-start', display: 'flex', alignItems: 'center' }} onClick={() => handleSwitchUser(u)}>
@@ -195,30 +197,30 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
                   {u.displayName}
                 </button>
               ))}
-              {otherUsers.length === 0 && <p className="text-sm text-slate-400 text-center py-2">沒有其他使用者</p>}
+              {otherUsers.length === 0 && <p className="text-sm text-slate-400 text-center py-2">{t('userMenu.noOtherUsers')}</p>}
             </div>
-            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('menu')}>返回</button>
+            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('menu')}>{t('common.back')}</button>
           </>
         )}
 
         {view === 'resetpw' && (
           <>
-            <h3 style={{ fontWeight: 600 }}>重置密碼</h3>
+            <h3 style={{ fontWeight: 600 }}>{t('auth.resetPassword')}</h3>
             {resetSuccess ? (
               <>
-                <p className="text-sm text-slate-500 text-center">密碼已重置成功</p>
-                <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('menu')}>返回</button>
+                <p className="text-sm text-slate-500 text-center">{t('auth.passwordResetSuccess')}</p>
+                <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('menu')}>{t('common.back')}</button>
               </>
             ) : (
               <form onSubmit={e => { e.preventDefault(); if (!newPassword) return; updateUser({ ...currentUser, password: newPassword }); setResetSuccess(true) }}>
                 <div className="form-group">
-                  <label className="form-label">新密碼</label>
+                  <label className="form-label">{t('auth.newPassword')}</label>
                   <PasswordInput value={newPassword} onChange={e => setNewPassword(e.target.value)} autoFocus required />
-                  <p className="text-xs text-slate-400 mt-1">此為簡易帳號系統，密碼以明碼儲存，請勿使用重要密碼</p>
+                  <p className="text-xs text-slate-400 mt-1">{t('auth.passwordWarning')}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" className="btn btn-secondary flex-1" onClick={() => setView('menu')}>取消</button>
-                  <button type="submit" className="btn btn-primary flex-1">確認</button>
+                  <button type="button" className="btn btn-secondary flex-1" onClick={() => setView('menu')}>{t('common.cancel')}</button>
+                  <button type="submit" className="btn btn-primary flex-1">{t('common.confirm')}</button>
                 </div>
               </form>
             )}

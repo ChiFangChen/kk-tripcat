@@ -13,16 +13,17 @@ import { NotesPage } from "./pages/NotesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { UserMenu } from "./components/UserMenu";
 import { Modal } from "./components/Modal";
+import { useTranslation } from "react-i18next";
 import {
   getEffectiveMainTab,
   getEffectiveSelectedTripId,
 } from "./navigationState";
 import type { TabType } from "./types";
+import i18n, { type Language } from "./i18n";
 import "./App.css";
 
-type Language = "zh-TW" | "en";
-
 function AppContent() {
+  const { t } = useTranslation();
   const { state, loading, updateTrip, viewTripId, isCurrentUserAdmin } =
     useApp();
   const [theme, setTheme] = useState<"light" | "dark">(
@@ -97,6 +98,7 @@ function AppContent() {
   useEffect(() => {
     storage.setItem("language", language);
     document.documentElement.lang = language;
+    void i18n.changeLanguage(language);
   }, [language]);
 
   // Join trip via URL: ?join=<tripId>
@@ -124,7 +126,7 @@ function AppContent() {
   function handleJoinConfirm() {
     if (!joinTrip || !state.auth.currentUser) return;
     if (joinTrip.members.includes(state.auth.currentUser.id)) {
-      setNotice("已在旅程中！");
+      setNotice(t("app.alreadyInTrip"));
       setJoinTripId(null);
       return;
     }
@@ -178,20 +180,22 @@ function AppContent() {
   const joinDialog =
     joinTripId && joinTrip
       ? createPortal(
-          <Modal title="加入旅程" onClose={() => setJoinTripId(null)}>
-            <p className="text-sm mb-4">是否加入「{joinTrip.name}」旅程？</p>
+          <Modal title={t("app.joinTrip")} onClose={() => setJoinTripId(null)}>
+            <p className="text-sm mb-4">
+              {t("app.joinTripQuestion", { name: joinTrip.name })}
+            </p>
             <div className="flex gap-2">
               <button
                 className="btn btn-secondary flex-1"
                 onClick={() => setJoinTripId(null)}
               >
-                取消
+                {t("common.cancel")}
               </button>
               <button
                 className="btn btn-primary flex-1"
                 onClick={handleJoinConfirm}
               >
-                下一步
+                {t("trips.next")}
               </button>
             </div>
           </Modal>,
@@ -199,13 +203,13 @@ function AppContent() {
         )
       : joinTripId && !joinTrip
         ? createPortal(
-            <Modal title="加入旅程" onClose={() => setJoinTripId(null)}>
-              <p className="text-sm mb-4">找不到此旅程</p>
+            <Modal title={t("app.joinTrip")} onClose={() => setJoinTripId(null)}>
+              <p className="text-sm mb-4">{t("app.tripNotFound")}</p>
               <button
                 className="btn btn-secondary w-full"
                 onClick={() => setJoinTripId(null)}
               >
-                確定
+                {t("common.ok")}
               </button>
             </Modal>,
             document.body,
@@ -214,13 +218,13 @@ function AppContent() {
 
   const noticeDialog = notice
     ? createPortal(
-        <Modal title="提示" onClose={() => setNotice(null)}>
+        <Modal title={t("app.notice")} onClose={() => setNotice(null)}>
           <p className="text-sm mb-4">{notice}</p>
           <button
             className="btn btn-secondary w-full"
             onClick={() => setNotice(null)}
           >
-            確定
+            {t("common.ok")}
           </button>
         </Modal>,
         document.body,

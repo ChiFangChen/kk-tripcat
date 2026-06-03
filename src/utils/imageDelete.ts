@@ -1,6 +1,4 @@
 export const IMAGE_DELETE_RETRY_ATTEMPTS = 3;
-export const IMAGE_DELETE_FAILURE_MESSAGE =
-  "部分圖片刪除失敗，內容已移除，稍後可再試。";
 
 export async function deleteImagePathWithRetry(
   path: string,

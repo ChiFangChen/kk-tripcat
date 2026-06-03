@@ -11,12 +11,21 @@ import { TemplateSelector } from "../components/TemplateSelector";
 import { generateId } from "../utils/id";
 import { formatDate } from "../utils/date";
 import type { Trip, TripType, ChecklistItem, Template } from "../types";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   onSelectTrip: (tripId: string) => void;
 }
 
-const tripTypes: TripType[] = ["情侶", "朋友", "家人", "獨旅"];
+type FilledTripType = Exclude<TripType, "">;
+
+const tripTypes: FilledTripType[] = ["情侶", "朋友", "家人", "獨旅"];
+const tripTypeLabelKeys: Record<FilledTripType, string> = {
+  情侶: "trips.types.couple",
+  朋友: "trips.types.friends",
+  家人: "trips.types.family",
+  獨旅: "trips.types.solo",
+};
 
 type Step = "list" | "template" | "info";
 
@@ -26,6 +35,7 @@ function formatTripDateRange(startDate: string, endDate: string) {
 }
 
 export function TripsPage({ onSelectTrip }: Props) {
+  const { t } = useTranslation();
   const {
     state,
     addTrip,
@@ -72,7 +82,7 @@ export function TripsPage({ onSelectTrip }: Props) {
       } catch {
         showToast({
           type: "error",
-          message: "模板沒有同步成功，請確認網路後再試一次",
+          message: t("settings.template.syncFailed"),
         });
         return;
       }
@@ -151,7 +161,7 @@ export function TripsPage({ onSelectTrip }: Props) {
     } catch {
       showToast({
         type: "error",
-        message: "旅程沒有建立成功，請確認網路後再試一次",
+        message: t("trips.createFailed"),
       });
       return;
     }
@@ -180,7 +190,7 @@ export function TripsPage({ onSelectTrip }: Props) {
             <button className="text-sky-600" onClick={() => setStep("list")}>
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
-            <h1 className="text-lg font-bold">選擇準備項目</h1>
+            <h1 className="text-lg font-bold">{t("trips.choosePreparation")}</h1>
           </div>
           <div className="w-8" />
         </div>
@@ -188,13 +198,13 @@ export function TripsPage({ onSelectTrip }: Props) {
           className="btn btn-secondary w-full mb-4"
           onClick={handleSkipPreparation}
         >
-          跳過準備事項
+          {t("trips.skipPreparation")}
         </button>
         <TemplateSelector
           template={state.template}
           onConfirm={handleTemplateConfirm}
-          confirmWithUpdateLabel="更新模板並下一步 →"
-          confirmLabel="下一步 →"
+          confirmWithUpdateLabel={t("trips.updateTemplateAndNext")}
+          confirmLabel={t("trips.nextArrow")}
         />
       </div>
     );
@@ -209,13 +219,13 @@ export function TripsPage({ onSelectTrip }: Props) {
             <button className="text-sky-600" onClick={() => setStep("template")}>
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
-            <h1 className="text-lg font-bold">旅程資訊</h1>
+            <h1 className="text-lg font-bold">{t("trips.info")}</h1>
           </div>
           <div className="w-12" />
         </div>
 
         <div className="form-group">
-          <label className="form-label">名稱 *</label>
+          <label className="form-label">{t("trips.nameRequired")}</label>
           <input
             className="form-input"
             value={form.name}
@@ -223,7 +233,7 @@ export function TripsPage({ onSelectTrip }: Props) {
           />
         </div>
         <div className="form-group">
-          <label className="form-label">國家</label>
+          <label className="form-label">{t("trips.country")}</label>
           <input
             className="form-input"
             value={form.country}
@@ -232,7 +242,7 @@ export function TripsPage({ onSelectTrip }: Props) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="form-group">
-            <label className="form-label">開始日期 *</label>
+            <label className="form-label">{t("trips.startDateRequired")}</label>
             <input
               className="form-input"
               type="date"
@@ -241,7 +251,7 @@ export function TripsPage({ onSelectTrip }: Props) {
             />
           </div>
           <div className="form-group">
-            <label className="form-label">結束日期</label>
+            <label className="form-label">{t("trips.endDate")}</label>
             <input
               className="form-input"
               type="date"
@@ -251,23 +261,26 @@ export function TripsPage({ onSelectTrip }: Props) {
           </div>
         </div>
         <div className="form-group">
-          <label className="form-label">旅行類型</label>
+          <label className="form-label">{t("trips.type")}</label>
           <div className="flex gap-2 flex-wrap">
-            {tripTypes.map((t) => (
+            {tripTypes.map((tripType) => (
               <button
-                key={t}
-                className={`btn btn-sm ${form.tripType === t ? "btn-primary" : "btn-secondary"}`}
+                key={tripType}
+                className={`btn btn-sm ${form.tripType === tripType ? "btn-primary" : "btn-secondary"}`}
                 onClick={() =>
-                  setForm({ ...form, tripType: form.tripType === t ? "" : t })
+                  setForm({
+                    ...form,
+                    tripType: form.tripType === tripType ? "" : tripType,
+                  })
                 }
               >
-                {t}
+                {t(tripTypeLabelKeys[tripType])}
               </button>
             ))}
           </div>
         </div>
         <div className="form-group">
-          <label className="form-label">標籤（逗號分隔）</label>
+          <label className="form-label">{t("trips.tagsCommaSeparated")}</label>
           <input
             className="form-input"
             value={form.tags}
@@ -275,7 +288,7 @@ export function TripsPage({ onSelectTrip }: Props) {
           />
         </div>
         <button className="btn btn-primary w-full mt-2" onClick={handleCreate}>
-          建立旅程
+          {t("trips.create")}
         </button>
       </div>
     );
@@ -285,7 +298,7 @@ export function TripsPage({ onSelectTrip }: Props) {
   return (
     <div className="page-container">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold">旅程</h1>
+        <h1 className="text-xl font-bold">{t("nav.trips")}</h1>
         <button className="btn-round-add" onClick={() => setStep("template")}>
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
@@ -296,7 +309,7 @@ export function TripsPage({ onSelectTrip }: Props) {
           <p className="text-4xl mb-2">
             <FontAwesomeIcon icon={faCat} />
           </p>
-          <p>還沒有旅程，開始規劃吧！</p>
+          <p>{t("trips.empty")}</p>
         </div>
       ) : (
         visibleTrips.map((trip) => (
@@ -316,7 +329,9 @@ export function TripsPage({ onSelectTrip }: Props) {
                 <span className="tag tag-country">{trip.country}</span>
               )}
               {trip.tripType && (
-                <span className="tag tag-type">{trip.tripType}</span>
+                <span className="tag tag-type">
+                  {t(tripTypeLabelKeys[trip.tripType])}
+                </span>
               )}
               {trip.tags.map((tag) => (
                 <span key={tag} className="tag">
@@ -347,8 +362,8 @@ export function TripsPage({ onSelectTrip }: Props) {
                   event.stopPropagation();
                   toggleCompleted(trip);
                 }}
-                title={trip.isCompleted ? "取消完成" : "完成旅程"}
-                aria-label={trip.isCompleted ? "取消完成" : "完成旅程"}
+                title={trip.isCompleted ? t("trips.markIncomplete") : t("trips.markComplete")}
+                aria-label={trip.isCompleted ? t("trips.markIncomplete") : t("trips.markComplete")}
               >
                 <FontAwesomeIcon icon={faCircleCheck} />
               </button>

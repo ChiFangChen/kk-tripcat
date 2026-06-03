@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export function ScheduleTab({ tripId, viewOnly }: Props) {
+  const { t, i18n } = useTranslation();
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
   const schedule = tripData.schedule;
@@ -180,7 +182,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
     <div>
       {/* Schedule days */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold">行程表</h2>
+        <h2 className="font-semibold">{t("schedule.title")}</h2>
         {!viewOnly && (
           <button className="btn-round-add" onClick={() => setShowAddDay(true)}>
             <FontAwesomeIcon icon={faPlus} className="text-xs" />
@@ -190,7 +192,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 
       {schedule.length === 0 ? (
         <div className="empty-state">
-          <p>尚無行程</p>
+          <p>{t("schedule.empty")}</p>
         </div>
       ) : (
         schedule.map((day, dayIndex) => (
@@ -211,7 +213,8 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
                         () => !viewOnly && setEditingDayIndex(dayIndex),
                       )}
                     >
-                      {day.label || formatDateWithWeekday(day.date)}
+                      {day.label ||
+                        formatDateWithWeekday(day.date, i18n.language)}
                       {isToday(day.date) && (
                         <FontAwesomeIcon
                           icon={faLocationDot}
@@ -281,7 +284,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             icon={faNoteSticky}
             className="mr-2 text-amber-400"
           />
-          行程筆記
+          {t("schedule.notesTitle")}
         </h2>
         {!viewOnly && (
           <button
@@ -295,7 +298,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 
       {scheduleNotes.length === 0 ? (
         <div className="text-center text-sm text-slate-400 py-4">
-          備選行程、餐廳推薦、注意事項...
+          {t("schedule.notesEmpty")}
         </div>
       ) : (
         scheduleNotes.map((note) => (
@@ -333,9 +336,12 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 
       {/* Add day modal */}
       {showAddDay && (
-        <FullScreenModal title="新增天數" onClose={() => setShowAddDay(false)}>
+        <FullScreenModal
+          title={t("schedule.addDay")}
+          onClose={() => setShowAddDay(false)}
+        >
           <div className="form-group">
-            <label className="form-label">日期</label>
+            <label className="form-label">{t("schedule.date")}</label>
             <input
               className="form-input"
               type="date"
@@ -344,7 +350,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             />
           </div>
           <div className="form-group">
-            <label className="form-label">顯示標籤</label>
+            <label className="form-label">{t("schedule.displayLabel")}</label>
             <input
               className="form-input"
               value={newDay.label}
@@ -356,10 +362,10 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
               className="btn btn-secondary"
               onClick={() => setShowAddDay(false)}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" onClick={addDay}>
-              新增
+              {t("common.add")}
             </button>
           </div>
         </FullScreenModal>
@@ -367,7 +373,10 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
 
       {/* Edit day modal */}
       {editingDayIndex !== null && schedule[editingDayIndex] && (
-        <Modal title="編輯天數" onClose={() => setEditingDayIndex(null)}>
+        <Modal
+          title={t("schedule.editDay")}
+          onClose={() => setEditingDayIndex(null)}
+        >
           <DayForm
             day={schedule[editingDayIndex]}
             onSave={(date, label) => updateDay(editingDayIndex, date, label)}
@@ -391,20 +400,20 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
                   setSelectedActivity(null);
                 })}
               >
-                {selectedActivity.activity.name || "活動"}
+                {selectedActivity.activity.name || t("schedule.activity")}
               </button>
             ) : (
-              selectedActivity.activity.name || "活動"
+              selectedActivity.activity.name || t("schedule.activity")
             )
           }
           onClose={() => setSelectedActivity(null)}
         >
-          <InfoRow label="地點" value={selectedActivity.activity.place} />
-          <InfoRow label="時間" value={selectedActivity.activity.time} />
+          <InfoRow label={t("schedule.place")} value={selectedActivity.activity.place} />
+          <InfoRow label={t("schedule.time")} value={selectedActivity.activity.time} />
           {(selectedActivity.activity.address ||
             selectedActivity.activity.googleMapUrl) && (
             <InfoRow
-              label="地址"
+              label={t("schedule.address")}
               value={
                 <div>
                   {selectedActivity.activity.address && (
@@ -428,7 +437,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
           )}
           {selectedActivity.activity.booking?.platform && (
             <InfoRow
-              label="平台"
+              label={t("schedule.platform")}
               value={
                 <>
                   {selectedActivity.activity.booking.platform}
@@ -442,17 +451,17 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             />
           )}
           <InfoRow
-            label="訂單編號"
+            label={t("schedule.orderNumber")}
             value={selectedActivity.activity.booking?.orderNumber}
           />
           <InfoRow
-            label="金額"
+            label={t("schedule.amount")}
             value={selectedActivity.activity.booking?.amount}
           />
           {(selectedActivity.activity.note ||
             selectedActivity.activity.booking?.note) && (
             <InfoRow
-              label="備註"
+              label={t("schedule.note")}
               value={
                 <div className="schedule-note-text">
                   {selectedActivity.activity.note ||
@@ -471,7 +480,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
       {/* Activity edit modal */}
       {editingActivity && (
         <FullScreenModal
-          title="編輯活動"
+          title={t("schedule.editActivity")}
           onClose={() => setEditingActivity(null)}
         >
           <ActivityForm
@@ -501,23 +510,23 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
                   setSelectedNote(null);
                 })}
               >
-                {selectedNote.title || "行程筆記"}
+                {selectedNote.title || t("schedule.notesTitle")}
               </button>
             ) : (
-              selectedNote.title || "行程筆記"
+              selectedNote.title || t("schedule.notesTitle")
             )
           }
           onClose={() => setSelectedNote(null)}
         >
           <InfoRow
-            label="內容"
+            label={t("schedule.content")}
             value={
               <div className="schedule-note-text">{selectedNote.content}</div>
             }
           />
           {(selectedNote.address || selectedNote.googleMapUrl) && (
             <InfoRow
-              label="地址"
+              label={t("schedule.address")}
               value={
                 <div>
                   {selectedNote.address && (
@@ -546,7 +555,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
       {/* Add schedule note */}
       {showAddNote && (
         <FullScreenModal
-          title="新增行程筆記"
+          title={t("schedule.addNote")}
           onClose={() => setShowAddNote(false)}
         >
           <NoteForm
@@ -561,7 +570,7 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
       {/* Edit schedule note */}
       {editingNote && (
         <FullScreenModal
-          title="編輯行程筆記"
+          title={t("schedule.editNote")}
           onClose={() => setEditingNote(null)}
         >
           <NoteForm
@@ -579,17 +588,17 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
         <ConfirmDeleteModal
           title={
             confirmDelete.type === "day"
-              ? "刪除此天"
+              ? t("schedule.deleteDay")
               : confirmDelete.type === "activity"
-                ? "刪除活動"
-                : "刪除行程筆記"
+                ? t("schedule.deleteActivity")
+                : t("schedule.deleteNote")
           }
           message={
             confirmDelete.type === "day"
-              ? "確定要刪除這一天嗎？這天的活動也會一起刪除。"
+              ? t("schedule.deleteDayConfirm")
               : confirmDelete.type === "activity"
-                ? "確定要刪除這個活動嗎？圖片也會一起刪除。"
-                : "確定要刪除這則行程筆記嗎？圖片也會一起刪除。"
+                ? t("schedule.deleteActivityConfirm")
+                : t("schedule.deleteNoteConfirm")
           }
           onCancel={() => setConfirmDelete(null)}
           onConfirm={() => {
@@ -621,6 +630,7 @@ function ActivityForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(activity);
   const [booking, setBooking] = useState<BookingInfo>(activity.booking || {});
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
@@ -656,7 +666,7 @@ function ActivityForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">名稱</label>
+        <label className="form-label">{t("schedule.name")}</label>
         <input
           className="form-input"
           value={form.name}
@@ -664,7 +674,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">地點</label>
+        <label className="form-label">{t("schedule.place")}</label>
         <input
           className="form-input"
           value={form.place || ""}
@@ -672,7 +682,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">時間</label>
+        <label className="form-label">{t("schedule.time")}</label>
         <input
           className="form-input"
           value={form.time || ""}
@@ -680,7 +690,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">地址</label>
+        <label className="form-label">{t("schedule.address")}</label>
         <input
           className="form-input"
           value={form.address || ""}
@@ -688,7 +698,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">Google Map 連結</label>
+        <label className="form-label">{t("schedule.googleMapUrl")}</label>
         <input
           className="form-input"
           value={form.googleMapUrl || ""}
@@ -696,7 +706,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">訂位平台</label>
+        <label className="form-label">{t("schedule.bookingPlatform")}</label>
         <input
           className="form-input"
           value={booking.platform || ""}
@@ -704,7 +714,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">負責人</label>
+        <label className="form-label">{t("schedule.assignee")}</label>
         <input
           className="form-input"
           value={booking.assignee || ""}
@@ -712,7 +722,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">訂單編號</label>
+        <label className="form-label">{t("schedule.orderNumber")}</label>
         <input
           className="form-input"
           value={booking.orderNumber || ""}
@@ -722,7 +732,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">金額</label>
+        <label className="form-label">{t("schedule.amount")}</label>
         <input
           className="form-input"
           value={booking.amount || ""}
@@ -730,7 +740,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">備註</label>
+        <label className="form-label">{t("schedule.note")}</label>
         <textarea
           className="form-input"
           value={form.note || ""}
@@ -738,7 +748,7 @@ function ActivityForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("schedule.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -766,14 +776,14 @@ function ActivityForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       </div>
       {onDelete && activity.name && (
@@ -782,7 +792,7 @@ function ActivityForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除活動
+          {t("schedule.deleteActivity")}
         </button>
       )}
     </div>
@@ -800,13 +810,14 @@ function DayForm({
   onCancel: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const [date, setDate] = useState(day.date);
   const [label, setLabel] = useState(day.label);
 
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">日期</label>
+        <label className="form-label">{t("schedule.date")}</label>
         <input
           className="form-input"
           type="date"
@@ -815,7 +826,7 @@ function DayForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">標籤</label>
+        <label className="form-label">{t("schedule.label")}</label>
         <input
           className="form-input"
           value={label}
@@ -824,10 +835,10 @@ function DayForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button className="btn btn-primary" onClick={() => onSave(date, label)}>
-          儲存
+          {t("common.save")}
         </button>
       </div>
       <button
@@ -835,7 +846,7 @@ function DayForm({
         onClick={onDelete}
       >
         <FontAwesomeIcon icon={faTrash} className="mr-1" />
-        刪除此天
+        {t("schedule.deleteDay")}
       </button>
     </div>
   );
@@ -854,6 +865,7 @@ function NoteForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(note);
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
   const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
@@ -882,7 +894,7 @@ function NoteForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">標題</label>
+        <label className="form-label">{t("schedule.noteTitle")}</label>
         <input
           className="form-input"
           value={form.title}
@@ -890,7 +902,7 @@ function NoteForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">內容</label>
+        <label className="form-label">{t("schedule.content")}</label>
         <textarea
           className="form-input"
           rows={8}
@@ -899,7 +911,7 @@ function NoteForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">地址</label>
+        <label className="form-label">{t("schedule.address")}</label>
         <input
           className="form-input"
           value={form.address || ""}
@@ -907,7 +919,7 @@ function NoteForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">Google Map 連結</label>
+        <label className="form-label">{t("schedule.googleMapUrl")}</label>
         <input
           className="form-input"
           value={form.googleMapUrl || ""}
@@ -915,7 +927,7 @@ function NoteForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("schedule.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -943,14 +955,14 @@ function NoteForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       </div>
       {onDelete && note.title && (
@@ -959,7 +971,7 @@ function NoteForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除筆記
+          {t("schedule.deleteNote")}
         </button>
       )}
     </div>

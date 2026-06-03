@@ -5,6 +5,13 @@ import {
 
 export type ShoppingModalMode = "view" | "edit";
 
+export interface ShoppingModalTitleLabels {
+  editPoolItem: string;
+  editItem: string;
+  poolItem: string;
+  tripItem: string;
+}
+
 export function getInitialShoppingModalMode(): ShoppingModalMode {
   return "view";
 }
@@ -29,9 +36,14 @@ export function getShoppingModalTitle(
   mode: ShoppingModalMode,
   item: TripShoppingItem,
   itemName: string,
+  labels: ShoppingModalTitleLabels,
 ): string {
-  if (mode === "edit" && isLinkedTripShoppingItem(item)) return "編輯魚池項目";
-  if (mode === "edit" && !isLinkedTripShoppingItem(item)) return "編輯項目";
-  if (isLinkedTripShoppingItem(item)) return itemName || "魚池項目";
-  return itemName || "購物項目";
+  if (mode === "edit" && isLinkedTripShoppingItem(item)) {
+    return labels.editPoolItem;
+  }
+  if (mode === "edit" && !isLinkedTripShoppingItem(item)) {
+    return labels.editItem;
+  }
+  if (isLinkedTripShoppingItem(item)) return itemName || labels.poolItem;
+  return itemName || labels.tripItem;
 }

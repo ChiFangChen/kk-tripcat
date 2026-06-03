@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export function TransportTab({ tripId, viewOnly }: Props) {
+  const { t } = useTranslation();
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
   const transport = tripData.transport || [];
@@ -85,7 +87,7 @@ export function TransportTab({ tripId, viewOnly }: Props) {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold">交通資訊</h2>
+        <h2 className="font-semibold">{t("transport.title")}</h2>
         {!viewOnly && (
           <button
             className="btn-round-add"
@@ -98,7 +100,7 @@ export function TransportTab({ tripId, viewOnly }: Props) {
 
       {transport.length === 0 && (
         <div className="empty-state">
-          <p>尚無交通資訊</p>
+          <p>{t("transport.empty")}</p>
         </div>
       )}
 
@@ -118,7 +120,7 @@ export function TransportTab({ tripId, viewOnly }: Props) {
                   () => !viewOnly && setEditingItem(item),
                 )}
               >
-                {item.title || "交通方式"}
+                {item.title || t("transport.fallbackTitle")}
               </h3>
               {hasCollapsibleContent && (
                 <button
@@ -146,7 +148,11 @@ export function TransportTab({ tripId, viewOnly }: Props) {
 
       {editingItem && (
         <FullScreenModal
-          title={editingItem.title ? "編輯交通資訊" : "新增交通資訊"}
+          title={
+            editingItem.title
+              ? t("transport.editTransport")
+              : t("transport.addTransport")
+          }
           onClose={() => setEditingItem(null)}
         >
           <TransportForm
@@ -164,8 +170,8 @@ export function TransportTab({ tripId, viewOnly }: Props) {
       )}
       {confirmDeleteId && (
         <ConfirmDeleteModal
-          title="刪除交通資訊"
-          message="確定要刪除這筆交通資訊嗎？圖片也會一起刪除。"
+          title={t("transport.deleteTransport")}
+          message={t("transport.deleteTransportConfirm")}
           onCancel={() => setConfirmDeleteId(null)}
           onConfirm={() => {
             removeTransport(confirmDeleteId);
@@ -190,6 +196,7 @@ function TransportForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(item);
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
   const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
@@ -218,7 +225,7 @@ function TransportForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">標題</label>
+        <label className="form-label">{t("transport.formTitle")}</label>
         <input
           className="form-input"
           value={form.title}
@@ -227,17 +234,17 @@ function TransportForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">內容</label>
+        <label className="form-label">{t("transport.content")}</label>
         <textarea
           className="form-input"
           rows={6}
           value={form.content}
           onChange={(e) => setForm({ ...form, content: e.target.value })}
-          placeholder="內容（如：時刻表、轉乘資訊、地圖截圖連結...）"
+          placeholder={t("transport.contentPlaceholder")}
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("transport.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -265,14 +272,14 @@ function TransportForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       </div>
       {onDelete && (
@@ -281,7 +288,7 @@ function TransportForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除交通資訊
+          {t("transport.deleteTransport")}
         </button>
       )}
     </div>

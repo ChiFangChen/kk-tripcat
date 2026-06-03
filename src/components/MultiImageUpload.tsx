@@ -4,6 +4,7 @@ import { faCamera, faTrash } from "@fortawesome/free-solid-svg-icons";
 import type { ImageAsset, PendingImageFile } from "../types/images";
 import { galleryImageClassName } from "../utils/imageDisplayClasses";
 import { LoadingImage } from "./LoadingImage";
+import { useTranslation } from "react-i18next";
 
 function getPreviewBlob(file: PendingImageFile["file"]): Blob {
   return "blob" in file ? file.blob : file;
@@ -22,6 +23,7 @@ export function MultiImageUpload({
   onRemoveExisting: (imageId: string) => void;
   onRemovePending: (imageId: string) => void;
 }) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const safeExistingImages = existingImages || [];
   const safePendingImages = pendingImages || [];
@@ -86,7 +88,7 @@ export function MultiImageUpload({
         type="button"
       >
         <FontAwesomeIcon icon={faCamera} className="mr-1" />
-        新增圖片
+        {t("images.add")}
       </button>
     </div>
   );
@@ -105,6 +107,8 @@ function PreviewCard({
   pending?: boolean;
   onRemove: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="relative">
       <LoadingImage
@@ -123,7 +127,7 @@ function PreviewCard({
       </button>
       {pending && (
         <span className="absolute bottom-2 left-2 rounded bg-black/50 px-2 py-1 text-[10px] text-white">
-          待上傳
+          {t("images.pendingUpload")}
         </span>
       )}
     </div>

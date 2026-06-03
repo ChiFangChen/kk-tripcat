@@ -24,6 +24,7 @@ import type {
   MemoryPost,
 } from "../types";
 import { USER_COLORS } from "../types";
+import i18n from "../i18n";
 import * as storage from "../utils/storage";
 import { generateId } from "../utils/id";
 import {
@@ -613,7 +614,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const showSyncError = useCallback(
-    (message = "沒有同步成功，請確認網路後再試一次") => {
+    (message = i18n.t("app.syncFailed")) => {
       showToast({ type: "error", message });
     },
     [showToast],
@@ -1208,7 +1209,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await syncUser(dbRef.current!, user);
         dispatch({ type: "ADD_USER", user });
       } catch (error) {
-        showSyncError("帳號沒有建立成功，請確認網路後再試一次");
+        showSyncError(i18n.t("app.userCreateFailed"));
         throw error;
       }
       return user;
@@ -1228,7 +1229,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "UPDATE_USER", user });
         if (user.id === state.auth.currentUser?.id) storage.saveAuth(user);
       } catch (error) {
-        showSyncError("使用者資料沒有同步成功，請確認網路後再試一次");
+        showSyncError(i18n.t("app.userSyncFailed"));
         console.error("Failed to sync user:", error);
       }
     },
@@ -1332,7 +1333,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await syncTrip(dbRef.current!, trip);
         dispatch({ type: "ADD_TRIP", trip });
       } catch (error) {
-        showSyncError("旅程沒有建立成功，請確認網路後再試一次");
+        showSyncError(i18n.t("app.tripCreateFailed"));
         throw error;
       }
     },
@@ -1362,7 +1363,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         );
         dispatch({ type: "UPDATE_TRIP", trip: nextTrip });
       } catch (error) {
-        showSyncError("旅程沒有同步成功，請確認網路後再試一次");
+        showSyncError(i18n.t("app.tripSyncFailed"));
         console.error("Failed to sync trip:", error);
       }
     },
@@ -1412,7 +1413,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           storage.setItem(getUserTripUpdatedAtStorageKey(userId), restUserAt);
         }
       } catch (error) {
-        showSyncError("旅程沒有刪除成功，請確認網路後再試一次");
+        showSyncError(i18n.t("app.tripDeleteFailed"));
         console.error("Failed to delete trip:", error);
       }
     },
@@ -1476,7 +1477,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (versionBlockedTripIdsRef.current.has(tripId)) {
       const error = new Error("Blocked shared trip write from outdated client.");
       console.warn(error.message, tripId);
-      showSyncError("資料版本較新，請重新整理後再試一次");
+      showSyncError(i18n.t("app.versionOutdated"));
       return;
     }
     const updatedAt = new Date().toISOString();
@@ -1518,7 +1519,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (versionBlockedTripIdsRef.current.has(tripId)) {
       const error = new Error("Blocked user trip write from outdated client.");
       console.warn(error.message, tripId);
-      showSyncError("資料版本較新，請重新整理後再試一次");
+      showSyncError(i18n.t("app.versionOutdated"));
       return;
     }
     const updatedAt = new Date().toISOString();
@@ -1567,7 +1568,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getUserName = useCallback(
     (userId: string): string => {
-      return state.users.find((u) => u.id === userId)?.displayName || "未知";
+      return state.users.find((u) => u.id === userId)?.displayName || i18n.t("app.unknownUser");
     },
     [state.users],
   );

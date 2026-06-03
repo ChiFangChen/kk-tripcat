@@ -115,10 +115,10 @@ describe("tripEntry", () => {
   it("labels the memories tab as records", () => {
     expect(
       getEditableTabs(true).find((tab) => tab.key === "memories")?.label,
-    ).toBe("記錄");
+    ).toBe("tripTabs.memories");
     expect(
       getViewerTabs(true).find((tab) => tab.key === "memories")?.label,
-    ).toBe("記錄");
+    ).toBe("tripTabs.memories");
   });
 
   it("falls back to the default trip tab when the active tab is unavailable", () => {

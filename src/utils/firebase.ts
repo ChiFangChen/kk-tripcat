@@ -9,9 +9,9 @@ import {
 } from "firebase/storage";
 import {
   deleteImagePathWithRetry,
-  IMAGE_DELETE_FAILURE_MESSAGE,
 } from "./imageDelete";
 import { emitGlobalToast } from "./toastBus";
+import i18n from "../i18n";
 import {
   getFirestore,
   collection,
@@ -549,7 +549,7 @@ export async function deleteImage(path: string): Promise<void> {
   if (!deleted) {
     emitGlobalToast({
       type: "error",
-      message: IMAGE_DELETE_FAILURE_MESSAGE,
+      message: i18n.t("images.deleteFailed"),
     });
   }
 }

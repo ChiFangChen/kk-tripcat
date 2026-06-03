@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -56,6 +57,7 @@ interface Props {
 }
 
 export function ShoppingTab({ tripId, viewOnly }: Props) {
+  const { t } = useTranslation();
   const {
     state,
     setItems,
@@ -162,7 +164,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       );
     } catch (error) {
       console.error("Failed to sync pool item:", error);
-      showToast({ type: "error", message: "儲存失敗，請稍後再試" });
+      showToast({ type: "error", message: t("shopping.saveFailed") });
       return;
     }
     setEditingItem(null);
@@ -304,7 +306,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       );
     } catch (error) {
       console.error("Failed to promote member shopping item to pool:", error);
-      showToast({ type: "error", message: "加入魚池失敗，請稍後再試" });
+      showToast({ type: "error", message: t("shopping.addToPoolFailed") });
     }
   }
 
@@ -344,10 +346,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             : entry,
         ),
       });
-      showToast({ type: "success", message: "已加入魚池" });
+      showToast({ type: "success", message: t("shopping.addedToPool") });
     } catch (error) {
       console.error("Failed to promote shopping item to pool:", error);
-      showToast({ type: "error", message: "加入魚池失敗，請稍後再試" });
+      showToast({ type: "error", message: t("shopping.addToPoolFailed") });
     } finally {
       setPromotingItemIds((current) => {
         const next = new Set(current);
@@ -462,14 +464,14 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             onClick={openPoolModal}
           >
             <FontAwesomeIcon icon={faBoxesStacked} className="mr-1" />
-            從魚池加入
+            {t("shopping.addFromPool")}
           </button>
           <button
             className="btn btn-secondary btn-sm"
             onClick={openReviewModal}
           >
             <FontAwesomeIcon icon={faUsers} className="mr-1" />
-            查看大家想買的
+            {t("shopping.reviewOthersItems")}
           </button>
         </div>
       )}
@@ -479,13 +481,13 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
           className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!showCompleted ? "bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium" : "text-slate-400"}`}
           onClick={() => setShowCompleted(false)}
         >
-          未買 ({unchecked.length})
+          {t("shopping.unpaid")} ({unchecked.length})
         </button>
         <button
           className={`flex-1 text-xs py-1.5 rounded-md transition-all ${showCompleted ? "bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium" : "text-slate-400"}`}
           onClick={() => setShowCompleted(true)}
         >
-          全部 ({items.length})
+          {t("preparation.all")} ({items.length})
         </button>
       </div>
 
@@ -513,10 +515,10 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
               }),
           });
           const starLabel = promoting
-            ? "加入魚池中"
+            ? t("shopping.addingToPool")
             : promoted
-              ? "已加入魚池"
-              : "加入魚池";
+              ? t("shopping.addedToPool")
+              : t("shopping.addToPool");
 
           return (
             <div
@@ -557,8 +559,8 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                 <button
                   type="button"
                   className="star-btn"
-                  aria-label="查看購買紀錄"
-                  title="查看購買紀錄"
+                  aria-label={t("shopping.viewPurchaseHistory")}
+                  title={t("shopping.viewPurchaseHistory")}
                   onClick={(event) => {
                     event.stopPropagation();
                     setPurchaseHistoryItemId(item.source.itemId!);
@@ -588,7 +590,9 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         })}
         {resolvedDisplayed.length === 0 && (
           <div className="py-4 text-center text-sm text-slate-400">
-            {showCompleted ? "購物清單是空的" : "全部買好了！"}
+            {showCompleted
+              ? t("shopping.emptyList")
+              : t("shopping.everythingPurchased")}
           </div>
         )}
       </div>
@@ -606,6 +610,12 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             shoppingModalMode,
             editingItem,
             resolvedItem.name,
+            {
+              editPoolItem: t("shopping.pool.editItem"),
+              editItem: t("shopping.editItem"),
+              poolItem: t("shopping.poolItem"),
+              tripItem: t("shopping.tripItem"),
+            },
           );
           const handleTitleDoubleClick = () =>
             setShoppingModalMode((current) =>
@@ -679,7 +689,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
 
       {showAddDraftModal && (
         <FullScreenModal
-          title="新增本次旅程項目"
+          title={t("shopping.addTripItem")}
           onClose={() => setShowAddDraftModal(false)}
         >
           <DraftShoppingForm
@@ -693,7 +703,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
 
       {showPoolModal && (
         <FullScreenModal
-          title="從魚池加入"
+          title={t("shopping.addFromPool")}
           onClose={() => setShowPoolModal(false)}
         >
           <div className="space-y-3">
@@ -719,11 +729,11 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             )}
             {availablePoolItems.length === 0 ? (
               <div className="empty-state">
-                <p>魚池目前沒有項目</p>
+                <p>{t("shopping.pool.empty")}</p>
               </div>
             ) : filteredAvailablePoolItems.length === 0 ? (
               <div className="empty-state">
-                <p>沒有符合分類標籤的魚池項目</p>
+                <p>{t("shopping.pool.noMatchingTags")}</p>
               </div>
             ) : (
               filteredAvailablePoolItems.map((item) => (
@@ -773,13 +783,13 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
 
       {showReviewModal && (
         <FullScreenModal
-          title="大家想買的"
+          title={t("shopping.reviewTitle")}
           onClose={() => setShowReviewModal(false)}
         >
           <div className="space-y-3">
             {reviewItems.length === 0 ? (
               <div className="empty-state">
-                <p>目前沒有其他人新增的購物項目</p>
+                <p>{t("shopping.noReviewItems")}</p>
               </div>
             ) : (
               reviewItems.map((entry) => (
@@ -790,18 +800,20 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
                         {entry.item.textSnapshot}
                       </div>
                       <div className="text-xs text-slate-400">
-                        {getUserName(entry.userId)} 建立於{" "}
-                        {formatDate(entry.item.createdAt)}
+                        {t("shopping.createdAt", {
+                          name: getUserName(entry.userId),
+                          date: formatDate(entry.item.createdAt),
+                        })}
                       </div>
                     </div>
                     {entry.item.promotedToPoolAt ? (
-                      <span className="tag">已收編</span>
+                      <span className="tag">{t("shopping.promoted")}</span>
                     ) : (
                       <button
                         className="btn btn-primary btn-sm"
                         onClick={() => promoteToPool(entry)}
                       >
-                        加入魚池
+                        {t("shopping.addToPool")}
                       </button>
                     )}
                   </div>
@@ -835,11 +847,11 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       )}
       {confirmDeleteItemId && (
         <ConfirmDeleteModal
-          title="刪除購物項目"
+          title={t("shopping.deleteTripItem")}
           message={
             confirmDeleteItem && isLinkedTripShoppingItem(confirmDeleteItem)
-              ? "確定要從這趟旅程刪除這個購物項目嗎？魚池項目不會被刪除。"
-              : "確定要刪除這個購物項目嗎？圖片也會一起刪除。"
+              ? t("shopping.deleteLinkedTripItemConfirm")
+              : t("shopping.deleteTripItemConfirm")
           }
           onCancel={() => setConfirmDeleteItemId(null)}
           onConfirm={() => {
@@ -850,7 +862,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
       )}
       {purchaseHistoryItem && (
         <Modal
-          title="購買紀錄"
+          title={t("shopping.purchase.title")}
           onClose={() => setPurchaseHistoryItemId(null)}
         >
           <PurchaseHistoryView
@@ -867,7 +879,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         </Modal>
       )}
       {addingPurchaseItem && (
-        <Modal title="新增購買紀錄" onClose={() => setAddingPurchaseTo(null)}>
+        <Modal title={t("shopping.purchase.add")} onClose={() => setAddingPurchaseTo(null)}>
           <PurchaseForm
             onSave={(purchase) =>
               addPoolPurchase(addingPurchaseItem.id, purchase)
@@ -876,7 +888,7 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
         </Modal>
       )}
       {editingPurchase && (
-        <Modal title="編輯購買紀錄" onClose={() => setEditingPurchase(null)}>
+        <Modal title={t("shopping.purchase.edit")} onClose={() => setEditingPurchase(null)}>
           <PurchaseForm
             purchase={editingPurchase.purchase}
             onSave={(purchase) =>
@@ -917,12 +929,16 @@ function PriceBadges({
 }: {
   badges: ReturnType<typeof buildShoppingPriceBadges>;
 }) {
+  const { t } = useTranslation();
+
   if (badges.length === 0) return null;
   return (
     <span className="price-badge-row">
       {badges.map((badge) => (
         <span key={badge.label}>
-          <span className="price-badge">{badge.label}</span>
+          <span className="price-badge">
+            {t(`shopping.priceBadges.${badge.label}`)}
+          </span>
           <span>{badge.value}</span>
         </span>
       ))}
@@ -943,17 +959,19 @@ function PurchaseHistoryView({
   onEdit: (purchase: Purchase) => void;
   onDelete: (purchaseId: string) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-3">
       {!viewOnly && (
         <button className="btn btn-primary w-full" onClick={onAdd}>
           <FontAwesomeIcon icon={faPlus} className="mr-1" />
-          新增購買紀錄
+          {t("shopping.purchase.add")}
         </button>
       )}
       {item.purchases.length === 0 ? (
         <div className="empty-state">
-          <p>目前沒有購買紀錄</p>
+          <p>{t("shopping.purchase.empty")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -977,8 +995,8 @@ function PurchaseHistoryView({
                   <button
                     type="button"
                     className="pool-item-icon-button"
-                    aria-label="編輯購買紀錄"
-                    title="編輯購買紀錄"
+                    aria-label={t("shopping.purchase.edit")}
+                    title={t("shopping.purchase.edit")}
                     onClick={() => onEdit(purchase)}
                   >
                     <FontAwesomeIcon icon={faPen} />
@@ -986,8 +1004,8 @@ function PurchaseHistoryView({
                   <button
                     type="button"
                     className="pool-item-icon-button"
-                    aria-label="刪除購買紀錄"
-                    title="刪除購買紀錄"
+                    aria-label={t("shopping.purchase.delete")}
+                    title={t("shopping.purchase.delete")}
                     onClick={() => onDelete(purchase.id)}
                   >
                     <FontAwesomeIcon icon={faTrash} />
@@ -1009,6 +1027,7 @@ function PurchaseForm({
   purchase?: Purchase;
   onSave: (purchase: Purchase) => void | Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<Omit<Purchase, "id">>(() => ({
     date: purchase?.date ?? new Date().toISOString().split("T")[0],
     amount: purchase?.amount ?? "",
@@ -1021,7 +1040,7 @@ function PurchaseForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">金額</label>
+        <label className="form-label">{t("shopping.form.amount")}</label>
         <input
           className="form-input"
           value={form.amount}
@@ -1029,7 +1048,7 @@ function PurchaseForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">幣別</label>
+        <label className="form-label">{t("shopping.form.currency")}</label>
         <input
           className="form-input"
           value={form.currency || ""}
@@ -1039,7 +1058,7 @@ function PurchaseForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">日期</label>
+        <label className="form-label">{t("shopping.form.date")}</label>
         <input
           className="form-input"
           type="date"
@@ -1048,7 +1067,7 @@ function PurchaseForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">備註</label>
+        <label className="form-label">{t("shopping.form.note")}</label>
         <input
           className="form-input"
           value={form.note || ""}
@@ -1061,7 +1080,7 @@ function PurchaseForm({
           void onSave({ ...form, id: purchase?.id ?? generateId() });
         }}
       >
-        儲存
+        {t("common.save")}
       </button>
     </div>
   );
@@ -1080,6 +1099,7 @@ function DraftShoppingForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(item);
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
   const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
@@ -1106,7 +1126,7 @@ function DraftShoppingForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">品名</label>
+        <label className="form-label">{t("shopping.form.itemName")}</label>
         <input
           className="form-input"
           value={form.textSnapshot}
@@ -1117,7 +1137,7 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">品牌</label>
+        <label className="form-label">{t("shopping.form.brand")}</label>
         <input
           className="form-input"
           value={form.brand || ""}
@@ -1127,7 +1147,7 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">規格</label>
+        <label className="form-label">{t("shopping.form.spec")}</label>
         <input
           className="form-input"
           value={form.spec || ""}
@@ -1135,7 +1155,7 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">購買價格</label>
+        <label className="form-label">{t("shopping.form.purchaseAmount")}</label>
         <input
           className="form-input"
           value={form.purchaseAmount || ""}
@@ -1145,7 +1165,7 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">購買幣別</label>
+        <label className="form-label">{t("shopping.form.purchaseCurrency")}</label>
         <input
           className="form-input"
           value={form.purchaseCurrency || ""}
@@ -1155,7 +1175,7 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">建議售價</label>
+        <label className="form-label">{t("shopping.form.suggestedPrice")}</label>
         <input
           className="form-input"
           value={form.estimatedAmount || ""}
@@ -1165,7 +1185,7 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">幣別</label>
+        <label className="form-label">{t("shopping.form.currency")}</label>
         <input
           className="form-input"
           value={form.currency || ""}
@@ -1175,7 +1195,7 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">備註</label>
+        <label className="form-label">{t("shopping.form.note")}</label>
         <textarea
           className="form-input"
           value={form.note || ""}
@@ -1183,7 +1203,7 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("shopping.form.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -1211,14 +1231,14 @@ function DraftShoppingForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       </div>
       {onDelete && (
@@ -1227,7 +1247,7 @@ function DraftShoppingForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除
+          {t("common.delete")}
         </button>
       )}
     </div>
@@ -1247,6 +1267,7 @@ function PoolItemForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const { state } = useApp();
   const [form, setForm] = useState(item);
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
@@ -1274,7 +1295,7 @@ function PoolItemForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">名稱</label>
+        <label className="form-label">{t("shopping.form.name")}</label>
         <input
           className="form-input"
           value={form.name}
@@ -1283,7 +1304,7 @@ function PoolItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">品牌</label>
+        <label className="form-label">{t("shopping.form.brand")}</label>
         <input
           className="form-input"
           value={form.brand || ""}
@@ -1293,7 +1314,7 @@ function PoolItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">規格</label>
+        <label className="form-label">{t("shopping.form.spec")}</label>
         <input
           className="form-input"
           value={form.spec || ""}
@@ -1306,7 +1327,7 @@ function PoolItemForm({
         onChange={(tags) => setForm({ ...form, tags })}
       />
       <div className="form-group">
-        <label className="form-label">建議售價</label>
+        <label className="form-label">{t("shopping.form.suggestedPrice")}</label>
         <input
           className="form-input"
           value={form.estimatedAmount || ""}
@@ -1316,7 +1337,7 @@ function PoolItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">幣別</label>
+        <label className="form-label">{t("shopping.form.currency")}</label>
         <input
           className="form-input"
           value={form.currency || ""}
@@ -1326,7 +1347,7 @@ function PoolItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">備註</label>
+        <label className="form-label">{t("shopping.form.note")}</label>
         <textarea
           className="form-input"
           value={form.notes || ""}
@@ -1334,7 +1355,7 @@ function PoolItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("shopping.form.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -1362,14 +1383,14 @@ function PoolItemForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       </div>
       {onDelete && (
@@ -1378,7 +1399,7 @@ function PoolItemForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除
+          {t("common.delete")}
         </button>
       )}
     </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { normalizePoolItemTags } from "./shoppingTypes";
 
 interface PoolItemTagsFieldProps {
@@ -12,6 +13,7 @@ export function PoolItemTagsField({
   suggestions,
   onChange,
 }: PoolItemTagsFieldProps) {
+  const { t } = useTranslation();
   const [draftTag, setDraftTag] = useState("");
   const normalizedTags = normalizePoolItemTags(tags);
   const availableSuggestions = normalizePoolItemTags(suggestions).filter(
@@ -31,7 +33,7 @@ export function PoolItemTagsField({
 
   return (
     <div className="form-group">
-      <label className="form-label">分類標籤</label>
+      <label className="form-label">{t("shopping.form.categoryTags")}</label>
       {normalizedTags.length > 0 && (
         <div className="pool-tag-row mb-2">
           {normalizedTags.map((tag) => (
@@ -40,7 +42,7 @@ export function PoolItemTagsField({
               <button
                 type="button"
                 className="pool-tag-remove"
-                aria-label={`移除分類標籤 ${tag}`}
+                aria-label={t("shopping.form.removeCategoryTag", { tag })}
                 onClick={() => removeTag(tag)}
               >
                 x
@@ -65,7 +67,7 @@ export function PoolItemTagsField({
           className="btn btn-secondary"
           onClick={() => addTag(draftTag)}
         >
-          新增
+          {t("common.add")}
         </button>
       </div>
       {availableSuggestions.length > 0 && (

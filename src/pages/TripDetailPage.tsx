@@ -29,6 +29,7 @@ import {
   getTripTabGroups,
   getViewerTabs,
 } from "./trip/tripEntry";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   tripId: string;
@@ -37,6 +38,7 @@ interface Props {
 }
 
 export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
+  const { t } = useTranslation();
   const {
     state,
     loading,
@@ -138,7 +140,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       } catch {
         showToast({
           type: "error",
-          message: "模板沒有同步成功，請確認網路後再試一次",
+          message: t("settings.template.syncFailed"),
         });
         return;
       }
@@ -171,9 +173,9 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   if (!trip) {
     return (
       <div className="page-container">
-        <p className="text-center text-slate-400 py-8">找不到此旅程</p>
+        <p className="text-center text-slate-400 py-8">{t("app.tripNotFound")}</p>
         <button className="btn btn-secondary w-full" onClick={onBack}>
-          返回
+          {t("common.back")}
         </button>
       </div>
     );
@@ -183,21 +185,23 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     return (
       <div className="page-container">
         <div className="card">
-          <h1 className="text-lg font-bold mb-2">第一次進入旅程</h1>
+          <h1 className="text-lg font-bold mb-2">{t("tripDetail.firstEntry")}</h1>
           <p className="text-sm text-slate-400 mb-6">
-            你要為「{trip.name}」設定自己的準備事項嗎？
+            {t("tripDetail.firstEntryQuestion", {
+              name: trip.name,
+            })}
           </p>
           <button
             className="btn btn-primary w-full"
             onClick={() => setSetupChoice("preparation")}
           >
-            加入準備事項
+            {t("tripDetail.addPreparationItems")}
           </button>
           <button
             className="btn btn-secondary w-full mt-2"
             onClick={handleSkipPreparation}
           >
-            略過準備事項
+            {t("tripDetail.skipPreparationItems")}
           </button>
         </div>
       </div>
@@ -219,16 +223,16 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
             >
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
-            <h1 className="text-lg font-bold">選擇準備項目</h1>
+            <h1 className="text-lg font-bold">{t("trips.choosePreparation")}</h1>
           </div>
           <div className="w-8" />
         </div>
-        <p className="text-sm text-slate-400 mb-4">請編輯準備事項</p>
+        <p className="text-sm text-slate-400 mb-4">{t("tripDetail.editPreparationItems")}</p>
         <TemplateSelector
           template={state.template}
           onConfirm={handleSetupComplete}
-          confirmWithUpdateLabel="將以上存入準備事項模板並套用"
-          confirmLabel="直接套用"
+          confirmWithUpdateLabel={t("tripDetail.saveTemplateAndApply")}
+          confirmLabel={t("tripDetail.applyDirectly")}
         />
       </div>
     );
@@ -301,12 +305,12 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
               )}
             </>
           )}
-          {viewOnly && <span className="status-badge">唯讀</span>}
+          {viewOnly && <span className="status-badge">{t("tripDetail.readOnly")}</span>}
         </div>
       </div>
 
       {editingTrip && (
-        <FullScreenModal title="編輯旅程" onClose={() => setEditingTrip(false)}>
+        <FullScreenModal title={t("tripDetail.editTrip")} onClose={() => setEditingTrip(false)}>
           <TripEditForm
             trip={trip}
             onSave={handleUpdateTrip}
@@ -323,7 +327,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
               className={`trip-tab ${effectiveActiveTab === tab.key ? "active" : ""}`}
               onClick={() => setActiveTab(tab.key)}
             >
-              {tab.label}
+              {t(tab.label)}
             </button>
           ))}
         </div>
@@ -332,7 +336,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
             <button
               className={`trip-tab-menu-btn ${menuTabs.some((tab) => tab.key === effectiveActiveTab) ? "active" : ""}`}
               onClick={() => setShowTabMenu((current) => !current)}
-              title="更多分頁"
+              title={t("tripDetail.moreTabs")}
             >
               <FontAwesomeIcon icon={faEllipsisVertical} />
             </button>
@@ -352,7 +356,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
                         setShowTabMenu(false);
                       }}
                     >
-                      {tab.label}
+                      {t(tab.label)}
                     </button>
                   ))}
                 </div>
@@ -396,32 +400,32 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       {showUserMenu && <UserMenu onClose={() => setShowUserMenu(false)} />}
 
       {showShare && (
-        <Modal title="分享旅程" onClose={() => setShowShare(false)}>
+        <Modal title={t("tripDetail.shareTrip")} onClose={() => setShowShare(false)}>
           <div className="flex flex-col gap-3">
             {admin && !completed && (
               <div>
-                <p className="text-sm font-medium mb-1">邀請加入連結</p>
+                <p className="text-sm font-medium mb-1">{t("tripDetail.inviteLink")}</p>
                 <p className="text-xs text-slate-400 mb-2">
-                  對方需登入，加入後可編輯共用資料
+                  {t("tripDetail.inviteLinkDescription")}
                 </p>
                 <button
                   className="btn btn-primary w-full"
                   onClick={() => copyLink("join")}
                 >
-                  {copied === "join" ? "已複製！" : "複製邀請連結"}
+                  {copied === "join" ? t("tripDetail.copied") : t("tripDetail.copyInviteLink")}
                 </button>
               </div>
             )}
             <div>
-              <p className="text-sm font-medium mb-1">唯讀連結</p>
+              <p className="text-sm font-medium mb-1">{t("tripDetail.readOnlyLink")}</p>
               <p className="text-xs text-slate-400 mb-2">
-                不需登入，只能看共用資料（行程/航班/飯店/交通）
+                {t("tripDetail.readOnlyLinkDescription")}
               </p>
               <button
                 className="btn btn-secondary w-full"
                 onClick={() => copyLink("view")}
               >
-                {copied === "view" ? "已複製！" : "複製唯讀連結"}
+                {copied === "view" ? t("tripDetail.copied") : t("tripDetail.copyReadOnlyLink")}
               </button>
             </div>
           </div>

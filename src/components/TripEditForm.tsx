@@ -1,7 +1,16 @@
 import { useState } from "react";
 import type { Trip, TripType } from "../types";
+import { useTranslation } from "react-i18next";
 
-const tripTypes: TripType[] = ["情侶", "朋友", "家人", "獨旅"];
+type FilledTripType = Exclude<TripType, "">;
+
+const tripTypes: FilledTripType[] = ["情侶", "朋友", "家人", "獨旅"];
+const tripTypeLabelKeys: Record<FilledTripType, string> = {
+  情侶: "trips.types.couple",
+  朋友: "trips.types.friends",
+  家人: "trips.types.family",
+  獨旅: "trips.types.solo",
+};
 
 interface Props {
   trip: Trip;
@@ -10,6 +19,7 @@ interface Props {
 }
 
 export function TripEditForm({ trip, onSave, onCancel }: Props) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     name: trip.name,
     startDate: trip.startDate,
@@ -22,7 +32,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">旅程名稱</label>
+        <label className="form-label">{t("trips.tripName")}</label>
         <input
           className="form-input"
           value={form.name}
@@ -31,7 +41,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">開始日期</label>
+          <label className="form-label">{t("trips.startDate")}</label>
           <input
             className="form-input"
             type="date"
@@ -40,7 +50,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
           />
         </div>
         <div className="form-group flex-1">
-          <label className="form-label">結束日期</label>
+          <label className="form-label">{t("trips.endDate")}</label>
           <input
             className="form-input"
             type="date"
@@ -50,7 +60,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
         </div>
       </div>
       <div className="form-group">
-        <label className="form-label">國家</label>
+        <label className="form-label">{t("trips.country")}</label>
         <input
           className="form-input"
           value={form.country}
@@ -58,7 +68,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
         />
       </div>
       <div className="form-group">
-        <label className="form-label">旅行類型</label>
+        <label className="form-label">{t("trips.type")}</label>
         <div className="flex gap-2 flex-wrap">
           {tripTypes.map((type) => (
             <button
@@ -72,13 +82,13 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
               }
               type="button"
             >
-              {type}
+              {t(tripTypeLabelKeys[type])}
             </button>
           ))}
         </div>
       </div>
       <div className="form-group">
-        <label className="form-label">標籤（逗號分隔）</label>
+        <label className="form-label">{t("trips.tagsCommaSeparated")}</label>
         <input
           className="form-input"
           value={form.tags}
@@ -87,7 +97,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
@@ -108,7 +118,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
             })
           }
         >
-          儲存
+          {t("common.save")}
         </button>
       </div>
     </div>

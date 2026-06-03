@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faThumbtack } from '@fortawesome/free-solid-svg-icons'
 import type { Template, ChecklistItem, TemplateCategory } from '../types'
 import { generateId } from '../utils/id'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   template: Template
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function TemplateSelector({ template, onConfirm, confirmLabel, confirmWithUpdateLabel }: Props) {
+  const { t } = useTranslation()
   const [selectedCategories, setSelectedCategories] = useState<Record<string, boolean>>(() => {
     const cats: Record<string, boolean> = {}
     for (const cat of template.categories) cats[cat.name] = true
@@ -144,7 +146,7 @@ export function TemplateSelector({ template, onConfirm, confirmLabel, confirmWit
     <div>
       {template.notes && (
         <div className="card mb-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-          <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />注意事項</p>
+          <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1"><FontAwesomeIcon icon={faThumbtack} className="mr-1" />{t('settings.template.notes')}</p>
           <p className="text-sm whitespace-pre-wrap">{template.notes}</p>
         </div>
       )}
@@ -229,4 +231,3 @@ export function TemplateSelector({ template, onConfirm, confirmLabel, confirmWit
     </div>
   )
 }
-

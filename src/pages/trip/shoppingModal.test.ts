@@ -22,6 +22,13 @@ const linkedItem: TripShoppingItem = {
   itemId: "pool-1",
 };
 
+const labels = {
+  editPoolItem: "Edit pool item",
+  editItem: "Edit item",
+  poolItem: "Pool item",
+  tripItem: "Shopping item",
+};
+
 describe("shopping modal mode", () => {
   it("opens list items in view mode", () => {
     expect(getInitialShoppingModalMode()).toBe("view");
@@ -49,10 +56,14 @@ describe("shopping modal mode", () => {
   });
 
   it("uses the item name as the view modal title", () => {
-    expect(getShoppingModalTitle("view", draftItem, "Socks")).toBe("Socks");
+    expect(getShoppingModalTitle("view", draftItem, "Socks", labels)).toBe(
+      "Socks",
+    );
   });
 
   it("keeps the edit modal title in edit mode", () => {
-    expect(getShoppingModalTitle("edit", draftItem, "Socks")).toBe("編輯項目");
+    expect(getShoppingModalTitle("edit", draftItem, "Socks", labels)).toBe(
+      "Edit item",
+    );
   });
 });

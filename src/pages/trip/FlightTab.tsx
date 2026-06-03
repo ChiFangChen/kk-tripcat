@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function FlightTab({ tripId, viewOnly }: Props) {
+  const { t } = useTranslation();
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
   const flights = tripData.flights;
@@ -139,7 +141,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold">航班資訊</h2>
+        <h2 className="font-semibold">{t("flights.title")}</h2>
         {!viewOnly && (
           <button
             className="btn-round-add"
@@ -152,7 +154,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
 
       {flights.length === 0 && (
         <div className="empty-state">
-          <p>尚無航班資訊</p>
+          <p>{t("flights.empty")}</p>
         </div>
       )}
 
@@ -167,13 +169,13 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                   () => !viewOnly && setEditingFlight(flight),
                 )}
               >
-                {flight.airline || "航班"}
+                {flight.airline || t("flights.flight")}
               </h3>
               {(flight.memberPlan || flight.memberNumber) && (
                 <div className="flight-card-meta">
                   {(flight.memberPlan || flight.memberNumber) && (
                     <span className="flight-meta-chip">
-                      {`${flight.memberPlan ? flight.memberPlan : "會員"} ${flight.memberNumber && flight.memberNumber}`}
+                      {`${flight.memberPlan ? flight.memberPlan : t("flights.member")} ${flight.memberNumber && flight.memberNumber}`}
                     </span>
                   )}
                 </div>
@@ -191,7 +193,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
             flight.booking?.assignee) && (
             <div className="flight-panel-card">
               <Accordion
-                title="票務"
+                title={t("flights.ticketing")}
                 isOpen={
                   !(
                     collapsedSections[
@@ -203,13 +205,19 @@ export function FlightTab({ tripId, viewOnly }: Props) {
               >
                 <div className="flight-panel-body">
                   <InfoRow
-                    label="訂位代號"
+                    label={t("flights.bookingCode")}
                     value={getFlightBookingCode(flight)}
                   />
-                  <InfoRow label="票號" value={flight.ticketNumber} />
-                  <InfoRow label="票價" value={getFlightTicketPrice(flight)} />
                   <InfoRow
-                    label="平台"
+                    label={t("flights.ticketNumber")}
+                    value={flight.ticketNumber}
+                  />
+                  <InfoRow
+                    label={t("flights.ticketPrice")}
+                    value={getFlightTicketPrice(flight)}
+                  />
+                  <InfoRow
+                    label={t("flights.platform")}
                     value={
                       flight.booking?.platform ? (
                         <div className="flex items-center gap-2">
@@ -223,9 +231,9 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                       ) : undefined
                     }
                   />
-                  <InfoRow label="備註" value={flight.booking?.note} />
+                  <InfoRow label={t("flights.note")} value={flight.booking?.note} />
                   <InfoRow
-                    label="託運行李"
+                    label={t("flights.checkedBaggage")}
                     value={
                       flight.checkedBaggage ? (
                         <div className="flight-multiline-text">
@@ -235,7 +243,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                     }
                   />
                   <InfoRow
-                    label="隨身行李"
+                    label={t("flights.carryOn")}
                     value={
                       flight.carryOn ? (
                         <div className="flight-multiline-text">
@@ -296,17 +304,20 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                 </div>
 
                 <div>
-                  <InfoRow label="航班" value={getFlightNumberLabel(leg)} />
                   <InfoRow
-                    label="起飛機場"
+                    label={t("flights.flightNumber")}
+                    value={getFlightNumberLabel(leg)}
+                  />
+                  <InfoRow
+                    label={t("flights.departureAirport")}
                     value={<AirportNameWithTerminal airport={departure} />}
                   />
                   <InfoRow
-                    label="抵達機場"
+                    label={t("flights.arrivalAirport")}
                     value={<AirportNameWithTerminal airport={arrival} />}
                   />
-                  <InfoRow label="餐點" value={leg.meal} />
-                  <InfoRow label="座位" value={leg.seat} />
+                  <InfoRow label={t("flights.meal")} value={leg.meal} />
+                  <InfoRow label={t("flights.seat")} value={leg.seat} />
                 </div>
               </div>
             );
@@ -325,7 +336,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                     current === flight.id ? null : flight.id,
                   );
                 }}
-                title="新增航段"
+                title={t("flights.addLeg")}
               >
                 <FontAwesomeIcon icon={faPlus} className="text-xs" />
               </button>
@@ -340,13 +351,13 @@ export function FlightTab({ tripId, viewOnly }: Props) {
                       className="inline-action-menu-item"
                       onClick={() => openBlankLeg(flight.id)}
                     >
-                      新增
+                      {t("common.add")}
                     </button>
                     <button
                       className="inline-action-menu-item"
                       onClick={() => openLegFromTemplate(flight)}
                     >
-                      從模板新增
+                      {t("flights.addLegFromTemplate")}
                     </button>
                   </div>
                 </>
@@ -358,7 +369,11 @@ export function FlightTab({ tripId, viewOnly }: Props) {
 
       {editingFlight && (
         <FullScreenModal
-          title={editingFlight.airline ? "編輯航班" : "新增航班"}
+          title={
+            editingFlight.airline
+              ? t("flights.editFlight")
+              : t("flights.addFlight")
+          }
           onClose={() => setEditingFlight(null)}
         >
           <FlightForm
@@ -380,7 +395,7 @@ export function FlightTab({ tripId, viewOnly }: Props) {
 
       {editingLeg && editingFlightId && (
         <FullScreenModal
-          title="航段"
+          title={t("flights.leg")}
           onClose={() => {
             setEditingLeg(null);
             setEditingFlightId(null);
@@ -408,11 +423,15 @@ export function FlightTab({ tripId, viewOnly }: Props) {
       )}
       {confirmDelete && (
         <ConfirmDeleteModal
-          title={confirmDelete.type === "flight" ? "刪除航班" : "刪除航段"}
+          title={
+            confirmDelete.type === "flight"
+              ? t("flights.deleteFlight")
+              : t("flights.deleteLeg")
+          }
           message={
             confirmDelete.type === "flight"
-              ? "確定要刪除這筆航班嗎？航段也會一起刪除。"
-              : "確定要刪除這筆航段嗎？"
+              ? t("flights.deleteFlightConfirm")
+              : t("flights.deleteLegConfirm")
           }
           onCancel={() => setConfirmDelete(null)}
           onConfirm={() => {
@@ -493,6 +512,7 @@ function FlightForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     ...flight,
     bookingCode: getFlightBookingCode(flight) || "",
@@ -507,7 +527,7 @@ function FlightForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">航空公司</label>
+        <label className="form-label">{t("flights.airline")}</label>
         <input
           className="form-input"
           value={form.airline}
@@ -516,7 +536,7 @@ function FlightForm({
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">訂位代號</label>
+          <label className="form-label">{t("flights.bookingCode")}</label>
           <input
             className="form-input"
             value={form.bookingCode || ""}
@@ -524,7 +544,7 @@ function FlightForm({
           />
         </div>
         <div className="form-group">
-          <label className="form-label">機票號碼</label>
+          <label className="form-label">{t("flights.ticketNumber")}</label>
           <input
             className="form-input"
             value={form.ticketNumber || ""}
@@ -534,7 +554,7 @@ function FlightForm({
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">會員方案</label>
+          <label className="form-label">{t("flights.memberPlan")}</label>
           <input
             className="form-input"
             value={form.memberPlan || ""}
@@ -542,7 +562,7 @@ function FlightForm({
           />
         </div>
         <div className="form-group flex-1">
-          <label className="form-label">會員卡號</label>
+          <label className="form-label">{t("flights.memberNumber")}</label>
           <input
             className="form-input"
             value={form.memberNumber || ""}
@@ -551,7 +571,7 @@ function FlightForm({
         </div>
       </div>
       <div className="form-group">
-        <label className="form-label">平台</label>
+        <label className="form-label">{t("flights.platform")}</label>
         <input
           className="form-input"
           value={booking.platform || ""}
@@ -560,7 +580,7 @@ function FlightForm({
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">負責人</label>
+          <label className="form-label">{t("flights.assignee")}</label>
           <input
             className="form-input"
             value={booking.assignee || ""}
@@ -572,7 +592,7 @@ function FlightForm({
         <div className="form-group flex-1" />
       </div>
       <div className="form-group flex-1">
-        <label className="form-label">票價</label>
+        <label className="form-label">{t("flights.ticketPrice")}</label>
         <input
           className="form-input"
           value={form.ticketPrice || ""}
@@ -580,7 +600,7 @@ function FlightForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">票務備註</label>
+        <label className="form-label">{t("flights.ticketingNote")}</label>
         <textarea
           className="form-input"
           value={booking.note || ""}
@@ -589,7 +609,7 @@ function FlightForm({
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">託運行李</label>
+          <label className="form-label">{t("flights.checkedBaggage")}</label>
           <textarea
             className="form-input"
             rows={4}
@@ -600,7 +620,7 @@ function FlightForm({
           />
         </div>
         <div className="form-group flex-1">
-          <label className="form-label">隨身行李</label>
+          <label className="form-label">{t("flights.carryOn")}</label>
           <textarea
             className="form-input"
             rows={4}
@@ -611,7 +631,7 @@ function FlightForm({
       </div>
       <div className="form-actions mt-8">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
@@ -626,7 +646,7 @@ function FlightForm({
             })
           }
         >
-          儲存
+          {t("common.save")}
         </button>
       </div>
       {onDelete && (
@@ -635,7 +655,7 @@ function FlightForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除航班
+          {t("flights.deleteFlight")}
         </button>
       )}
     </div>
@@ -661,12 +681,13 @@ function LegForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(leg);
 
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">方向（如：去程：台北 → 清邁）</label>
+        <label className="form-label">{t("flights.direction")}</label>
         <input
           className="form-input"
           value={form.direction}
@@ -674,7 +695,7 @@ function LegForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">日期</label>
+        <label className="form-label">{t("flights.date")}</label>
         <input
           className="form-input"
           type="date"
@@ -683,7 +704,7 @@ function LegForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">航班號碼</label>
+        <label className="form-label">{t("flights.flightNumberForm")}</label>
         <input
           className="form-input"
           value={form.flightNumber}
@@ -693,7 +714,7 @@ function LegForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">機型</label>
+        <label className="form-label">{t("flights.aircraft")}</label>
         <input
           className="form-input"
           value={form.aircraft || ""}
@@ -702,7 +723,7 @@ function LegForm({
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">起飛時間</label>
+          <label className="form-label">{t("flights.departureTime")}</label>
           <input
             className="form-input"
             value={form.departureTime}
@@ -712,7 +733,7 @@ function LegForm({
           />
         </div>
         <div className="form-group flex-1">
-          <label className="form-label">抵達時間</label>
+          <label className="form-label">{t("flights.arrivalTime")}</label>
           <input
             className="form-input"
             value={form.arrivalTime}
@@ -722,7 +743,9 @@ function LegForm({
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">起飛機場縮寫</label>
+          <label className="form-label">
+            {t("flights.departureAirportCode")}
+          </label>
           <input
             className="form-input"
             value={form.departureAirportCode || ""}
@@ -735,7 +758,9 @@ function LegForm({
           />
         </div>
         <div className="form-group flex-1">
-          <label className="form-label">抵達機場縮寫</label>
+          <label className="form-label">
+            {t("flights.arrivalAirportCode")}
+          </label>
           <input
             className="form-input"
             value={form.arrivalAirportCode || ""}
@@ -750,7 +775,9 @@ function LegForm({
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">起飛機場中文</label>
+          <label className="form-label">
+            {t("flights.departureAirportName")}
+          </label>
           <input
             className="form-input"
             value={form.departureAirport}
@@ -760,7 +787,9 @@ function LegForm({
           />
         </div>
         <div className="form-group flex-1">
-          <label className="form-label">抵達機場中文</label>
+          <label className="form-label">
+            {t("flights.arrivalAirportName")}
+          </label>
           <input
             className="form-input"
             value={form.arrivalAirport}
@@ -772,7 +801,7 @@ function LegForm({
       </div>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">起飛航廈</label>
+          <label className="form-label">{t("flights.departureTerminal")}</label>
           <input
             className="form-input"
             value={form.departureTerminal || ""}
@@ -782,7 +811,7 @@ function LegForm({
           />
         </div>
         <div className="form-group flex-1">
-          <label className="form-label">抵達航廈</label>
+          <label className="form-label">{t("flights.arrivalTerminal")}</label>
           <input
             className="form-input"
             value={form.arrivalTerminal || ""}
@@ -793,7 +822,7 @@ function LegForm({
         </div>
       </div>
       <div className="form-group">
-        <label className="form-label">飛行時間</label>
+        <label className="form-label">{t("flights.duration")}</label>
         <input
           className="form-input"
           value={form.duration || ""}
@@ -801,7 +830,7 @@ function LegForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">餐點</label>
+        <label className="form-label">{t("flights.meal")}</label>
         <input
           className="form-input"
           value={form.meal || ""}
@@ -809,7 +838,7 @@ function LegForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">座位</label>
+        <label className="form-label">{t("flights.seat")}</label>
         <input
           className="form-input"
           value={form.seat || ""}
@@ -818,10 +847,10 @@ function LegForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button className="btn btn-primary" onClick={() => onSave(form)}>
-          儲存
+          {t("common.save")}
         </button>
       </div>
       {onDelete && (
@@ -830,7 +859,7 @@ function LegForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除航段
+          {t("flights.deleteLeg")}
         </button>
       )}
     </div>

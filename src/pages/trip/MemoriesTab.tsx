@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faComment,
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export function MemoriesTab({ tripId, viewOnly }: Props) {
+  const { t } = useTranslation();
   const {
     state,
     getTripData,
@@ -187,13 +189,13 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <div>
+        <div className="flex flex-col gap-2">
           {admin && !viewOnly && (
             <SwitchControl
               checked={!!trip?.memoriesVisibleToViewers}
               onChange={setPendingVisibility}
-              ariaLabel="公開記錄"
-              title="公開記錄"
+              ariaLabel={t("memories.publicRecords")}
+              title={t("memories.publicRecords")}
             />
           )}
         </div>
@@ -209,7 +211,7 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
 
       {posts.length === 0 ? (
         <div className="empty-state">
-          <p>還沒有回憶</p>
+          <p>{t("memories.empty")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -311,7 +313,7 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
                     }
                   >
                     <FontAwesomeIcon icon={faComment} className="mr-1" />
-                    留言
+                    {t("memories.comment")}
                   </button>
                 )}
               </div>
@@ -324,8 +326,8 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
         <FullScreenModal
           title={
             posts.some((post) => post.id === editingPost.id)
-              ? "編輯回憶"
-              : "新增回憶"
+              ? t("memories.editMemory")
+              : t("memories.addMemory")
           }
           onClose={() => setEditingPost(null)}
         >
@@ -351,8 +353,8 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
               ?.comments.some(
                 (comment) => comment.id === editingComment.comment.id,
               )
-              ? "編輯留言"
-              : "新增留言"
+              ? t("memories.editComment")
+              : t("memories.addComment")
           }
           onClose={() => setEditingComment(null)}
         >
@@ -376,38 +378,44 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
       )}
 
       {confirmDeletePost && (
-        <Modal title="刪除回憶" onClose={() => setConfirmDeletePost(null)}>
+        <Modal
+          title={t("memories.deleteMemory")}
+          onClose={() => setConfirmDeletePost(null)}
+        >
           <p className="text-sm mb-4">
-            確定要刪除這則回憶嗎？留言和圖片也會一起刪除。
+            {t("memories.deleteMemoryConfirm")}
           </p>
           <div className="flex gap-2">
             <button
               className="btn btn-secondary flex-1"
               onClick={() => setConfirmDeletePost(null)}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button
               className="btn btn-secondary btn-danger flex-1"
               onClick={() => deletePost(confirmDeletePost)}
             >
-              刪除
+              {t("common.delete")}
             </button>
           </div>
         </Modal>
       )}
 
       {confirmDeleteComment && (
-        <Modal title="刪除留言" onClose={() => setConfirmDeleteComment(null)}>
+        <Modal
+          title={t("memories.deleteComment")}
+          onClose={() => setConfirmDeleteComment(null)}
+        >
           <p className="text-sm mb-4">
-            確定要刪除這則留言嗎？圖片也會一起刪除。
+            {t("memories.deleteCommentConfirm")}
           </p>
           <div className="flex gap-2">
             <button
               className="btn btn-secondary flex-1"
               onClick={() => setConfirmDeleteComment(null)}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button
               className="btn btn-secondary btn-danger flex-1"
@@ -418,24 +426,27 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
                 )
               }
             >
-              刪除
+              {t("common.delete")}
             </button>
           </div>
         </Modal>
       )}
 
       {pendingVisibility !== null && (
-        <Modal title="公開記錄" onClose={() => setPendingVisibility(null)}>
+        <Modal
+          title={t("memories.publicRecords")}
+          onClose={() => setPendingVisibility(null)}
+        >
           <div className="text-sm mb-4">
             {pendingVisibility ? (
               <div>
-                <p>開啟後，拿到唯讀分享連結的人可以看到記錄內容。</p>
-                <p>確定開啟嗎？</p>
+                <p>{t("memories.publicOnDescription")}</p>
+                <p>{t("memories.publicOnConfirm")}</p>
               </div>
             ) : (
               <div>
-                <p>關閉後，唯讀分享連結將看不到記錄內容。</p>
-                <p>確定關閉嗎？</p>
+                <p>{t("memories.publicOffDescription")}</p>
+                <p>{t("memories.publicOffConfirm")}</p>
               </div>
             )}
           </div>
@@ -444,13 +455,13 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
               className="btn btn-secondary flex-1"
               onClick={() => setPendingVisibility(null)}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button
               className="btn btn-primary flex-1"
               onClick={() => confirmVisibilityChange(pendingVisibility)}
             >
-              確定
+              {t("common.confirm")}
             </button>
           </div>
         </Modal>
@@ -472,6 +483,7 @@ function MemoryPostForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(post);
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
   const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
@@ -504,7 +516,7 @@ function MemoryPostForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">標題</label>
+        <label className="form-label">{t("memories.formTitle")}</label>
         <input
           className="form-input"
           value={form.title || ""}
@@ -513,7 +525,7 @@ function MemoryPostForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">內容</label>
+        <label className="form-label">{t("memories.content")}</label>
         <textarea
           className="form-input"
           value={form.content}
@@ -523,7 +535,7 @@ function MemoryPostForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("memories.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -551,14 +563,14 @@ function MemoryPostForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving || !canSave}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       </div>
       {onDelete && (
@@ -567,7 +579,7 @@ function MemoryPostForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除
+          {t("common.delete")}
         </button>
       )}
     </div>
@@ -589,6 +601,7 @@ function MemoryCommentForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(comment);
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
   const [removedImages, setRemovedImages] = useState<ImageAsset[]>([]);
@@ -621,7 +634,7 @@ function MemoryCommentForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">內容</label>
+        <label className="form-label">{t("memories.content")}</label>
         <textarea
           className="form-input"
           value={form.content}
@@ -632,7 +645,7 @@ function MemoryCommentForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("memories.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -660,14 +673,14 @@ function MemoryCommentForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving || !canSave}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       </div>
       {onDelete && (
@@ -676,7 +689,7 @@ function MemoryCommentForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除
+          {t("common.delete")}
         </button>
       )}
     </div>

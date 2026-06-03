@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function HotelTab({ tripId, viewOnly }: Props) {
+  const { t } = useTranslation();
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
   const hotels = tripData.hotels;
@@ -55,7 +57,7 @@ export function HotelTab({ tripId, viewOnly }: Props) {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold">飯店資訊</h2>
+        <h2 className="font-semibold">{t("hotels.title")}</h2>
         {!viewOnly && (
           <button
             className="btn-round-add"
@@ -68,7 +70,7 @@ export function HotelTab({ tripId, viewOnly }: Props) {
 
       {hotels.length === 0 && (
         <div className="empty-state">
-          <p>尚無飯店資訊</p>
+          <p>{t("hotels.empty")}</p>
         </div>
       )}
 
@@ -78,12 +80,12 @@ export function HotelTab({ tripId, viewOnly }: Props) {
             className="font-semibold mb-2 cursor-pointer"
             onClick={doubleTap(hotel.id, () => !viewOnly && setEditing(hotel))}
           >
-            {hotel.name || "飯店"}
+            {hotel.name || t("hotels.hotel")}
           </h3>
 
           {hotel.booking?.platform && (
             <InfoRow
-              label="訂房平台"
+              label={t("hotels.bookingPlatform")}
               value={
                 <div className="flex items-center gap-2">
                   <span>
@@ -98,10 +100,10 @@ export function HotelTab({ tripId, viewOnly }: Props) {
               }
             />
           )}
-          <InfoRow label="價格" value={hotel.booking?.amount} />
+          <InfoRow label={t("hotels.price")} value={hotel.booking?.amount} />
           {(hotel.address || hotel.googleMapUrl) && (
             <InfoRow
-              label="地址"
+              label={t("hotels.address")}
               value={
                 <div>
                   {hotel.address && (
@@ -121,19 +123,22 @@ export function HotelTab({ tripId, viewOnly }: Props) {
               }
             />
           )}
-          <InfoRow label="電話" value={hotel.phone} />
-          <InfoRow label="入住" value={hotel.checkIn} />
-          <InfoRow label="退房" value={hotel.checkOut} />
-          <InfoRow label="房型" value={hotel.roomType} />
-          <InfoRow label="人數" value={hotel.guests} />
-          <InfoRow label="備註" value={hotel.booking?.note || hotel.note} />
+          <InfoRow label={t("hotels.phone")} value={hotel.phone} />
+          <InfoRow label={t("hotels.checkIn")} value={hotel.checkIn} />
+          <InfoRow label={t("hotels.checkOut")} value={hotel.checkOut} />
+          <InfoRow label={t("hotels.roomType")} value={hotel.roomType} />
+          <InfoRow label={t("hotels.guests")} value={hotel.guests} />
+          <InfoRow
+            label={t("hotels.note")}
+            value={hotel.booking?.note || hotel.note}
+          />
           <ImageGalleryField images={hotel.images} className="mt-3" />
         </div>
       ))}
 
       {editing && (
         <FullScreenModal
-          title={editing.name ? "編輯飯店" : "新增飯店"}
+          title={editing.name ? t("hotels.editHotel") : t("hotels.addHotel")}
           onClose={() => setEditing(null)}
         >
           <HotelForm
@@ -149,8 +154,8 @@ export function HotelTab({ tripId, viewOnly }: Props) {
       )}
       {confirmDeleteId && (
         <ConfirmDeleteModal
-          title="刪除飯店"
-          message="確定要刪除這筆飯店資訊嗎？圖片也會一起刪除。"
+          title={t("hotels.deleteHotel")}
+          message={t("hotels.deleteHotelConfirm")}
           onCancel={() => setConfirmDeleteId(null)}
           onConfirm={() => {
             remove(confirmDeleteId);
@@ -175,6 +180,7 @@ function HotelForm({
   onCancel: () => void;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(hotel);
   const [booking, setBooking] = useState(hotel.booking || {});
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
@@ -210,7 +216,7 @@ function HotelForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">飯店名稱</label>
+        <label className="form-label">{t("hotels.hotelName")}</label>
         <input
           className="form-input"
           value={form.name}
@@ -218,7 +224,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">訂房平台</label>
+        <label className="form-label">{t("hotels.bookingPlatform")}</label>
         <input
           className="form-input"
           value={booking.platform || ""}
@@ -226,7 +232,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">訂單編號</label>
+        <label className="form-label">{t("hotels.orderNumber")}</label>
         <input
           className="form-input"
           value={booking.orderNumber || ""}
@@ -236,7 +242,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">負責人</label>
+        <label className="form-label">{t("hotels.assignee")}</label>
         <input
           className="form-input"
           value={booking.assignee || ""}
@@ -244,7 +250,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">價格</label>
+        <label className="form-label">{t("hotels.price")}</label>
         <input
           className="form-input"
           value={booking.amount || ""}
@@ -252,7 +258,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">地址</label>
+        <label className="form-label">{t("hotels.address")}</label>
         <input
           className="form-input"
           value={form.address || ""}
@@ -260,7 +266,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">Google Map 連結</label>
+        <label className="form-label">{t("hotels.googleMapUrl")}</label>
         <input
           className="form-input"
           value={form.googleMapUrl || ""}
@@ -268,7 +274,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">電話</label>
+        <label className="form-label">{t("hotels.phone")}</label>
         <input
           className="form-input"
           value={form.phone || ""}
@@ -276,7 +282,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">入住時間</label>
+        <label className="form-label">{t("hotels.checkInTime")}</label>
         <input
           className="form-input"
           value={form.checkIn || ""}
@@ -284,7 +290,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">退房時間</label>
+        <label className="form-label">{t("hotels.checkOutTime")}</label>
         <input
           className="form-input"
           value={form.checkOut || ""}
@@ -292,7 +298,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">房型</label>
+        <label className="form-label">{t("hotels.roomType")}</label>
         <input
           className="form-input"
           value={form.roomType || ""}
@@ -300,7 +306,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">人數</label>
+        <label className="form-label">{t("hotels.guests")}</label>
         <input
           className="form-input"
           value={form.guests || ""}
@@ -308,7 +314,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">備註</label>
+        <label className="form-label">{t("hotels.note")}</label>
         <textarea
           className="form-input"
           value={form.note || ""}
@@ -316,7 +322,7 @@ function HotelForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("hotels.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -344,14 +350,14 @@ function HotelForm({
       </div>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? "儲存中..." : "儲存"}
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       </div>
       {onDelete && (
@@ -360,7 +366,7 @@ function HotelForm({
           onClick={onDelete}
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除飯店
+          {t("hotels.deleteHotel")}
         </button>
       )}
     </div>

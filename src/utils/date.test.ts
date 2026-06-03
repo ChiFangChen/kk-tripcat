@@ -6,6 +6,10 @@ describe("formatDateWithWeekday", () => {
     expect(formatDateWithWeekday("2026-04-09")).toBe("2026/4/9（四）");
   });
 
+  it("formats YYYY-MM-DD as YYYY/M/D with English weekday", () => {
+    expect(formatDateWithWeekday("2026-10-22", "en")).toBe("2026/10/22 (Thu)");
+  });
+
   it("returns the original value when date is invalid", () => {
     expect(formatDateWithWeekday("not-a-date")).toBe("not-a-date");
   });

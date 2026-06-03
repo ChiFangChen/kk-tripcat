@@ -9,6 +9,7 @@ import {
 import { useApp } from "../context/AppContext";
 import { Modal } from "./Modal";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   tripId: string;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function MemberMenu({ tripId, onClose, readOnly }: Props) {
+  const { t } = useTranslation();
   const { state, updateTrip, getUserName, getUserColor, isTripAdmin } =
     useApp();
   const trip = state.trips.find((t) => t.id === tripId);
@@ -48,10 +50,10 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
   }
 
   return (
-    <Modal title="旅伴" onClose={onClose}>
+    <Modal title={t("members.title")} onClose={onClose}>
       <div className="flex flex-col gap-2">
         {members.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-2">尚無旅伴</p>
+          <p className="text-sm text-slate-400 text-center py-2">{t("members.empty")}</p>
         ) : (
           members.map((userId) => (
             <div key={userId} className="flex items-center gap-2 py-1.5">
@@ -86,7 +88,7 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
             onClick={() => setShowAddMember(true)}
           >
             <FontAwesomeIcon icon={faUserPlus} className="mr-1" />
-            新增旅伴
+            {t("members.add")}
           </button>
         )}
 
@@ -97,7 +99,7 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
             >
-              <option value="">選擇使用者...</option>
+              <option value="">{t("members.selectUser")}</option>
               {nonMembers.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.displayName}
@@ -109,7 +111,7 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
                 className="btn btn-secondary flex-1"
                 onClick={() => setShowAddMember(false)}
               >
-                取消
+                {t("common.cancel")}
               </button>
               <button
                 className="btn btn-primary flex-1"
@@ -117,7 +119,7 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
                 disabled={!selectedUserId}
               >
                 <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                新增
+                {t("common.add")}
               </button>
             </div>
           </div>
@@ -125,9 +127,11 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
       </div>
       {confirmRemoveMemberId && (
         <ConfirmDeleteModal
-          title="移除旅伴"
-          message={`確定要移除「${getUserName(confirmRemoveMemberId)}」嗎？`}
-          confirmLabel="移除"
+          title={t("members.remove")}
+          message={t("members.removeConfirm", {
+            name: getUserName(confirmRemoveMemberId),
+          })}
+          confirmLabel="userMenu.remove"
           onCancel={() => setConfirmRemoveMemberId(null)}
           onConfirm={() => {
             removeMember(confirmRemoveMemberId);

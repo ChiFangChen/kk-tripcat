@@ -2,8 +2,10 @@ import { useState } from "react";
 import type { NoteTabType } from "../types";
 import { TipsSection } from "./notes/TipsSection";
 import { PoolSection } from "./notes/PoolSection";
+import { useTranslation } from "react-i18next";
 
 export function NotesPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<NoteTabType>("tips");
 
   return (
@@ -13,13 +15,13 @@ export function NotesPage() {
           className={`trip-tab ${activeTab === "tips" ? "active" : ""}`}
           onClick={() => setActiveTab("tips")}
         >
-          Experiences & Tips
+          {t("notes.tips")}
         </button>
         <button
           className={`trip-tab ${activeTab === "pool" ? "active" : ""}`}
           onClick={() => setActiveTab("pool")}
         >
-          Pool
+          {t("notes.pool")}
         </button>
       </div>
       <div className="page-container">

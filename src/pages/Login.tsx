@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import { PasswordInput } from '../components/PasswordInput'
+import { useTranslation } from 'react-i18next'
 
 interface Props {
   onSwitchToRegister: () => void
 }
 
 export function Login({ onSwitchToRegister }: Props) {
+  const { t } = useTranslation()
   const { state, login, updateUser } = useApp()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -29,7 +31,7 @@ export function Login({ onSwitchToRegister }: Props) {
     if (user) {
       login(user)
     } else {
-      setError('帳號或密碼錯誤')
+      setError('auth.errors.invalidLogin')
     }
   }
 
@@ -50,8 +52,8 @@ export function Login({ onSwitchToRegister }: Props) {
     const user = state.users.find(
       (u) => u.username === forgotUsername && u.displayName === forgotDisplayName && !u.deleted
     )
-    if (!user) { setForgotError('帳號或顯示名稱不正確'); return }
-    if (!forgotNewPassword) { setForgotError('請輸入新密碼'); return }
+    if (!user) { setForgotError('auth.errors.invalidUsernameOrDisplayName'); return }
+    if (!forgotNewPassword) { setForgotError('auth.errors.missingNewPassword'); return }
     updateUser({ ...user, password: forgotNewPassword })
     setForgotSuccess(true)
   }
@@ -60,40 +62,40 @@ export function Login({ onSwitchToRegister }: Props) {
     <div className="identity-page">
       <div className="login-logo" onClick={handleLogoTap}>🐱</div>
       <h1 className="identity-title">KK TripCat</h1>
-      <p className="identity-subtitle">旅行規劃好夥伴</p>
+      <p className="identity-subtitle">{t('auth.brandSubtitle')}</p>
 
       {showForgot ? (
         forgotSuccess ? (
           <div className="auth-form">
-            <p className="text-sm text-slate-500 text-center">密碼已重置成功</p>
+            <p className="text-sm text-slate-500 text-center">{t('auth.passwordResetSuccess')}</p>
             <button type="button" className="btn btn-primary w-full" onClick={() => {
               setShowForgot(false); setForgotSuccess(false)
               setForgotUsername(''); setForgotDisplayName(''); setForgotNewPassword('')
-            }}>返回登入</button>
+            }}>{t('auth.backToLogin')}</button>
           </div>
         ) : (
           <form onSubmit={handleForgotSubmit} className="auth-form">
-            <div className="form-group"><label className="form-label">帳號</label><input className="form-input" value={forgotUsername} onChange={e => setForgotUsername(e.target.value)} autoComplete="off" required /></div>
-            <div className="form-group"><label className="form-label">顯示名稱</label><input className="form-input" value={forgotDisplayName} onChange={e => setForgotDisplayName(e.target.value)} autoComplete="off" required /></div>
+            <div className="form-group"><label className="form-label">{t('auth.username')}</label><input className="form-input" value={forgotUsername} onChange={e => setForgotUsername(e.target.value)} autoComplete="off" required /></div>
+            <div className="form-group"><label className="form-label">{t('auth.displayName')}</label><input className="form-input" value={forgotDisplayName} onChange={e => setForgotDisplayName(e.target.value)} autoComplete="off" required /></div>
             <div className="form-group">
-              <label className="form-label">新密碼</label>
+              <label className="form-label">{t('auth.newPassword')}</label>
               <PasswordInput value={forgotNewPassword} onChange={e => setForgotNewPassword(e.target.value)} autoComplete="off" required />
-              <p className="text-xs text-slate-400 mt-1">此為簡易帳號系統，密碼以明碼儲存，請勿使用重要密碼</p>
+              <p className="text-xs text-slate-400 mt-1">{t('auth.passwordWarning')}</p>
             </div>
-            {forgotError && <div className="auth-error">{forgotError}</div>}
-            <button type="submit" className="btn btn-primary w-full">重置密碼</button>
-            <button type="button" className="btn-link" onClick={() => { setShowForgot(false); setForgotError('') }}>返回登入</button>
+            {forgotError && <div className="auth-error">{t(forgotError)}</div>}
+            <button type="submit" className="btn btn-primary w-full">{t('auth.resetPassword')}</button>
+            <button type="button" className="btn-link" onClick={() => { setShowForgot(false); setForgotError('') }}>{t('auth.backToLogin')}</button>
           </form>
         )
       ) : (
         <>
           <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group"><label className="form-label">帳號</label><input className="form-input" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" required /></div>
-            <div className="form-group"><label className="form-label">密碼</label><PasswordInput value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required /></div>
-            {error && <div className="auth-error">{error}</div>}
-            <button type="submit" className="btn btn-primary w-full">登入</button>
+            <div className="form-group"><label className="form-label">{t('auth.username')}</label><input className="form-input" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" required /></div>
+            <div className="form-group"><label className="form-label">{t('auth.password')}</label><PasswordInput value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" required /></div>
+            {error && <div className="auth-error">{t(error)}</div>}
+            <button type="submit" className="btn btn-primary w-full">{t('auth.login')}</button>
           </form>
-          <button className="btn-link" onClick={onSwitchToRegister}>還沒有帳號？建立帳號</button>
+          <button className="btn-link" onClick={onSwitchToRegister}>{t('auth.switchToRegister')}</button>
         </>
       )}
     </div>

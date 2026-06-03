@@ -32,19 +32,19 @@ export function getEditableTabs(skipPreparation?: boolean): Array<{
   label: string;
 }> {
   const sharedTabs: Array<{ key: TripTabType; label: string }> = [
-    { key: "flight", label: "飛機" },
-    { key: "hotel", label: "飯店" },
-    { key: "schedule", label: "行程表" },
-    { key: "transport", label: "交通" },
-    { key: "shopping", label: "購物" },
-    { key: "memories", label: "記錄" },
+    { key: "flight", label: "tripTabs.flight" },
+    { key: "hotel", label: "tripTabs.hotel" },
+    { key: "schedule", label: "tripTabs.schedule" },
+    { key: "transport", label: "tripTabs.transport" },
+    { key: "shopping", label: "tripTabs.shopping" },
+    { key: "memories", label: "tripTabs.memories" },
   ];
 
   if (skipPreparation) {
     return sharedTabs;
   }
 
-  return [{ key: "preparation", label: "準備" }, ...sharedTabs];
+  return [{ key: "preparation", label: "tripTabs.preparation" }, ...sharedTabs];
 }
 
 export function getViewerTabs(memoriesVisibleToViewers?: boolean): Array<{
@@ -52,14 +52,14 @@ export function getViewerTabs(memoriesVisibleToViewers?: boolean): Array<{
   label: string;
 }> {
   const tabs: Array<{ key: TripTabType; label: string }> = [
-    { key: "flight", label: "飛機" },
-    { key: "hotel", label: "飯店" },
-    { key: "schedule", label: "行程表" },
-    { key: "transport", label: "交通" },
+    { key: "flight", label: "tripTabs.flight" },
+    { key: "hotel", label: "tripTabs.hotel" },
+    { key: "schedule", label: "tripTabs.schedule" },
+    { key: "transport", label: "tripTabs.transport" },
   ];
 
   if (memoriesVisibleToViewers) {
-    tabs.push({ key: "memories", label: "記錄" });
+    tabs.push({ key: "memories", label: "tripTabs.memories" });
   }
 
   return tabs;

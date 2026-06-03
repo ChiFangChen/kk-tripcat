@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons'
+import { useTranslation } from 'react-i18next'
 
 interface PasswordInputProps {
   value: string
@@ -17,7 +18,9 @@ export function PasswordInput({
   autoFocus,
   required,
 }: PasswordInputProps) {
+  const { t } = useTranslation()
   const [isVisible, setIsVisible] = useState(false)
+  const visibilityLabel = isVisible ? t('auth.hidePassword') : t('auth.showPassword')
 
   return (
     <div className="password-input-wrapper">
@@ -34,8 +37,8 @@ export function PasswordInput({
         type="button"
         className="password-toggle-btn"
         onClick={() => setIsVisible((visible) => !visible)}
-        aria-label={isVisible ? '隱藏密碼' : '顯示密碼'}
-        title={isVisible ? '隱藏密碼' : '顯示密碼'}
+        aria-label={visibilityLabel}
+        title={visibilityLabel}
       >
         <FontAwesomeIcon icon={isVisible ? faEyeSlash : faEye} />
       </button>

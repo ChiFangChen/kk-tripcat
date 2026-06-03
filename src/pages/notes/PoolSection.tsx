@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronDown,
@@ -34,6 +35,7 @@ import {
 import { PoolItemTagsField } from "../trip/PoolItemTagsField";
 
 export function PoolSection() {
+  const { t } = useTranslation();
   const {
     state,
     firebaseConnected,
@@ -60,7 +62,7 @@ export function PoolSection() {
   const poolItems = state.items;
 
   function warnReadOnly() {
-    showToast({ type: "info", message: "離線時只能查看魚池" });
+    showToast({ type: "info", message: t("shopping.pool.readOnlyOffline") });
   }
 
   function togglePurchaseHistory(itemId: string) {
@@ -158,7 +160,7 @@ export function PoolSection() {
         await Promise.all(item.images.map((image) => deleteImage(image.path)));
       } catch (error) {
         console.error("Failed to detach fish pool item before delete:", error);
-        showToast({ type: "error", message: "刪除失敗，請稍後再試" });
+        showToast({ type: "error", message: t("shopping.saveDeleteFailed") });
         return;
       }
     }
@@ -166,7 +168,7 @@ export function PoolSection() {
       await setItems(state.items.filter((entry) => entry.id !== id));
     } catch (error) {
       console.error("Failed to sync fish pool item delete:", error);
-      showToast({ type: "error", message: "刪除失敗，請稍後再試" });
+      showToast({ type: "error", message: t("shopping.saveDeleteFailed") });
       return;
     }
     setEditing(null);
@@ -258,7 +260,11 @@ export function PoolSection() {
           }}
           disabled={!firebaseConnected}
           aria-disabled={!firebaseConnected}
-          title={firebaseConnected ? "新增魚池項目" : "離線時只能查看魚池"}
+          title={
+            firebaseConnected
+              ? t("shopping.pool.addItem")
+              : t("shopping.pool.readOnlyOffline")
+          }
         >
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
@@ -266,7 +272,7 @@ export function PoolSection() {
 
       {poolItems.length === 0 ? (
         <div className="empty-state">
-          <p>魚池目前沒有項目</p>
+          <p>{t("shopping.pool.empty")}</p>
         </div>
       ) : (
         <div className="pool-item-list">
@@ -317,7 +323,9 @@ export function PoolSection() {
                       <div className="pool-item-meta">
                         {priceBadges.map((badge) => (
                           <span key={badge.label}>
-                            <span className="price-badge">{badge.label}</span>
+                            <span className="price-badge">
+                              {t(`shopping.priceBadges.${badge.label}`)}
+                            </span>
                             <span>{badge.value}</span>
                           </span>
                         ))}
@@ -340,11 +348,11 @@ export function PoolSection() {
                         className="pool-item-icon-button"
                         onClick={() => setEditing(item)}
                         disabled={!firebaseConnected}
-                        aria-label="編輯魚池項目"
+                        aria-label={t("shopping.pool.editItem")}
                         title={
                           firebaseConnected
-                            ? "編輯魚池項目"
-                            : "離線時只能查看魚池"
+                            ? t("shopping.pool.editItem")
+                            : t("shopping.pool.readOnlyOffline")
                         }
                       >
                         <FontAwesomeIcon icon={faPen} />
@@ -355,11 +363,11 @@ export function PoolSection() {
                           setConfirmDelete({ type: "item", itemId: item.id })
                         }
                         disabled={!firebaseConnected}
-                        aria-label="刪除魚池項目"
+                        aria-label={t("shopping.pool.deleteItem")}
                         title={
                           firebaseConnected
-                            ? "刪除魚池項目"
-                            : "離線時只能查看魚池"
+                            ? t("shopping.pool.deleteItem")
+                            : t("shopping.pool.readOnlyOffline")
                         }
                       >
                         <FontAwesomeIcon icon={faTrash} />
@@ -371,11 +379,11 @@ export function PoolSection() {
                       className="btn-round-add !w-7 !h-7"
                       onClick={() => setAddingPurchaseTo(item.id)}
                       disabled={!firebaseConnected}
-                      aria-label="新增購買紀錄"
+                      aria-label={t("shopping.purchase.add")}
                       title={
                         firebaseConnected
-                          ? "新增購買紀錄"
-                          : "離線時只能查看魚池"
+                          ? t("shopping.purchase.add")
+                          : t("shopping.pool.readOnlyOffline")
                       }
                     >
                       <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
@@ -386,13 +394,13 @@ export function PoolSection() {
                         onClick={() => togglePurchaseHistory(item.id)}
                         aria-label={
                           purchaseHistoryExpanded
-                            ? "收合購買紀錄"
-                            : "展開購買紀錄"
+                            ? t("shopping.purchase.collapse")
+                            : t("shopping.purchase.expand")
                         }
                         title={
                           purchaseHistoryExpanded
-                            ? "收合購買紀錄"
-                            : "展開購買紀錄"
+                            ? t("shopping.purchase.collapse")
+                            : t("shopping.purchase.expand")
                         }
                       >
                         <FontAwesomeIcon icon={faReceipt} />
@@ -437,11 +445,11 @@ export function PoolSection() {
                               })
                             }
                             disabled={!firebaseConnected}
-                            aria-label="編輯購買紀錄"
+                            aria-label={t("shopping.purchase.edit")}
                             title={
                               firebaseConnected
-                                ? "編輯購買紀錄"
-                                : "離線時只能查看魚池"
+                                ? t("shopping.purchase.edit")
+                                : t("shopping.pool.readOnlyOffline")
                             }
                           >
                             <FontAwesomeIcon icon={faPen} />
@@ -456,11 +464,11 @@ export function PoolSection() {
                               })
                             }
                             disabled={!firebaseConnected}
-                            aria-label="刪除購買紀錄"
+                            aria-label={t("shopping.purchase.delete")}
                             title={
                               firebaseConnected
-                                ? "刪除購買紀錄"
-                                : "離線時只能查看魚池"
+                                ? t("shopping.purchase.delete")
+                                : t("shopping.pool.readOnlyOffline")
                             }
                           >
                             <FontAwesomeIcon icon={faTrash} />
@@ -480,8 +488,8 @@ export function PoolSection() {
         <Modal
           title={
             state.items.find((item) => item.id === editing.id)
-              ? "編輯魚池項目"
-              : "新增魚池項目"
+              ? t("shopping.pool.editItem")
+              : t("shopping.pool.addItem")
           }
           onClose={() => setEditing(null)}
         >
@@ -511,14 +519,14 @@ export function PoolSection() {
       )}
 
       {addingPurchaseTo && (
-        <Modal title="新增購買紀錄" onClose={() => setAddingPurchaseTo(null)}>
+        <Modal title={t("shopping.purchase.add")} onClose={() => setAddingPurchaseTo(null)}>
           <PurchaseForm
             onSave={(purchase) => addPurchase(addingPurchaseTo, purchase)}
           />
         </Modal>
       )}
       {editingPurchase && (
-        <Modal title="編輯購買紀錄" onClose={() => setEditingPurchase(null)}>
+        <Modal title={t("shopping.purchase.edit")} onClose={() => setEditingPurchase(null)}>
           <PurchaseForm
             purchase={editingPurchase.purchase}
             onSave={(purchase) =>
@@ -530,12 +538,14 @@ export function PoolSection() {
       {confirmDelete && (
         <ConfirmDeleteModal
           title={
-            confirmDelete.type === "item" ? "刪除魚池項目" : "刪除購買紀錄"
+            confirmDelete.type === "item"
+              ? t("shopping.pool.deleteItem")
+              : t("shopping.purchase.delete")
           }
           message={
             confirmDelete.type === "item"
-              ? "確定要刪除這個魚池項目嗎？圖片也會一起刪除。"
-              : "確定要刪除這筆購買紀錄嗎？"
+              ? t("shopping.pool.deleteItemConfirm")
+              : t("shopping.purchase.deleteConfirm")
           }
           onCancel={() => setConfirmDelete(null)}
           onConfirm={() => {
@@ -565,6 +575,7 @@ function ItemForm({
   tagSuggestions?: string[];
   onSave: (item: Item) => void | Promise<void>;
 }) {
+  const { t } = useTranslation();
   const { state } = useApp();
   const [form, setForm] = useState(item);
   const [pendingImages, setPendingImages] = useState<PendingImageFile[]>([]);
@@ -594,7 +605,7 @@ function ItemForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">名稱</label>
+        <label className="form-label">{t("shopping.form.name")}</label>
         <input
           className="form-input"
           value={form.name}
@@ -602,7 +613,7 @@ function ItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">品牌</label>
+        <label className="form-label">{t("shopping.form.brand")}</label>
         <input
           className="form-input"
           value={form.brand || ""}
@@ -612,7 +623,7 @@ function ItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">規格</label>
+        <label className="form-label">{t("shopping.form.spec")}</label>
         <input
           className="form-input"
           value={form.spec || ""}
@@ -625,7 +636,7 @@ function ItemForm({
         onChange={(tags) => setForm({ ...form, tags })}
       />
       <div className="form-group">
-        <label className="form-label">建議售價</label>
+        <label className="form-label">{t("shopping.form.suggestedPrice")}</label>
         <input
           className="form-input"
           value={form.estimatedAmount || ""}
@@ -635,7 +646,7 @@ function ItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">幣別</label>
+        <label className="form-label">{t("shopping.form.currency")}</label>
         <input
           className="form-input"
           value={form.currency || ""}
@@ -645,7 +656,7 @@ function ItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">備註</label>
+        <label className="form-label">{t("shopping.form.note")}</label>
         <textarea
           className="form-input"
           value={form.notes || ""}
@@ -653,7 +664,7 @@ function ItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">圖片</label>
+        <label className="form-label">{t("shopping.form.images")}</label>
         <MultiImageUpload
           existingImages={form.images}
           pendingImages={pendingImages}
@@ -684,7 +695,7 @@ function ItemForm({
         onClick={handleSave}
         disabled={saving}
       >
-        {saving ? "儲存中..." : "儲存"}
+        {saving ? t("common.saving") : t("common.save")}
       </button>
     </div>
   );
@@ -697,6 +708,7 @@ function PurchaseForm({
   purchase?: Purchase;
   onSave: (purchase: Purchase) => void | Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState<Omit<Purchase, "id">>(() => ({
     date: purchase?.date ?? new Date().toISOString().split("T")[0],
     amount: purchase?.amount ?? "",
@@ -709,7 +721,7 @@ function PurchaseForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">金額</label>
+        <label className="form-label">{t("shopping.form.amount")}</label>
         <input
           className="form-input"
           value={form.amount}
@@ -717,7 +729,7 @@ function PurchaseForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">幣別</label>
+        <label className="form-label">{t("shopping.form.currency")}</label>
         <input
           className="form-input"
           value={form.currency || ""}
@@ -727,7 +739,7 @@ function PurchaseForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">日期</label>
+        <label className="form-label">{t("shopping.form.date")}</label>
         <input
           className="form-input"
           type="date"
@@ -736,7 +748,7 @@ function PurchaseForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">備註</label>
+        <label className="form-label">{t("shopping.form.note")}</label>
         <input
           className="form-input"
           value={form.note || ""}
@@ -749,7 +761,7 @@ function PurchaseForm({
           void onSave({ ...form, id: purchase?.id ?? generateId() });
         }}
       >
-        儲存
+        {t("common.save")}
       </button>
     </div>
   );

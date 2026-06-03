@@ -537,7 +537,6 @@ body {
   align-items: center;
   gap: 5px;
   max-width: 100%;
-  border: 1px solid rgba(126, 200, 227, 0.28);
   border-radius: 999px;
   background: rgba(126, 200, 227, 0.12);
   color: color-mix(in srgb, var(--color-primary-dark) 82%, var(--color-text));
@@ -578,7 +577,6 @@ body {
 
 .pool-filter-panel {
   padding: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 8px;
   background: rgba(248, 250, 252, 0.72);
 }

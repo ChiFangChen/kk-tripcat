@@ -14,6 +14,7 @@ import { Modal } from "../../components/Modal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { generateId } from "../../utils/id";
 import type { ChecklistItem } from "../../types";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   tripId: string;
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function PreparationTab({ tripId, viewOnly }: Props) {
+  const { t } = useTranslation();
   const { setUserTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -188,6 +190,10 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
         <div className="fixed inset-0 z-30" onClick={closeFab} />
       )}
 
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="font-semibold">{t("tripTabs.preparation")}</h2>
+      </div>
+
       {/* Got Ready FAB */}
       {!viewOnly && (
         <div className={`get-ready-fab ${fabExpanded ? "expanded" : ""}`}>
@@ -206,7 +212,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
               onClick={handleFabConfirm}
               type="button"
             >
-              {tripData.gotReady ? "Cancel Ready" : "Get Ready!"}
+              {tripData.gotReady ? t("preparation.cancelReady") : t("preparation.getReady")}
             </button>
           )}
         </div>
@@ -222,7 +228,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
         >
           <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">
             <FontAwesomeIcon icon={faThumbtack} className="mr-1" />
-            注意事項
+            {t("settings.template.notes")}
           </p>
           <p className="text-xs whitespace-pre-wrap text-slate-400 dark:text-slate-500">
             {notes}
@@ -261,13 +267,13 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
             className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!showCompleted ? "bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium" : "text-slate-400"}`}
             onClick={() => setShowCompleted(false)}
           >
-            未完成 ({unchecked.length})
+            {t("preparation.incomplete")} ({unchecked.length})
           </button>
           <button
             className={`flex-1 text-xs py-1.5 rounded-md transition-all ${showCompleted ? "bg-white dark:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm font-medium" : "text-slate-400"}`}
             onClick={() => setShowCompleted(true)}
           >
-            全部 ({items.length})
+            {t("preparation.all")} ({items.length})
           </button>
         </div>
         {!viewOnly && (
@@ -335,13 +341,13 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
 
       {displayed.length === 0 && (
         <div className="empty-state">
-          <p>{showCompleted ? "清單是空的" : "全部準備好了！"}</p>
+          <p>{showCompleted ? t("preparation.emptyList") : t("preparation.everythingReady")}</p>
         </div>
       )}
 
       {/* Edit item popup with category/subcategory */}
       {editingItem && (
-        <Modal title="編輯項目" onClose={() => setEditingItem(null)}>
+        <Modal title={t("settings.template.editItem")} onClose={() => setEditingItem(null)}>
           <EditItemForm
             item={editingItem}
             existingCategories={existingCategories}
@@ -354,8 +360,8 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
       )}
       {confirmDeleteItemId && (
         <ConfirmDeleteModal
-          title="刪除準備項目"
-          message="確定要刪除這個準備項目嗎？"
+          title={t("settings.template.deletePreparationItem")}
+          message={t("settings.template.deletePreparationItemConfirm")}
           onCancel={() => setConfirmDeleteItemId(null)}
           onConfirm={() => {
             deleteItem(confirmDeleteItemId);
@@ -366,7 +372,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
 
       {/* Edit notes modal */}
       {editingNotes && (
-        <Modal title="編輯注意事項" onClose={() => setEditingNotes(false)}>
+        <Modal title={t("settings.template.editNotes")} onClose={() => setEditingNotes(false)}>
           <textarea
             className="form-input"
             rows={5}
@@ -379,10 +385,10 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
               className="btn btn-secondary"
               onClick={() => setEditingNotes(false)}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" onClick={saveNotes}>
-              儲存
+              {t("common.save")}
             </button>
           </div>
         </Modal>
@@ -391,11 +397,11 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
       {/* Add item full-screen popup */}
       {showAddModal && (
         <FullScreenModal
-          title="新增準備項目"
+          title={t("settings.template.addPreparationItem")}
           onClose={() => setShowAddModal(false)}
         >
           <div className="form-group">
-            <label className="form-label">分類</label>
+            <label className="form-label">{t("settings.template.category")}</label>
             {!creatingCategory ? (
               <div className="flex gap-2 flex-wrap">
                 {existingCategories.map((cat) => (
@@ -412,7 +418,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
                   onClick={() => setCreatingCategory(true)}
                 >
                   <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                  新分類
+                  {t("settings.template.newCategory")}
                 </button>
               </div>
             ) : (
@@ -427,7 +433,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
                   className="btn btn-sm btn-secondary"
                   onClick={() => setCreatingCategory(false)}
                 >
-                  取消
+                  {t("common.cancel")}
                 </button>
               </div>
             )}
@@ -438,14 +444,14 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
               const subs = getSubcategories(selectedCategory);
               return (
                 <div className="form-group">
-                  <label className="form-label">次分類</label>
+                  <label className="form-label">{t("settings.template.shortSubcategory")}</label>
                   {!creatingSubcategory ? (
                     <div className="flex gap-2 flex-wrap">
                       <button
                         className={`btn btn-sm ${selectedSubcategory === null ? "btn-primary" : "btn-secondary"}`}
                         onClick={() => setSelectedSubcategory(null)}
                       >
-                        無
+                        {t("common.none")}
                       </button>
                       {subs.map((sub) => (
                         <button
@@ -461,7 +467,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
                         onClick={() => setCreatingSubcategory(true)}
                       >
                         <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                        新次分類
+                        {t("settings.template.newSubcategory")}
                       </button>
                     </div>
                   ) : (
@@ -476,7 +482,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
                         className="btn btn-sm btn-secondary"
                         onClick={() => setCreatingSubcategory(false)}
                       >
-                        取消
+                        {t("common.cancel")}
                       </button>
                     </div>
                   )}
@@ -485,7 +491,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
             })()}
 
           <div className="form-group">
-            <label className="form-label">項目內容</label>
+            <label className="form-label">{t("settings.template.itemContent")}</label>
             <input
               className="form-input"
               value={newItem}
@@ -499,10 +505,10 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
               className="btn btn-secondary"
               onClick={() => setShowAddModal(false)}
             >
-              取消
+              {t("common.cancel")}
             </button>
             <button className="btn btn-primary" onClick={addItem}>
-              新增
+              {t("common.add")}
             </button>
           </div>
         </FullScreenModal>
@@ -526,6 +532,7 @@ function EditItemForm({
   onCancel: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState(item.text);
   const [category, setCategory] = useState(item.category || "其他");
   const [subcategory, setSubcategory] = useState<string | undefined>(
@@ -537,7 +544,7 @@ function EditItemForm({
   return (
     <div>
       <div className="form-group">
-        <label className="form-label">項目內容</label>
+        <label className="form-label">{t("settings.template.itemContent")}</label>
         <input
           className="form-input"
           value={text}
@@ -546,7 +553,7 @@ function EditItemForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">分類</label>
+        <label className="form-label">{t("settings.template.category")}</label>
         <div className="flex gap-2 flex-wrap">
           {existingCategories.map((cat) => (
             <button
@@ -564,13 +571,13 @@ function EditItemForm({
       </div>
       {subs.length > 0 && (
         <div className="form-group">
-          <label className="form-label">次分類</label>
+          <label className="form-label">{t("settings.template.shortSubcategory")}</label>
           <div className="flex gap-2 flex-wrap">
             <button
               className={`btn btn-sm ${!subcategory ? "btn-primary" : "btn-secondary"}`}
               onClick={() => setSubcategory(undefined)}
             >
-              無
+              {t("common.none")}
             </button>
             {subs.map((sub) => (
               <button
@@ -588,11 +595,11 @@ function EditItemForm({
         className="btn btn-primary"
         onClick={() => onSave({ ...item, text, category, subcategory })}
       >
-        儲存
+        {t("common.save")}
       </button>
       <div className="form-actions">
         <button className="btn btn-secondary" onClick={onCancel} type="button">
-          取消
+          {t("common.cancel")}
         </button>
         <button
           className="btn btn-secondary btn-danger"
@@ -600,7 +607,7 @@ function EditItemForm({
           type="button"
         >
           <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          刪除
+          {t("common.delete")}
         </button>
       </div>
     </div>

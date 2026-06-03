@@ -56,8 +56,13 @@ describe("updateTemplateItem", () => {
 
 describe("buildTemplateItemDeleteMessage", () => {
   it("includes the item name when deleting a preparation item", () => {
-    expect(buildTemplateItemDeleteMessage(template, "必要", "item-2")).toBe(
-      "確定要刪除準備事項『圍巾』嗎？",
-    );
+    expect(
+      buildTemplateItemDeleteMessage(
+        template,
+        "必要",
+        "item-2",
+        (name) => `Delete ${name}?`,
+      ),
+    ).toBe("Delete 圍巾?");
   });
 });
