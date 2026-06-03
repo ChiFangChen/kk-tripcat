@@ -4,6 +4,7 @@ import {
   faChevronLeft,
   faChevronRight,
   faGear,
+  faGlobe,
   faMoon,
   faPalette,
   faThumbtack,
@@ -24,6 +25,7 @@ import {
 } from "./settingsTemplate";
 
 type Theme = "light" | "dark";
+type Language = "zh-TW" | "en";
 type SettingsView = "index" | "ui" | "template";
 
 interface SettingsPageProps {
@@ -31,6 +33,8 @@ interface SettingsPageProps {
   onThemeChange: (theme: Theme) => void;
   textScale: number;
   onTextScaleChange: (scale: number) => void;
+  language: Language;
+  onLanguageChange: (language: Language) => void;
 }
 
 export function SettingsPage({
@@ -38,6 +42,8 @@ export function SettingsPage({
   onThemeChange,
   textScale,
   onTextScaleChange,
+  language,
+  onLanguageChange,
 }: SettingsPageProps) {
   const [view, setView] = useState<SettingsView>("index");
 
@@ -48,6 +54,8 @@ export function SettingsPage({
         onThemeChange={onThemeChange}
         textScale={textScale}
         onTextScaleChange={onTextScaleChange}
+        language={language}
+        onLanguageChange={onLanguageChange}
         onBack={() => setView("index")}
       />
     );
@@ -91,6 +99,8 @@ function UiSettingsPage({
   onThemeChange,
   textScale,
   onTextScaleChange,
+  language,
+  onLanguageChange,
   onBack,
 }: SettingsPageProps & { onBack: () => void }) {
   const [draftTextScale, setDraftTextScale] = useState(textScale);
@@ -126,6 +136,31 @@ function UiSettingsPage({
               onClick={() => onThemeChange("dark")}
             >
               深色
+            </button>
+          </div>
+        </div>
+        <div className="settings-list-item">
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={faGlobe} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">語言</div>
+            <div className="settings-list-description">
+              {language === "zh-TW" ? "繁體中文" : "English"}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className={`btn btn-sm ${language === "zh-TW" ? "btn-primary" : "btn-secondary"}`}
+              onClick={() => onLanguageChange("zh-TW")}
+            >
+              繁中
+            </button>
+            <button
+              className={`btn btn-sm ${language === "en" ? "btn-primary" : "btn-secondary"}`}
+              onClick={() => onLanguageChange("en")}
+            >
+              English
             </button>
           </div>
         </div>

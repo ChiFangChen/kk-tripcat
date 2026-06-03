@@ -20,6 +20,8 @@ import {
 import type { TabType } from "./types";
 import "./App.css";
 
+type Language = "zh-TW" | "en";
+
 function AppContent() {
   const { state, loading, updateTrip, viewTripId, isCurrentUserAdmin } =
     useApp();
@@ -32,6 +34,9 @@ function AppContent() {
   );
   const [textScale, setTextScale] = useState(
     () => storage.getItem<number>("textScale") || 100,
+  );
+  const [language, setLanguage] = useState<Language>(
+    () => storage.getItem<Language>("language") || "zh-TW",
   );
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
@@ -88,6 +93,11 @@ function AppContent() {
       String(textScale / 100),
     );
   }, [textScale]);
+
+  useEffect(() => {
+    storage.setItem("language", language);
+    document.documentElement.lang = language;
+  }, [language]);
 
   // Join trip via URL: ?join=<tripId>
   const [joinTripId, setJoinTripId] = useState<string | null>(() => {
@@ -263,6 +273,8 @@ function AppContent() {
           onThemeChange={setTheme}
           textScale={textScale}
           onTextScaleChange={setTextScale}
+          language={language}
+          onLanguageChange={setLanguage}
         />
       )}
       <BottomTabBar activeTab={effectiveActiveTab} onTabChange={setActiveTab} />
