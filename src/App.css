@@ -1053,8 +1053,61 @@ button.settings-list-item {
 }
 
 .settings-range {
+  --range-progress: 0%;
+  appearance: none;
   width: 100%;
-  accent-color: var(--color-primary-dark);
+  height: 20px;
+  border: none;
+  background: transparent;
+  accent-color: var(--color-primary);
+}
+
+.settings-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary) 0%,
+    var(--color-primary) var(--range-progress),
+    var(--color-border) var(--range-progress),
+    var(--color-border) 100%
+  );
+}
+
+.settings-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary);
+  cursor: pointer;
+}
+
+.settings-range::-moz-range-track {
+  height: 6px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.settings-range::-moz-range-progress {
+  height: 6px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.settings-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary);
+  cursor: pointer;
 }
 
 .page-back-btn {

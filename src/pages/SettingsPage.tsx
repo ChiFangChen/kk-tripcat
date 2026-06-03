@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronRight,
@@ -147,6 +147,9 @@ function UiSettingsPage({
           </div>
           <input
             className="settings-range"
+            style={
+              { "--range-progress": `${draftTextScale - 100}%` } as CSSProperties
+            }
             type="range"
             min="100"
             max="200"
