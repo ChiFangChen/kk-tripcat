@@ -77,21 +77,34 @@ export function SettingsPage({
           </div>
           <div className="settings-list-content">
             <div className="settings-list-title">{t("settings.ui.title")}</div>
-            <div className="settings-list-description">{t("settings.ui.description")}</div>
+            <div className="settings-list-description">
+              {t("settings.ui.description")}
+            </div>
           </div>
-          <FontAwesomeIcon icon={faChevronRight} className="settings-list-chevron" />
+          <FontAwesomeIcon
+            icon={faChevronRight}
+            className="settings-list-chevron"
+          />
         </button>
-        <button className="settings-list-item" onClick={() => setView("template")}>
+        <button
+          className="settings-list-item"
+          onClick={() => setView("template")}
+        >
           <div className="settings-list-icon">
             <FontAwesomeIcon icon={faGear} />
           </div>
           <div className="settings-list-content">
-            <div className="settings-list-title">{t("settings.template.menuTitle")}</div>
+            <div className="settings-list-title">
+              {t("settings.template.menuTitle")}
+            </div>
             <div className="settings-list-description">
               {t("settings.template.description")}
             </div>
           </div>
-          <FontAwesomeIcon icon={faChevronRight} className="settings-list-chevron" />
+          <FontAwesomeIcon
+            icon={faChevronRight}
+            className="settings-list-chevron"
+          />
         </button>
       </div>
     </div>
@@ -108,7 +121,6 @@ function UiSettingsPage({
   onBack,
 }: SettingsPageProps & { onBack: () => void }) {
   const { t } = useTranslation();
-  const [draftTextScale, setDraftTextScale] = useState(textScale);
 
   return (
     <div className="page-container">
@@ -126,7 +138,9 @@ function UiSettingsPage({
           <div className="settings-list-content">
             <div className="settings-list-title">{t("settings.ui.theme")}</div>
             <div className="settings-list-description">
-              {theme === "dark" ? t("settings.ui.darkMode") : t("settings.ui.lightMode")}
+              {theme === "dark"
+                ? t("settings.ui.darkMode")
+                : t("settings.ui.lightMode")}
             </div>
           </div>
           <div className="flex gap-2">
@@ -149,9 +163,13 @@ function UiSettingsPage({
             <FontAwesomeIcon icon={faGlobe} />
           </div>
           <div className="settings-list-content">
-            <div className="settings-list-title">{t("settings.ui.language")}</div>
+            <div className="settings-list-title">
+              {t("settings.ui.language")}
+            </div>
             <div className="settings-list-description">
-              {language === "zh-TW" ? t("settings.ui.traditionalChinese") : t("settings.ui.english")}
+              {language === "zh-TW"
+                ? t("settings.ui.traditionalChinese")
+                : t("settings.ui.english")}
             </div>
           </div>
           <div className="flex gap-2">
@@ -175,30 +193,23 @@ function UiSettingsPage({
               <span className="settings-text-size-icon">Aa</span>
             </div>
             <div className="settings-list-content">
-              <div className="settings-list-title">{t("settings.ui.textSize")}</div>
-              <div className="settings-list-description">
-                {draftTextScale}%
+              <div className="settings-list-title">
+                {t("settings.ui.textSize")}
               </div>
+              <div className="settings-list-description">{textScale}%</div>
             </div>
-            <button
-              className="btn btn-sm btn-primary"
-              onClick={() => onTextScaleChange(draftTextScale)}
-              disabled={draftTextScale === textScale}
-            >
-              {t("common.save")}
-            </button>
           </div>
           <input
             className="settings-range"
             style={
-              { "--range-progress": `${draftTextScale - 100}%` } as CSSProperties
+              { "--range-progress": `${textScale - 100}%` } as CSSProperties
             }
             type="range"
             min="100"
             max="200"
             step="1"
-            value={draftTextScale}
-            onChange={(e) => setDraftTextScale(Number(e.target.value))}
+            value={textScale}
+            onChange={(e) => onTextScaleChange(Number(e.target.value))}
           />
         </div>
       </div>
@@ -561,7 +572,10 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
 
       {/* Edit notes modal */}
       {editingNotes && (
-        <Modal title={t("settings.template.editNotes")} onClose={() => setEditingNotes(false)}>
+        <Modal
+          title={t("settings.template.editNotes")}
+          onClose={() => setEditingNotes(false)}
+        >
           <textarea
             className="form-input"
             rows={5}
@@ -576,7 +590,10 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
 
       {/* Add category modal */}
       {addingCategory && (
-        <Modal title={t("settings.template.addCategory")} onClose={() => setAddingCategory(false)}>
+        <Modal
+          title={t("settings.template.addCategory")}
+          onClose={() => setAddingCategory(false)}
+        >
           <input
             className="form-input"
             value={newCatName}
@@ -598,7 +615,9 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
         >
           {/* Rename */}
           <div className="form-group">
-            <label className="form-label">{t("settings.template.categoryName")}</label>
+            <label className="form-label">
+              {t("settings.template.categoryName")}
+            </label>
             <div className="flex gap-2">
               <input
                 className="form-input flex-1"
@@ -619,7 +638,9 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
           {/* Subcategories */}
           <div className="mt-4">
             <div className="flex justify-between items-center mb-2">
-              <label className="form-label !mb-0">{t("settings.template.subcategory")}</label>
+              <label className="form-label !mb-0">
+                {t("settings.template.subcategory")}
+              </label>
               <button
                 className="btn-round-add !w-6 !h-6"
                 onClick={() => {
@@ -698,7 +719,9 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
             )}
 
             {getSubcategories(editingCatName).length === 0 && !addingSubTo ? (
-              <p className="text-xs text-slate-400">{t("settings.template.noSubcategories")}</p>
+              <p className="text-xs text-slate-400">
+                {t("settings.template.noSubcategories")}
+              </p>
             ) : (
               getSubcategories(editingCatName).map((sub) => (
                 <div
@@ -778,7 +801,9 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
               <>
                 {subs.length > 0 && (
                   <div className="form-group">
-                    <label className="form-label">{t("settings.template.subcategory")}</label>
+                    <label className="form-label">
+                      {t("settings.template.subcategory")}
+                    </label>
                     {!creatingNewSub ? (
                       <div className="flex gap-2 flex-wrap">
                         <button
@@ -823,7 +848,9 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                   </div>
                 )}
                 <div className="form-group">
-                  <label className="form-label">{t("settings.template.itemName")}</label>
+                  <label className="form-label">
+                    {t("settings.template.itemName")}
+                  </label>
                   <input
                     className="form-input"
                     value={newItemText}
@@ -856,7 +883,9 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
               <>
                 {subs.length > 0 && (
                   <div className="form-group">
-                    <label className="form-label">{t("settings.template.subcategory")}</label>
+                    <label className="form-label">
+                      {t("settings.template.subcategory")}
+                    </label>
                     {!editingItemNewSub ? (
                       <div className="flex gap-2 flex-wrap">
                         <button
@@ -911,7 +940,9 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                   </div>
                 )}
                 <div className="form-group">
-                  <label className="form-label">{t("settings.template.itemName")}</label>
+                  <label className="form-label">
+                    {t("settings.template.itemName")}
+                  </label>
                   <input
                     className="form-input"
                     data-e2e-id="template_item_name_field"
