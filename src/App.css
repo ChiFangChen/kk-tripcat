@@ -39,6 +39,7 @@ body,
 #root {
   min-height: 100%;
   background-color: var(--color-bg);
+  overflow-x: hidden;
 }
 
 .app {
@@ -1060,6 +1061,7 @@ button.settings-list-item {
   border: none;
   background: transparent;
   accent-color: var(--color-primary);
+  touch-action: pan-y;
 }
 
 .settings-range::-webkit-slider-runnable-track {
