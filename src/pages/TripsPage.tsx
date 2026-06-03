@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCat,
   faChevronLeft,
+  faCircleCheck,
   faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../context/AppContext";
@@ -32,6 +33,8 @@ export function TripsPage({ onSelectTrip }: Props) {
     setSharedTripData,
     setUserTripData,
     getUserColor,
+    isTripAdmin,
+    updateTrip,
     showToast,
   } = useApp();
   const [step, setStep] = useState<Step>("list");
@@ -84,6 +87,25 @@ export function TripsPage({ onSelectTrip }: Props) {
     setPendingChecklist([]);
     setPendingNotes("");
     setStep("info");
+  }
+
+  function toggleCompleted(trip: Trip) {
+    if (!isTripAdmin(trip)) return;
+    if (trip.isCompleted) {
+      void updateTrip(trip, {
+        isCompleted: false,
+        completedAt: "",
+        completedBy: "",
+      });
+      return;
+    }
+
+    if (!state.auth.currentUser) return;
+    void updateTrip(trip, {
+      isCompleted: true,
+      completedAt: new Date().toISOString(),
+      completedBy: state.auth.currentUser.id,
+    });
   }
 
   async function handleCreate() {
@@ -276,7 +298,7 @@ export function TripsPage({ onSelectTrip }: Props) {
         visibleTrips.map((trip) => (
           <div
             key={trip.id}
-            className="card !p-3 cursor-pointer"
+            className="card trip-list-card !p-3 cursor-pointer"
             onClick={() => onSelectTrip(trip.id)}
           >
             <div className="flex items-center justify-between gap-2">
@@ -286,7 +308,6 @@ export function TripsPage({ onSelectTrip }: Props) {
               </span>
             </div>
             <div className="flex flex-wrap gap-1 mt-2">
-              {trip.isCompleted && <span className="tag">已完成</span>}
               {trip.country && (
                 <span className="tag tag-country">{trip.country}</span>
               )}
@@ -314,6 +335,19 @@ export function TripsPage({ onSelectTrip }: Props) {
                   </span>
                 ))}
               </div>
+            )}
+            {isTripAdmin(trip) && (
+              <button
+                className={`trip-complete-btn ${trip.isCompleted ? "active" : "inactive"}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleCompleted(trip);
+                }}
+                title={trip.isCompleted ? "取消完成" : "完成旅程"}
+                aria-label={trip.isCompleted ? "取消完成" : "完成旅程"}
+              >
+                <FontAwesomeIcon icon={faCircleCheck} />
+              </button>
             )}
           </div>
         ))

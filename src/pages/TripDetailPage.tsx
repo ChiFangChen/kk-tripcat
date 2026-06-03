@@ -5,7 +5,6 @@ import {
   faEllipsisVertical,
   faUsers,
   faShareNodes,
-  faCircleCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { shouldRefreshTripOnVisibility, useApp } from "../context/AppContext";
 import { MemberMenu } from "../components/MemberMenu";
@@ -243,25 +242,6 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     setTimeout(() => setCopied(""), 2000);
   }
 
-  function toggleCompleted() {
-    if (!admin || !trip) return;
-    if (completed) {
-      updateTrip(trip, {
-        isCompleted: false,
-        completedAt: "",
-        completedBy: "",
-      });
-      return;
-    }
-
-    if (!state.auth.currentUser) return;
-    updateTrip(trip, {
-      isCompleted: true,
-      completedAt: new Date().toISOString(),
-      completedBy: state.auth.currentUser.id,
-    });
-  }
-
   function handleUpdateTrip(updatedTrip: typeof trip) {
     if (!updatedTrip) return;
     updateTrip(updatedTrip);
@@ -291,15 +271,6 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         <div className="flex items-center gap-1">
           {!viewOnly && (
             <>
-              {admin && (
-                <button
-                  className={`header-icon-btn ${completed ? "active" : ""}`}
-                  onClick={toggleCompleted}
-                  title={completed ? "取消完成" : "完成旅程"}
-                >
-                  <FontAwesomeIcon icon={faCircleCheck} />
-                </button>
-              )}
               <button
                 className="header-icon-btn"
                 onClick={() => setShowShare(true)}

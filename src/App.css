@@ -288,6 +288,45 @@ body {
   margin-bottom: 12px;
 }
 
+.trip-list-card {
+  position: relative;
+  padding-right: 44px !important;
+  padding-bottom: 38px !important;
+}
+
+.trip-complete-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-border);
+  cursor: pointer;
+}
+
+.trip-complete-btn.active {
+  color: #a8d8b9;
+}
+
+.theme-dark .trip-complete-btn.active {
+  color: #3d6b4f;
+}
+
+.trip-complete-btn.inactive {
+  opacity: 0.72;
+}
+
+.trip-complete-btn:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: 2px;
+}
+
 /* Accordion */
 .accordion-header {
   display: flex;
