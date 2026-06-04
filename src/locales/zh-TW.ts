@@ -323,6 +323,7 @@ const zhTW = {
     cancelReady: "取消準備",
     incomplete: "未完成",
     all: "全部",
+    other: "其他",
     emptyList: "清單是空的",
     everythingReady: "全部準備好了！",
   },

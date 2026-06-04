@@ -325,6 +325,7 @@ const en = {
     cancelReady: "Cancel Ready",
     incomplete: "Incomplete",
     all: "All",
+    other: "Other",
     emptyList: "The list is empty",
     everythingReady: "Everything is ready!",
   },

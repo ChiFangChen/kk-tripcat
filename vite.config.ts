@@ -41,7 +41,7 @@ export default defineConfig({
       manifest: {
         name: "KK TripCat",
         short_name: "KK TripCat",
-        description: "KK TripCat 旅遊規劃",
+        description: "KK TripCat Travel Planner",
         theme_color: "#7EC8E3",
         background_color: "#ffffff",
         display: "standalone",

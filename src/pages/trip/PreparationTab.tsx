@@ -52,11 +52,12 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
   const displayed = showCompleted ? items : unchecked;
+  const otherCategory = t("preparation.other");
 
   // Get existing categories
   const existingCategories: string[] = [];
   for (const item of items) {
-    const cat = item.category || "其他";
+    const cat = item.category || otherCategory;
     if (!existingCategories.includes(cat)) existingCategories.push(cat);
   }
 
@@ -64,7 +65,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
   const categoryOrder: string[] = [];
   const grouped: Record<string, ChecklistItem[]> = {};
   for (const item of displayed) {
-    const cat = item.category || "其他";
+    const cat = item.category || otherCategory;
     if (!grouped[cat]) {
       grouped[cat] = [];
       categoryOrder.push(cat);
@@ -85,7 +86,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
     const subs: string[] = [];
     for (const item of items) {
       if (
-        (item.category || "其他") === cat &&
+        (item.category || otherCategory) === cat &&
         item.subcategory &&
         !subs.includes(item.subcategory)
       ) {
@@ -105,7 +106,7 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
   function openAddModal() {
     if (viewOnly) return;
     setNewItem("");
-    setSelectedCategory(existingCategories[0] || "其他");
+    setSelectedCategory(existingCategories[0] || otherCategory);
     setNewCategoryName("");
     setCreatingCategory(false);
     setSelectedSubcategory(null);
@@ -118,8 +119,8 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
     if (viewOnly) return;
     if (!newItem.trim()) return;
     const category = creatingCategory
-      ? newCategoryName.trim() || "其他"
-      : selectedCategory || "其他";
+      ? newCategoryName.trim() || otherCategory
+      : selectedCategory || otherCategory;
     const subcategory = creatingSubcategory
       ? newSubName.trim() || undefined
       : selectedSubcategory || undefined;
@@ -533,8 +534,9 @@ function EditItemForm({
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
+  const otherCategory = t("preparation.other");
   const [text, setText] = useState(item.text);
-  const [category, setCategory] = useState(item.category || "其他");
+  const [category, setCategory] = useState(item.category || otherCategory);
   const [subcategory, setSubcategory] = useState<string | undefined>(
     item.subcategory,
   );
