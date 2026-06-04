@@ -122,6 +122,16 @@ const zhTW = {
     readOnlyLinkDescription:
       "不需登入，只能看共用資料（行程/航班/飯店/交通）",
     copyReadOnlyLink: "複製唯讀連結",
+    menu: "更多選項",
+    tripSettings: "旅程設定",
+    preparationSettings: "準備事項",
+    enablePreparation: "開啟準備事項",
+    disablePreparation: "關閉準備事項",
+    preparationSettingDescription: "關閉會清空並隱藏準備 tab",
+    preparationEnabledDescription: "這個旅程目前有準備事項清單",
+    preparationDisabledDescription: "這個旅程目前沒有準備事項清單",
+    disablePreparationConfirm:
+      "關閉後，這個旅程原本的準備事項會被清空刪除。確定要關閉嗎？",
   },
 
   // Trip tabs

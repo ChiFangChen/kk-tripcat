@@ -3,15 +3,23 @@ interface Props {
   onChange: (checked: boolean) => void;
   ariaLabel: string;
   title?: string;
+  disabled?: boolean;
 }
 
-export function SwitchControl({ checked, onChange, ariaLabel, title }: Props) {
+export function SwitchControl({
+  checked,
+  onChange,
+  ariaLabel,
+  title,
+  disabled,
+}: Props) {
   return (
     <label className="switch-control" title={title}>
       <input
         className="switch-control-input"
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(event) => onChange(event.currentTarget.checked)}
         aria-label={ariaLabel}
       />

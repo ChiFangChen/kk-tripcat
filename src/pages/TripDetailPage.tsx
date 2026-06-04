@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronLeft,
   faEllipsisVertical,
+  faGear,
   faUsers,
   faShareNodes,
 } from "@fortawesome/free-solid-svg-icons";
@@ -10,7 +11,9 @@ import { shouldRefreshTripOnVisibility, useApp } from "../context/AppContext";
 import { MemberMenu } from "../components/MemberMenu";
 import { UserMenu } from "../components/UserMenu";
 import { Modal } from "../components/Modal";
+import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { FullScreenModal } from "../components/FullScreenModal";
+import { SwitchControl } from "../components/SwitchControl";
 import { TemplateSelector } from "../components/TemplateSelector";
 import { TripEditForm } from "../components/TripEditForm";
 import { useDoubleTap } from "../hooks/useDoubleTap";
@@ -60,6 +63,10 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const [showShare, setShowShare] = useState(false);
   const [editingTrip, setEditingTrip] = useState(false);
   const [showTabMenu, setShowTabMenu] = useState(false);
+  const [showTripSettings, setShowTripSettings] = useState(false);
+  const [confirmDisablePreparation, setConfirmDisablePreparation] =
+    useState(false);
+  const [showPreparationPicker, setShowPreparationPicker] = useState(false);
   const [copied, setCopied] = useState("");
   const [setupChoice, setSetupChoice] = useState<"preparation" | "skip" | null>(
     null,
@@ -127,7 +134,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
-  }, [tripId, firstEntryMode]);
+  }, [tripId, firstEntryMode, showPreparationPicker]);
 
   async function handleSetupComplete(
     checklist: ChecklistItem[],
@@ -155,6 +162,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       gotReady: false,
     });
     setSetupChoice(null);
+    setShowPreparationPicker(false);
     setActiveTab("preparation");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -164,6 +172,31 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
       skipPreparation: true,
     });
     setSetupChoice("skip");
+    setActiveTab("flight");
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function openTripSettings() {
+    setShowTabMenu(false);
+    setShowTripSettings(true);
+  }
+
+  function handleEnablePreparation() {
+    setShowTripSettings(false);
+    setShowPreparationPicker(true);
+  }
+
+  function handleDisablePreparation() {
+    setUserTripData(tripId, {
+      checklist: [],
+      preparationNotes: "",
+      skipPreparation: true,
+      setupComplete: true,
+      gotReady: false,
+    });
+    setConfirmDisablePreparation(false);
+    setShowTripSettings(false);
+    setSetupChoice(null);
     setActiveTab("flight");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -208,8 +241,8 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
     );
   }
 
-  // Show template selection for new member who chose to use preparation
-  if (!completed && firstEntryMode === "template") {
+  // Show template selection for new member or trip settings enable flow.
+  if (!completed && (firstEntryMode === "template" || showPreparationPicker)) {
     return (
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
@@ -217,8 +250,12 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
             <button
               className="text-sky-600"
               onClick={() => {
-                setSetupChoice(null);
-                onBack();
+                if (showPreparationPicker) {
+                  setShowPreparationPicker(false);
+                } else {
+                  setSetupChoice(null);
+                  onBack();
+                }
               }}
             >
               <FontAwesomeIcon icon={faChevronLeft} />
@@ -234,6 +271,71 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
           confirmWithUpdateLabel={t("tripDetail.saveTemplateAndApply")}
           confirmLabel={t("tripDetail.applyDirectly")}
         />
+      </div>
+    );
+  }
+
+  if (showTripSettings) {
+    return (
+      <div>
+        <div className="page-header">
+          <div className="page-title-group">
+            <button
+              onClick={() => {
+                setConfirmDisablePreparation(false);
+                setShowTripSettings(false);
+              }}
+              className="text-sky-600"
+            >
+              <FontAwesomeIcon icon={faChevronLeft} />
+            </button>
+            <h1>{t("tripDetail.tripSettings")}</h1>
+          </div>
+          <div className="w-8" />
+        </div>
+
+        <div className="page-container">
+          <div className="settings-list">
+            <div
+              className="settings-list-item"
+            >
+              <span className="settings-list-icon">
+                <FontAwesomeIcon icon={faGear} />
+              </span>
+              <div className="settings-list-content">
+                <span className="settings-list-title">
+                  {t("tripDetail.preparationSettings")}
+                </span>
+                <p className="settings-list-description">
+                  {t("tripDetail.preparationSettingDescription")}
+                </p>
+              </div>
+              <SwitchControl
+                checked={!tripData.skipPreparation}
+                disabled={readOnly}
+                ariaLabel={t("tripDetail.preparationSettings")}
+                title={t("tripDetail.preparationSettings")}
+                onChange={(checked) => {
+                  if (checked) {
+                    handleEnablePreparation();
+                  } else {
+                    setConfirmDisablePreparation(true);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {confirmDisablePreparation && (
+          <ConfirmDeleteModal
+            title={t("tripDetail.disablePreparation")}
+            message={t("tripDetail.disablePreparationConfirm")}
+            confirmLabel="common.confirm"
+            onCancel={() => setConfirmDisablePreparation(false)}
+            onConfirm={handleDisablePreparation}
+          />
+        )}
       </div>
     );
   }
@@ -305,7 +407,9 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
               )}
             </>
           )}
-          {viewOnly && <span className="status-badge">{t("tripDetail.readOnly")}</span>}
+          {viewOnly && (
+            <span className="status-badge">{t("tripDetail.readOnly")}</span>
+          )}
         </div>
       </div>
 
@@ -331,12 +435,12 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
             </button>
           ))}
         </div>
-        {menuTabs.length > 0 && (
+        {!viewOnly && (
           <div className="trip-tabs-menu">
             <button
               className={`trip-tab-menu-btn ${menuTabs.some((tab) => tab.key === effectiveActiveTab) ? "active" : ""}`}
               onClick={() => setShowTabMenu((current) => !current)}
-              title={t("tripDetail.moreTabs")}
+              title={t("tripDetail.menu")}
             >
               <FontAwesomeIcon icon={faEllipsisVertical} />
             </button>
@@ -359,6 +463,13 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
                       {t(tab.label)}
                     </button>
                   ))}
+                  {menuTabs.length > 0 && <div className="trip-tab-menu-divider" />}
+                  <button
+                    className="trip-tab-menu-item"
+                    onClick={openTripSettings}
+                  >
+                    <FontAwesomeIcon icon={faGear} className="mr-2" />
+                  </button>
                 </div>
               </>
             )}
@@ -398,6 +509,16 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
         />
       )}
       {showUserMenu && <UserMenu onClose={() => setShowUserMenu(false)} />}
+
+      {confirmDisablePreparation && (
+        <ConfirmDeleteModal
+          title={t("tripDetail.disablePreparation")}
+          message={t("tripDetail.disablePreparationConfirm")}
+          confirmLabel="common.confirm"
+          onCancel={() => setConfirmDisablePreparation(false)}
+          onConfirm={handleDisablePreparation}
+        />
+      )}
 
       {showShare && (
         <Modal title={t("tripDetail.shareTrip")} onClose={() => setShowShare(false)}>

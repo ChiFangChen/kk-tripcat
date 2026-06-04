@@ -124,6 +124,17 @@ const en = {
     readOnlyLinkDescription:
       "No login required. Shared data only (schedule/flights/hotels/transport).",
     copyReadOnlyLink: "Copy read-only link",
+    menu: "More options",
+    tripSettings: "Trip settings",
+    preparationSettings: "Preparation items",
+    enablePreparation: "Enable preparation items",
+    disablePreparation: "Disable preparation items",
+    preparationSettingDescription:
+      "Turning this off will clear the list and hide the Preparation tab",
+    preparationEnabledDescription: "This trip currently has preparation items",
+    preparationDisabledDescription: "This trip currently has no preparation items",
+    disablePreparationConfirm:
+      "Turning this off will clear and delete this trip's preparation items. Are you sure?",
   },
 
   // Trip tabs
