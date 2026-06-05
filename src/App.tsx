@@ -91,11 +91,26 @@ function AppContent() {
   }, [theme]);
 
   useEffect(() => {
+    const scaleProgress = Math.max(0, Math.min(1, (textScale - 100) / 100));
+    const leadingBoost = scaleProgress * 0.08;
     storage.setItem("textScale", textScale);
     document.documentElement.style.setProperty(
       "--text-scale",
       String(textScale / 100),
     );
+    document.documentElement.style.setProperty(
+      "--line-height-tight",
+      String(1.35 + leadingBoost),
+    );
+    document.documentElement.style.setProperty(
+      "--line-height-normal",
+      String(1.5 + leadingBoost),
+    );
+    document.documentElement.style.setProperty(
+      "--line-height-relaxed",
+      String(1.65 + leadingBoost),
+    );
+    document.documentElement.style.setProperty("--letter-spacing-normal", "0");
   }, [textScale]);
 
   useEffect(() => {

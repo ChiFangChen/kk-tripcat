@@ -10,6 +10,10 @@
   --color-star: #f59e0b;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --text-scale: 1;
+  --line-height-tight: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+  --letter-spacing-normal: 0;
   --text-xs: calc(0.75rem * var(--text-scale));
   --text-xs--line-height: calc(1rem * var(--text-scale));
   --text-sm: calc(0.875rem * var(--text-scale));
@@ -139,6 +143,8 @@ body {
   color: var(--color-text);
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-normal);
   padding-bottom: var(--safe-bottom);
 }
 
@@ -447,7 +453,7 @@ body {
   color: var(--color-text);
   font-size: calc(14px * var(--text-scale));
   font-weight: 650;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
   align-items: center;
 }
 
@@ -459,7 +465,7 @@ body {
   color: color-mix(in srgb, var(--color-text) 82%, var(--color-primary));
   font-size: calc(12px * var(--text-scale));
   font-weight: 800;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
   letter-spacing: 0;
 }
 
@@ -478,7 +484,7 @@ body {
   color: var(--color-text-secondary);
   font-size: calc(11px * var(--text-scale));
   font-weight: 700;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
 }
 
 /* Schedule table */
@@ -522,6 +528,45 @@ body {
 
 .schedule-activity:hover {
   background: rgba(126, 200, 227, 0.1);
+}
+
+.schedule-activity-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, calc(6px + 2px * var(--text-scale)), 10px);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.schedule-activity-row:last-child {
+  border-bottom: 0;
+}
+
+.schedule-activity-time {
+  width: 5.5ch;
+  min-width: 5.5ch;
+  flex-shrink: 0;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: calc(12px * var(--text-scale));
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.schedule-activity-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.schedule-activity-name {
+  display: block;
+  color: #94a3b8;
+  font-size: calc(12px * var(--text-scale));
+  font-weight: 500;
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
 }
 
 /* Star button */
@@ -586,7 +631,7 @@ body {
   border-radius: 6px;
   background: rgba(148, 163, 184, 0.12);
   color: var(--color-text-secondary);
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
 }
 
 .pool-tag-row {
@@ -607,7 +652,7 @@ body {
   color: color-mix(in srgb, var(--color-primary-dark) 82%, var(--color-text));
   font-size: calc(11px * var(--text-scale));
   font-weight: 700;
-  line-height: 1.3;
+  line-height: var(--line-height-tight);
 }
 
 .pool-tag-chip {
@@ -1086,7 +1131,7 @@ body {
   margin-top: 4px;
   color: #dc2626;
   font-size: calc(12px * var(--text-scale));
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
 }
 
 .password-input-wrapper {
@@ -1293,12 +1338,12 @@ button.settings-list-item {
 .info-label {
   font-weight: 500;
   color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .info-value {
   min-width: 0;
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -1494,7 +1539,7 @@ button.settings-list-item {
   text-align: center;
   font-size: calc(0.75rem * var(--text-scale));
   color: var(--color-text-secondary);
-  line-height: 1.4;
+  line-height: var(--line-height-tight);
 }
 
 .flight-route-line {
@@ -1830,7 +1875,7 @@ button.settings-list-item {
   color: var(--color-text);
   font-size: calc(14px * var(--text-scale));
   font-weight: 700;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
 }
 
 .pool-item-meta {
@@ -1840,7 +1885,7 @@ button.settings-list-item {
   margin-top: 2px;
   color: var(--color-text-secondary);
   font-size: calc(11px * var(--text-scale));
-  line-height: 1.45;
+  line-height: var(--line-height-normal);
 }
 
 .pool-item-meta > span {
@@ -1855,7 +1900,7 @@ button.settings-list-item {
   margin: 2px 0 0;
   color: var(--color-text-secondary);
   font-size: calc(12px * var(--text-scale));
-  line-height: 1.45;
+  line-height: var(--line-height-normal);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
 }
@@ -1912,7 +1957,7 @@ button.settings-list-item {
   min-width: 0;
   color: var(--color-text-secondary);
   font-size: calc(12px * var(--text-scale));
-  line-height: 1.45;
+  line-height: var(--line-height-normal);
 }
 
 .pool-purchase-actions {
@@ -2014,7 +2059,7 @@ button.settings-list-item {
   color: white;
   font-size: calc(13px * var(--text-scale));
   font-weight: 600;
-  line-height: 1.35;
+  line-height: var(--line-height-tight);
   text-align: center;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
   animation: toastSlideIn 0.18s ease-out;

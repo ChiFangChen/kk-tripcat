@@ -250,16 +250,16 @@ export function ScheduleTab({ tripId, viewOnly, hideEditButtons }: Props) {
                         .map((activity) => (
                           <div
                             key={activity.id}
-                            className="flex items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0 cursor-pointer"
+                            className="schedule-activity-row"
                             onClick={() =>
                               setSelectedActivity({ activity, dayIndex })
                             }
                           >
-                            <span className="text-xs text-slate-400 font-mono w-11 flex-shrink-0 leading-5">
+                            <span className="schedule-activity-time">
                               {activity.time || ""}
                             </span>
-                            <div className="flex-1">
-                              <span className="text-xs text-slate-400 font-medium leading-5 block">
+                            <div className="schedule-activity-content">
+                              <span className="schedule-activity-name">
                                 {activity.name}
                               </span>
                               {activity.place && (
