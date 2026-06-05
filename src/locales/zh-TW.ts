@@ -86,6 +86,8 @@ const zhTW = {
     create: "建立旅程",
     empty: "還沒有旅程，開始規劃吧！",
     choosePreparation: "選擇準備項目",
+    cloneFromTemplate: "以此為模板複製",
+    cloneMenu: "複製旅程",
     skipPreparation: "跳過準備事項",
     updateTemplateAndNext: "更新模板並下一步 →",
     next: "下一步",
@@ -93,6 +95,10 @@ const zhTW = {
     createFailed: "旅程沒有建立成功，請確認網路後再試一次",
     markComplete: "完成旅程",
     markIncomplete: "取消完成",
+    errors: {
+      nameRequired: "請填寫旅程名稱",
+      startDateRequired: "請選擇開始日期",
+    },
     types: {
       couple: "情侶",
       friends: "朋友",

@@ -4,9 +4,10 @@ import {
   faCat,
   faChevronLeft,
   faCircleCheck,
+  faCopy,
   faPlus,
 } from "@fortawesome/free-solid-svg-icons";
-import { useApp } from "../context/AppContext";
+import { type TripData, useApp } from "../context/AppContext";
 import { TemplateSelector } from "../components/TemplateSelector";
 import { generateId } from "../utils/id";
 import { formatDate } from "../utils/date";
@@ -28,6 +29,24 @@ const tripTypeLabelKeys: Record<FilledTripType, string> = {
 };
 
 type Step = "list" | "template" | "info";
+type TripInfoForm = {
+  name: string;
+  startDate: string;
+  endDate: string;
+  country: string;
+  tripType: TripType;
+  tags: string;
+};
+type TripInfoFormErrors = Partial<Record<"name" | "startDate", string>>;
+
+const emptyTripInfoForm: TripInfoForm = {
+  name: "",
+  startDate: "",
+  endDate: "",
+  country: "",
+  tripType: "",
+  tags: "",
+};
 
 function formatTripDateRange(startDate: string, endDate: string) {
   if (!endDate || startDate === endDate) return formatDate(startDate);
@@ -42,26 +61,25 @@ export function TripsPage({ onSelectTrip }: Props) {
     setTemplate,
     setSharedTripData,
     setUserTripData,
+    getTripData,
     getUserColor,
     isTripAdmin,
     updateTrip,
     showToast,
   } = useApp();
   const [step, setStep] = useState<Step>("list");
+  const [cloneSourceTripId, setCloneSourceTripId] = useState<string | null>(
+    null,
+  );
+  const [openTripMenuId, setOpenTripMenuId] = useState<string | null>(null);
 
   // Stored from template selection step
   const [pendingChecklist, setPendingChecklist] = useState<ChecklistItem[]>([]);
   const [pendingNotes, setPendingNotes] = useState("");
 
   // Trip info form
-  const [form, setForm] = useState({
-    name: "",
-    startDate: "",
-    endDate: "",
-    country: "",
-    tripType: "" as TripType,
-    tags: "",
-  });
+  const [form, setForm] = useState<TripInfoForm>(emptyTripInfoForm);
+  const [formErrors, setFormErrors] = useState<TripInfoFormErrors>({});
 
   const sortedTrips = [...state.trips].sort((a, b) =>
     b.startDate.localeCompare(a.startDate),
@@ -94,9 +112,43 @@ export function TripsPage({ onSelectTrip }: Props) {
   }
 
   function handleSkipPreparation() {
+    setCloneSourceTripId(null);
     setPendingChecklist([]);
     setPendingNotes("");
+    setFormErrors({});
     setStep("info");
+  }
+
+  function startCreateTrip() {
+    setCloneSourceTripId(null);
+    setForm(emptyTripInfoForm);
+    setFormErrors({});
+    setStep("template");
+  }
+
+  function startCloneTrip(trip: Trip) {
+    setOpenTripMenuId(null);
+    setCloneSourceTripId(trip.id);
+    setPendingChecklist([]);
+    setPendingNotes("");
+    setFormErrors({});
+    setForm({
+      name: "",
+      startDate: "",
+      endDate: "",
+      country: trip.country,
+      tripType: trip.tripType,
+      tags: trip.tags.join(", "),
+    });
+    setStep("info");
+  }
+
+  function clearFormError(field: keyof TripInfoFormErrors) {
+    setFormErrors((current) => {
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
   }
 
   function toggleCompleted(trip: Trip) {
@@ -119,18 +171,38 @@ export function TripsPage({ onSelectTrip }: Props) {
   }
 
   async function handleCreate() {
-    if (!form.name || !form.startDate || !state.auth.currentUser) return;
+    const name = form.name.trim();
+    const startDate = form.startDate;
+    const errors: TripInfoFormErrors = {};
+    if (!name) errors.name = t("trips.errors.nameRequired");
+    if (!startDate) errors.startDate = t("trips.errors.startDateRequired");
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    if (!state.auth.currentUser) {
+      showToast({
+        type: "error",
+        message: t("trips.createFailed"),
+      });
+      return;
+    }
 
     const tripId = generateId();
     const userId = state.auth.currentUser.id;
+    const cloneSourceTrip = cloneSourceTripId
+      ? state.trips.find((trip) => trip.id === cloneSourceTripId)
+      : null;
+    const cloneSourceData = cloneSourceTrip
+      ? getTripData(cloneSourceTrip.id)
+      : null;
     const trip: Trip = {
       id: tripId,
-      name: form.name,
-      startDate: form.startDate,
-      endDate: form.endDate || form.startDate,
+      name,
+      startDate,
+      endDate: form.endDate || startDate,
       country: form.country,
       tripType: form.tripType,
-      members: [userId],
+      members: ensureMemberIncluded([], userId),
       creatorId: userId,
       tags: form.tags
         ? form.tags
@@ -141,23 +213,31 @@ export function TripsPage({ onSelectTrip }: Props) {
       createdAt: new Date().toISOString(),
       gotReady: false,
       isCompleted: false,
+      ...(cloneSourceTrip?.memoriesVisibleToViewers !== undefined
+        ? { memoriesVisibleToViewers: cloneSourceTrip.memoriesVisibleToViewers }
+        : {}),
     };
 
     try {
       await addTrip(trip);
-      await setSharedTripData(tripId, {
-        schedule: [],
-        scheduleNotes: [],
-        flights: [],
-        hotels: [],
-        transport: [],
-      });
-      await setUserTripData(tripId, {
-        checklist: pendingChecklist,
-        shopping: [],
-        preparationNotes: pendingNotes,
-        setupComplete: true,
-      });
+      if (cloneSourceData) {
+        await setSharedTripData(tripId, cloneTripSharedData(cloneSourceData));
+        await setUserTripData(tripId, cloneTripUserData(cloneSourceData));
+      } else {
+        await setSharedTripData(tripId, {
+          schedule: [],
+          scheduleNotes: [],
+          flights: [],
+          hotels: [],
+          transport: [],
+        });
+        await setUserTripData(tripId, {
+          checklist: pendingChecklist,
+          shopping: [],
+          preparationNotes: pendingNotes,
+          setupComplete: true,
+        });
+      }
     } catch {
       showToast({
         type: "error",
@@ -167,16 +247,11 @@ export function TripsPage({ onSelectTrip }: Props) {
     }
 
     // Reset
-    setForm({
-      name: "",
-      startDate: "",
-      endDate: "",
-      country: "",
-      tripType: "",
-      tags: "",
-    });
+    setForm(emptyTripInfoForm);
+    setFormErrors({});
     setPendingChecklist([]);
     setPendingNotes("");
+    setCloneSourceTripId(null);
     setStep("list");
     onSelectTrip(tripId);
   }
@@ -190,7 +265,9 @@ export function TripsPage({ onSelectTrip }: Props) {
             <button className="text-sky-600" onClick={() => setStep("list")}>
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
-            <h1 className="text-lg font-bold">{t("trips.choosePreparation")}</h1>
+            <h1 className="text-lg font-bold">
+              {t("trips.choosePreparation")}
+            </h1>
           </div>
           <div className="w-8" />
         </div>
@@ -216,7 +293,17 @@ export function TripsPage({ onSelectTrip }: Props) {
       <div className="page-container">
         <div className="flex items-center justify-between mb-4">
           <div className="page-title-group">
-            <button className="text-sky-600" onClick={() => setStep("template")}>
+            <button
+              className="text-sky-600"
+              onClick={() => {
+                if (cloneSourceTripId) {
+                  setCloneSourceTripId(null);
+                  setStep("list");
+                } else {
+                  setStep("template");
+                }
+              }}
+            >
               <FontAwesomeIcon icon={faChevronLeft} />
             </button>
             <h1 className="text-lg font-bold">{t("trips.info")}</h1>
@@ -227,10 +314,20 @@ export function TripsPage({ onSelectTrip }: Props) {
         <div className="form-group">
           <label className="form-label">{t("trips.nameRequired")}</label>
           <input
-            className="form-input"
+            className={`form-input ${formErrors.name ? "has-error" : ""}`}
             value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            aria-invalid={!!formErrors.name}
+            aria-describedby={formErrors.name ? "trip-name-error" : undefined}
+            onChange={(e) => {
+              setForm({ ...form, name: e.target.value });
+              if (formErrors.name) clearFormError("name");
+            }}
           />
+          {formErrors.name && (
+            <p id="trip-name-error" className="form-error">
+              {formErrors.name}
+            </p>
+          )}
         </div>
         <div className="form-group">
           <label className="form-label">{t("trips.country")}</label>
@@ -244,11 +341,23 @@ export function TripsPage({ onSelectTrip }: Props) {
           <div className="form-group">
             <label className="form-label">{t("trips.startDateRequired")}</label>
             <input
-              className="form-input"
+              className={`form-input ${formErrors.startDate ? "has-error" : ""}`}
               type="date"
               value={form.startDate}
-              onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+              aria-invalid={!!formErrors.startDate}
+              aria-describedby={
+                formErrors.startDate ? "trip-start-date-error" : undefined
+              }
+              onChange={(e) => {
+                setForm({ ...form, startDate: e.target.value });
+                if (formErrors.startDate) clearFormError("startDate");
+              }}
             />
+            {formErrors.startDate && (
+              <p id="trip-start-date-error" className="form-error">
+                {formErrors.startDate}
+              </p>
+            )}
           </div>
           <div className="form-group">
             <label className="form-label">{t("trips.endDate")}</label>
@@ -299,7 +408,7 @@ export function TripsPage({ onSelectTrip }: Props) {
     <div className="page-container">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">{t("nav.trips")}</h1>
-        <button className="btn-round-add" onClick={() => setStep("template")}>
+        <button className="btn-round-add" onClick={startCreateTrip}>
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
       </div>
@@ -339,38 +448,116 @@ export function TripsPage({ onSelectTrip }: Props) {
                 </span>
               ))}
             </div>
-            {trip.members.length > 1 && (
-              <div className="flex items-center gap-1 mt-1.5">
-                {trip.members.map((userId) => (
-                  <span
-                    key={userId}
-                    className="w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center"
-                    style={{ backgroundColor: getUserColor(userId) }}
-                  >
-                    {(
-                      state.users.find((u) => u.id === userId)?.displayName ||
-                      "?"
-                    ).charAt(0)}
-                  </span>
-                ))}
+            <div className="flex justify-between mt-1.5 gap-2">
+              <div className="flex items-center gap-1">
+                {trip.members.length > 1 &&
+                  trip.members.map((userId) => (
+                    <span
+                      key={userId}
+                      className="w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center"
+                      style={{ backgroundColor: getUserColor(userId) }}
+                    >
+                      {(
+                        state.users.find((u) => u.id === userId)?.displayName ||
+                        "?"
+                      ).charAt(0)}
+                    </span>
+                  ))}
               </div>
-            )}
-            {isTripAdmin(trip) && (
-              <button
-                className={`trip-complete-btn ${trip.isCompleted ? "active" : "inactive"}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  toggleCompleted(trip);
-                }}
-                title={trip.isCompleted ? t("trips.markIncomplete") : t("trips.markComplete")}
-                aria-label={trip.isCompleted ? t("trips.markIncomplete") : t("trips.markComplete")}
-              >
-                <FontAwesomeIcon icon={faCircleCheck} />
-              </button>
-            )}
+              <div className="trip-list-actions">
+                {isTripAdmin(trip) && (
+                  <button
+                    className={`trip-list-action-btn ${trip.isCompleted ? "active" : "inactive"}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleCompleted(trip);
+                    }}
+                    title={
+                      trip.isCompleted
+                        ? t("trips.markIncomplete")
+                        : t("trips.markComplete")
+                    }
+                    aria-label={
+                      trip.isCompleted
+                        ? t("trips.markIncomplete")
+                        : t("trips.markComplete")
+                    }
+                  >
+                    <FontAwesomeIcon icon={faCircleCheck} />
+                  </button>
+                )}
+                <div className="trip-list-menu">
+                  <button
+                    className="trip-list-action-btn"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setOpenTripMenuId((current) =>
+                        current === trip.id ? null : trip.id,
+                      );
+                    }}
+                    title={t("trips.cloneMenu")}
+                    aria-label={t("trips.cloneMenu")}
+                  >
+                    <FontAwesomeIcon icon={faCopy} />
+                  </button>
+                  {openTripMenuId === trip.id && (
+                    <>
+                      <div
+                        className="trip-list-menu-backdrop"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setOpenTripMenuId(null);
+                        }}
+                      />
+                      <div
+                        className="trip-list-menu-popover"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <button
+                          className="trip-list-menu-item"
+                          onClick={() => startCloneTrip(trip)}
+                        >
+                          {t("trips.cloneFromTemplate")}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         ))
       )}
     </div>
   );
+}
+
+function cloneValue<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function ensureMemberIncluded(members: string[], userId: string) {
+  return members.includes(userId) ? members : [...members, userId];
+}
+
+function cloneTripSharedData(tripData: TripData) {
+  return cloneValue({
+    schedule: tripData.schedule,
+    scheduleNotes: tripData.scheduleNotes,
+    flights: tripData.flights,
+    hotels: tripData.hotels,
+    transport: tripData.transport,
+    memories: tripData.memories,
+  });
+}
+
+function cloneTripUserData(tripData: TripData) {
+  return cloneValue({
+    checklist: tripData.checklist,
+    shopping: tripData.shopping,
+    preparationNotes: tripData.preparationNotes,
+    setupComplete: tripData.setupComplete,
+    skipPreparation: tripData.skipPreparation,
+    gotReady: tripData.gotReady,
+  });
 }

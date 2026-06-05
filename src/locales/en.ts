@@ -86,6 +86,8 @@ const en = {
     create: "Create trip",
     empty: "No trips yet. Start planning!",
     choosePreparation: "Choose preparation items",
+    cloneFromTemplate: "Duplicate as template",
+    cloneMenu: "Duplicate trip",
     skipPreparation: "Skip preparation items",
     updateTemplateAndNext: "Update template and next ->",
     next: "Next",
@@ -93,6 +95,10 @@ const en = {
     createFailed: "Trip was not created. Check your connection and try again.",
     markComplete: "Mark trip complete",
     markIncomplete: "Mark trip incomplete",
+    errors: {
+      nameRequired: "Enter a trip name",
+      startDateRequired: "Choose a start date",
+    },
     types: {
       couple: "Couple",
       friends: "Friends",

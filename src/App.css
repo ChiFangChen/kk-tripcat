@@ -314,14 +314,21 @@ body {
 
 .trip-list-card {
   position: relative;
-  padding-right: 44px !important;
+  padding-right: 72px !important;
   padding-bottom: 38px !important;
 }
 
-.trip-complete-btn {
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
+.trip-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.trip-list-menu {
+  position: relative;
+}
+
+.trip-list-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -334,21 +341,55 @@ body {
   cursor: pointer;
 }
 
-.trip-complete-btn.active {
+.trip-list-action-btn.active {
   color: #a8d8b9;
 }
 
-.theme-dark .trip-complete-btn.active {
+.theme-dark .trip-list-action-btn.active {
   color: #3d6b4f;
 }
 
-.trip-complete-btn.inactive {
+.trip-list-action-btn.inactive {
   opacity: 0.72;
 }
 
-.trip-complete-btn:focus-visible {
+.trip-list-action-btn:focus-visible {
   outline: 2px solid var(--color-primary-dark);
   outline-offset: 2px;
+}
+
+.trip-list-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+}
+
+.trip-list-menu-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  width: max-content;
+  min-width: 0;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--color-card);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+
+.trip-list-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: calc(14px * var(--text-scale));
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 /* Accordion */
@@ -1002,6 +1043,17 @@ body {
   font-size: calc(14px * var(--text-scale));
   background: var(--color-card);
   color: var(--color-text);
+}
+
+.form-input.has-error {
+  box-shadow: inset 0 0 0 1.5px #ef4444;
+}
+
+.form-error {
+  margin-top: 4px;
+  color: #dc2626;
+  font-size: calc(12px * var(--text-scale));
+  line-height: 1.35;
 }
 
 .password-input-wrapper {
