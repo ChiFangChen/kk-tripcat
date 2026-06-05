@@ -358,93 +358,86 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
 
   return (
     <div>
-      <div className="page-header">
-        <div className="page-title-group">
-          {viewOnly ? (
-            <div className="w-10" />
-          ) : (
-            <button onClick={onBack} className="text-sky-600">
-              <FontAwesomeIcon icon={faChevronLeft} />
-            </button>
-          )}
-          <h1
-            className={admin && !readOnly ? "cursor-pointer" : undefined}
-            onClick={
-              admin && !readOnly
-                ? doubleTap(`trip-title-${trip.id}`, () => setEditingTrip(true))
-                : undefined
-            }
-          >
-            {trip.name}
-          </h1>
-        </div>
-        <div className="flex items-center gap-1">
-          {!viewOnly && (
-            <>
-              <button
-                className="header-icon-btn"
-                onClick={() => setShowShare(true)}
-              >
-                <FontAwesomeIcon icon={faShareNodes} />
+      <div className="trip-detail-sticky">
+        <div className="page-header">
+          <div className="page-title-group">
+            {viewOnly ? (
+              <div className="w-10" />
+            ) : (
+              <button onClick={onBack} className="text-sky-600">
+                <FontAwesomeIcon icon={faChevronLeft} />
               </button>
-              <button
-                className="header-icon-btn"
-                onClick={() => setShowMembers(true)}
-              >
-                <FontAwesomeIcon icon={faUsers} />
-              </button>
-              {state.auth.currentUser && (
+            )}
+            <h1
+              className={admin && !readOnly ? "cursor-pointer" : undefined}
+              onClick={
+                admin && !readOnly
+                  ? doubleTap(`trip-title-${trip.id}`, () =>
+                      setEditingTrip(true),
+                    )
+                  : undefined
+              }
+            >
+              {trip.name}
+            </h1>
+          </div>
+          <div className="flex items-center gap-1">
+            {!viewOnly && (
+              <>
                 <button
-                  className="identity-badge"
-                  onClick={() => setShowUserMenu(true)}
-                  style={{
-                    backgroundColor: state.auth.currentUser.color,
-                    color: "white",
-                  }}
+                  className="header-icon-btn"
+                  onClick={() => setShowShare(true)}
                 >
-                  {state.auth.currentUser.displayName}
+                  <FontAwesomeIcon icon={faShareNodes} />
                 </button>
-              )}
-            </>
-          )}
-          {viewOnly && (
-            <span className="status-badge">{t("tripDetail.readOnly")}</span>
-          )}
+                <button
+                  className="header-icon-btn"
+                  onClick={() => setShowMembers(true)}
+                >
+                  <FontAwesomeIcon icon={faUsers} />
+                </button>
+                {state.auth.currentUser && (
+                  <button
+                    className="identity-badge"
+                    onClick={() => setShowUserMenu(true)}
+                    style={{
+                      backgroundColor: state.auth.currentUser.color,
+                      color: "white",
+                    }}
+                  >
+                    {state.auth.currentUser.displayName}
+                  </button>
+                )}
+              </>
+            )}
+            {viewOnly && (
+              <span className="status-badge">{t("tripDetail.readOnly")}</span>
+            )}
+          </div>
         </div>
-      </div>
 
-      {editingTrip && (
-        <FullScreenModal title={t("tripDetail.editTrip")} onClose={() => setEditingTrip(false)}>
-          <TripEditForm
-            trip={trip}
-            onSave={handleUpdateTrip}
-            onCancel={() => setEditingTrip(false)}
-          />
-        </FullScreenModal>
-      )}
-
-      <div className="trip-tabs">
-        <div className="trip-tabs-main">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              className={`trip-tab ${effectiveActiveTab === tab.key ? "active" : ""}`}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              {t(tab.label)}
-            </button>
-          ))}
-        </div>
-        {!viewOnly && (
-          <div className="trip-tabs-menu">
-            <button
-              className={`trip-tab-menu-btn ${menuTabs.some((tab) => tab.key === effectiveActiveTab) ? "active" : ""}`}
-              onClick={() => setShowTabMenu((current) => !current)}
-              title={t("tripDetail.menu")}
-            >
-              <FontAwesomeIcon icon={faEllipsisVertical} />
-            </button>
-            {showTabMenu && (
+        <div className="trip-tabs">
+          <div className="trip-tabs-main">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                className={`trip-tab ${effectiveActiveTab === tab.key ? "active" : ""}`}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {t(tab.label)}
+              </button>
+            ))}
+          </div>
+          {!viewOnly && (
+            <div className="trip-tabs-menu">
+              <button
+                className={`trip-tab-menu-btn ${menuTabs.some((tab) => tab.key === effectiveActiveTab) ? "active" : ""}`}
+                onClick={() => setShowTabMenu((current) => !current)}
+                title={t("tripDetail.menu")}
+              >
+                <FontAwesomeIcon icon={faEllipsisVertical} />
+              </button>
+              {showTabMenu && (
               <>
                 <div
                   className="trip-tab-menu-popover-wrapper"
@@ -469,13 +462,25 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
                     onClick={openTripSettings}
                   >
                     <FontAwesomeIcon icon={faGear} className="mr-2" />
+                    {t("tripDetail.tripSettings")}
                   </button>
                 </div>
               </>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {editingTrip && (
+        <FullScreenModal title={t("tripDetail.editTrip")} onClose={() => setEditingTrip(false)}>
+          <TripEditForm
+            trip={trip}
+            onSave={handleUpdateTrip}
+            onCancel={() => setEditingTrip(false)}
+          />
+        </FullScreenModal>
+      )}
 
       <div className="page-container">
         {effectiveActiveTab === "preparation" && !viewOnly && (
