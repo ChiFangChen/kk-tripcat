@@ -143,6 +143,10 @@ const en = {
     preparationDisabledDescription: "This trip currently has no preparation items",
     disablePreparationConfirm:
       "Turning this off will clear and delete this trip's preparation items. Are you sure?",
+    deleteTrip: "Delete trip",
+    deleteTripDescription: "Deletes this trip and all related data",
+    deleteTripConfirm:
+      "Delete \"{{name}}\"? This will remove the trip and all related data. This action cannot be undone.",
   },
 
   // Trip tabs

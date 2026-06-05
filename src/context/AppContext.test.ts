@@ -7,11 +7,93 @@ import {
   shouldRefreshTripOnVisibility,
   shouldSubscribeUserCollections,
   shouldSyncUserCollectionToRemote,
+  normalizeTrips,
+  uniqueTripsById,
 } from "./AppContext";
+import type { Trip } from "../types";
 
 describe("getInitialLoadingState", () => {
   it("does not block the first render while Firebase hydrates in the background", () => {
     expect(getInitialLoadingState()).toBe(false);
+  });
+});
+
+describe("normalizeTrips", () => {
+  it("migrates legacy single tripType into tripTypes", () => {
+    const [trip] = normalizeTrips([
+      {
+        id: "trip-1",
+        name: "Family trip",
+        startDate: "2026-01-01",
+        endDate: "2026-01-02",
+        country: "Japan",
+        tripType: "家人",
+        members: ["user-1"],
+        creatorId: "user-1",
+        tags: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        gotReady: false,
+      },
+    ]);
+
+    expect(trip.tripTypes).toEqual(["家人"]);
+    expect("tripType" in trip).toBe(false);
+  });
+
+  it("keeps new multi-select tripTypes", () => {
+    const [trip] = normalizeTrips([
+      {
+        id: "trip-1",
+        name: "Mixed trip",
+        startDate: "2026-01-01",
+        endDate: "2026-01-02",
+        country: "Japan",
+        tripTypes: ["朋友", "獨旅"],
+        members: ["user-1"],
+        creatorId: "user-1",
+        tags: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        gotReady: false,
+      },
+    ]);
+
+    expect(trip.tripTypes).toEqual(["朋友", "獨旅"]);
+  });
+});
+
+describe("uniqueTripsById", () => {
+  it("keeps the first trip when duplicate ids appear from optimistic and snapshot updates", () => {
+    const trips: Trip[] = [
+      {
+        id: "trip-1",
+        name: "New trip",
+        startDate: "2026-01-01",
+        endDate: "2026-01-02",
+        country: "Japan",
+        tripTypes: ["朋友"],
+        members: ["user-1"],
+        creatorId: "user-1",
+        tags: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        gotReady: false,
+      },
+      {
+        id: "trip-1",
+        name: "Duplicate trip",
+        startDate: "2026-01-01",
+        endDate: "2026-01-02",
+        country: "Japan",
+        tripTypes: ["朋友"],
+        members: ["user-1"],
+        creatorId: "user-1",
+        tags: [],
+        createdAt: "2026-01-01T00:00:00.000Z",
+        gotReady: false,
+      },
+    ];
+
+    expect(uniqueTripsById(trips)).toHaveLength(1);
+    expect(uniqueTripsById(trips)[0].name).toBe("New trip");
   });
 });
 

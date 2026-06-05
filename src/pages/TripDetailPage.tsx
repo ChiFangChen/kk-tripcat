@@ -4,6 +4,7 @@ import {
   faChevronLeft,
   faEllipsisVertical,
   faGear,
+  faTrash,
   faUsers,
   faShareNodes,
 } from "@fortawesome/free-solid-svg-icons";
@@ -60,6 +61,7 @@ export function TripDetailPage({
     setUserTripData,
     setTemplate,
     updateTrip,
+    deleteTrip,
     showToast,
   } = useApp();
   const trip = state.trips.find((t) => t.id === tripId);
@@ -76,6 +78,7 @@ export function TripDetailPage({
   const [showTripSettings, setShowTripSettings] = useState(false);
   const [confirmDisablePreparation, setConfirmDisablePreparation] =
     useState(false);
+  const [confirmDeleteTrip, setConfirmDeleteTrip] = useState(false);
   const [showPreparationPicker, setShowPreparationPicker] = useState(false);
   const [copied, setCopied] = useState("");
   const [setupChoice, setSetupChoice] = useState<"preparation" | "skip" | null>(
@@ -212,6 +215,13 @@ export function TripDetailPage({
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  async function handleDeleteTrip() {
+    await deleteTrip(tripId);
+    setConfirmDeleteTrip(false);
+    setShowTripSettings(false);
+    onBack();
+  }
+
   if (loading) return null;
 
   if (!trip) {
@@ -224,6 +234,8 @@ export function TripDetailPage({
       </div>
     );
   }
+
+  const admin = !viewOnly && isTripAdmin(trip);
 
   if (!completed && firstEntryMode === "choice") {
     return (
@@ -305,11 +317,9 @@ export function TripDetailPage({
           <div className="w-8" />
         </div>
 
-        <div className="page-container">
+        <div className="page-container trip-settings-page">
           <div className="settings-list">
-            <div
-              className="settings-list-item"
-            >
+            <div className="settings-list-item">
               <span className="settings-list-icon">
                 <FontAwesomeIcon icon={faGear} />
               </span>
@@ -336,6 +346,17 @@ export function TripDetailPage({
               />
             </div>
           </div>
+          {admin && (
+            <div className="trip-settings-danger-zone">
+              <button
+                className="btn btn-danger w-full"
+                onClick={() => setConfirmDeleteTrip(true)}
+              >
+                <FontAwesomeIcon icon={faTrash} />
+                {t("tripDetail.deleteTrip")}
+              </button>
+            </div>
+          )}
         </div>
 
         {confirmDisablePreparation && (
@@ -347,11 +368,20 @@ export function TripDetailPage({
             onConfirm={handleDisablePreparation}
           />
         )}
+        {confirmDeleteTrip && (
+          <ConfirmDeleteModal
+            title={t("tripDetail.deleteTrip")}
+            message={t("tripDetail.deleteTripConfirm", { name: trip.name })}
+            onCancel={() => setConfirmDeleteTrip(false)}
+            onConfirm={() => {
+              void handleDeleteTrip();
+            }}
+          />
+        )}
       </div>
     );
   }
 
-  const admin = !viewOnly && isTripAdmin(trip);
   const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
   function copyLink(type: "join" | "view") {

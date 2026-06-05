@@ -22,6 +22,7 @@ import type {
   ScheduleNote,
   TransportItem,
   MemoryPost,
+  TripType,
 } from "../types";
 import { USER_COLORS } from "../types";
 import i18n from "../i18n";
@@ -48,6 +49,7 @@ import {
   syncItems,
   syncTrip,
   syncTripPartial,
+  migrateTripTypes,
   deleteTripFromFirestore,
   deleteSharedTripData,
   deleteUserTripData,
@@ -310,9 +312,9 @@ function reducer(state: AppState, action: Action): AppState {
             : state.auth,
       };
     case "SET_TRIPS":
-      return { ...state, trips: action.trips };
+      return { ...state, trips: uniqueTripsById(action.trips) };
     case "ADD_TRIP":
-      return { ...state, trips: [action.trip, ...state.trips] };
+      return { ...state, trips: uniqueTripsById([action.trip, ...state.trips]) };
     case "UPDATE_TRIP":
       return {
         ...state,
@@ -420,6 +422,15 @@ function reducer(state: AppState, action: Action): AppState {
   }
 }
 
+export function uniqueTripsById(trips: Trip[]) {
+  const seen = new Set<string>();
+  return trips.filter((trip) => {
+    if (seen.has(trip.id)) return false;
+    seen.add(trip.id);
+    return true;
+  });
+}
+
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<Action>;
@@ -470,9 +481,35 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
+const VALID_TRIP_TYPES: TripType[] = ["情侶", "朋友", "家人", "獨旅"];
+
+type LegacyTrip = Omit<Trip, "tripTypes"> & {
+  tripTypes?: TripType[];
+  tripType?: TripType | "";
+};
+
+export function normalizeTrips(trips: LegacyTrip[]): Trip[] {
+  return trips.map((trip) => {
+    const tripTypes = Array.isArray(trip.tripTypes)
+      ? trip.tripTypes.filter((type): type is TripType =>
+          VALID_TRIP_TYPES.includes(type),
+        )
+      : trip.tripType && VALID_TRIP_TYPES.includes(trip.tripType)
+        ? [trip.tripType]
+        : [];
+    const rest = { ...trip };
+    delete rest.tripType;
+    return { ...rest, tripTypes };
+  });
+}
+
+function needsTripTypesMigration(trip: LegacyTrip) {
+  return "tripType" in trip || !Array.isArray(trip.tripTypes);
+}
+
 function loadInitialState(): AppState {
   const currentUser = storage.loadAuth();
-  const trips = storage.getItem<Trip[]>("trips") || [];
+  const trips = normalizeTrips(storage.getItem<LegacyTrip[]>("trips") || []);
   const template = currentUser
     ? storage.getItem<Template>(getTemplateStorageKey(currentUser.id)) ||
       defaultTemplate
@@ -626,7 +663,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         window.clearTimeout(toastTimerRef.current);
       }
     };
-  }, []);
+  }, [showSyncError]);
 
   useEffect(() => subscribeGlobalToast(showToast), [showToast]);
 
@@ -905,8 +942,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
               checkReady();
               return;
             }
-            rawDispatch({ type: "SET_TRIPS", trips: snapshot.data });
-            storage.setItem("trips", snapshot.data);
+            const legacyTrips = snapshot.data as LegacyTrip[];
+            const trips = normalizeTrips(legacyTrips);
+            if (!snapshot.fromCache) {
+              const migrations = legacyTrips
+                .map((trip, index) =>
+                  needsTripTypesMigration(trip)
+                    ? { id: trip.id, tripTypes: trips[index].tripTypes }
+                    : null,
+                )
+                .filter(
+                  (
+                    migration,
+                  ): migration is { id: string; tripTypes: TripType[] } =>
+                    migration !== null,
+                );
+              if (migrations.length > 0) {
+                void Promise.all(
+                  migrations.map((migration) =>
+                    migrateTripTypes(
+                      db,
+                      migration.id,
+                      migration.tripTypes,
+                    ),
+                  ),
+                ).catch(showSyncError);
+              }
+            }
+            rawDispatch({ type: "SET_TRIPS", trips });
+            storage.setItem("trips", trips);
             tripsLoaded = true;
             checkReady();
           });
@@ -920,7 +984,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         firebaseListeningRef.current = false;
       };
     }
-  }, []);
+  }, [showSyncError]);
 
   // Subscribe to template, tips, item pool when user logs in
   useEffect(() => {
@@ -1379,12 +1443,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           operation: "trip",
         });
         const userId = state.auth.currentUser?.id;
+        const trip = state.trips.find((item) => item.id === tripId);
+        const memberIds = trip
+          ? trip.members
+          : userId
+            ? [userId]
+            : [];
         await Promise.all([
           deleteTripFromFirestore(dbRef.current!, tripId),
           deleteSharedTripData(dbRef.current!, tripId),
-          ...(userId
-            ? [deleteUserTripData(dbRef.current!, tripId, userId)]
-            : []),
+          ...Array.from(new Set(memberIds)).map((memberId) =>
+            deleteUserTripData(dbRef.current!, tripId, memberId),
+          ),
         ]);
         dispatch({ type: "DELETE_TRIP", tripId });
         const { [tripId]: _shared, ...restShared } = sharedTripDataRef.current;
@@ -1417,7 +1487,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.error("Failed to delete trip:", error);
       }
     },
-    [dispatch, firebaseConnected, showSyncError, state.auth.currentUser?.id],
+    [dispatch, firebaseConnected, showSyncError, state.auth.currentUser?.id, state.trips],
   );
 
   function getTripData(tripId: string): TripData {

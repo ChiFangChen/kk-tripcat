@@ -19,10 +19,8 @@ interface Props {
   defaultSkipPreparation?: boolean;
 }
 
-type FilledTripType = Exclude<TripType, "">;
-
-const tripTypes: FilledTripType[] = ["情侶", "朋友", "家人", "獨旅"];
-const tripTypeLabelKeys: Record<FilledTripType, string> = {
+const tripTypes: TripType[] = ["情侶", "朋友", "家人", "獨旅"];
+const tripTypeLabelKeys: Record<TripType, string> = {
   情侶: "trips.types.couple",
   朋友: "trips.types.friends",
   家人: "trips.types.family",
@@ -35,7 +33,7 @@ type TripInfoForm = {
   startDate: string;
   endDate: string;
   country: string;
-  tripType: TripType;
+  tripTypes: TripType[];
   tags: string;
 };
 type TripInfoFormErrors = Partial<Record<"name" | "startDate", string>>;
@@ -45,7 +43,7 @@ const emptyTripInfoForm: TripInfoForm = {
   startDate: "",
   endDate: "",
   country: "",
-  tripType: "",
+  tripTypes: [],
   tags: "",
 };
 
@@ -145,7 +143,7 @@ export function TripsPage({ onSelectTrip, defaultSkipPreparation }: Props) {
       startDate: "",
       endDate: "",
       country: trip.country,
-      tripType: trip.tripType,
+      tripTypes: trip.tripTypes,
       tags: trip.tags.join(", "),
     });
     setStep("info");
@@ -209,7 +207,7 @@ export function TripsPage({ onSelectTrip, defaultSkipPreparation }: Props) {
       startDate,
       endDate: form.endDate || startDate,
       country: form.country,
-      tripType: form.tripType,
+      tripTypes: form.tripTypes,
       members: ensureMemberIncluded([], userId),
       creatorId: userId,
       tags: form.tags
@@ -389,11 +387,11 @@ export function TripsPage({ onSelectTrip, defaultSkipPreparation }: Props) {
             {tripTypes.map((tripType) => (
               <button
                 key={tripType}
-                className={`btn btn-sm ${form.tripType === tripType ? "btn-primary" : "btn-secondary"}`}
+                className={`btn btn-sm ${form.tripTypes.includes(tripType) ? "btn-primary" : "btn-secondary"}`}
                 onClick={() =>
                   setForm({
                     ...form,
-                    tripType: form.tripType === tripType ? "" : tripType,
+                    tripTypes: toggleTripType(form.tripTypes, tripType),
                   })
                 }
               >
@@ -451,11 +449,11 @@ export function TripsPage({ onSelectTrip, defaultSkipPreparation }: Props) {
               {trip.country && (
                 <span className="tag tag-country">{trip.country}</span>
               )}
-              {trip.tripType && (
-                <span className="tag tag-type">
-                  {t(tripTypeLabelKeys[trip.tripType])}
+              {trip.tripTypes.map((tripType) => (
+                <span key={tripType} className="tag tag-type">
+                  {t(tripTypeLabelKeys[tripType])}
                 </span>
-              )}
+              ))}
               {trip.tags.map((tag) => (
                 <span key={tag} className="tag">
                   {tag}
@@ -464,7 +462,7 @@ export function TripsPage({ onSelectTrip, defaultSkipPreparation }: Props) {
             </div>
             <div className="flex justify-between mt-1.5 gap-2">
               <div className="flex items-center gap-1">
-                {trip.members.length > 1 &&
+                {trip.members.length > 0 &&
                   trip.members.map((userId) => (
                     <span
                       key={userId}
@@ -552,6 +550,12 @@ function cloneValue<T>(value: T): T {
 
 function ensureMemberIncluded(members: string[], userId: string) {
   return members.includes(userId) ? members : [...members, userId];
+}
+
+function toggleTripType(selected: TripType[], tripType: TripType) {
+  return selected.includes(tripType)
+    ? selected.filter((item) => item !== tripType)
+    : [...selected, tripType];
 }
 
 function cloneTripSharedData(tripData: TripData) {

@@ -24,7 +24,7 @@ export const USER_COLORS = [
   "#C084FC",
 ];
 
-export type TripType = "情侶" | "朋友" | "家人" | "獨旅" | "";
+export type TripType = "情侶" | "朋友" | "家人" | "獨旅";
 
 export interface Trip {
   id: string;
@@ -32,7 +32,7 @@ export interface Trip {
   startDate: string;
   endDate: string;
   country: string;
-  tripType: TripType;
+  tripTypes: TripType[];
   members: string[]; // user IDs
   creatorId: string; // admin user ID
   tags: string[];

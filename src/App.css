@@ -1240,6 +1240,21 @@ button.settings-list-item {
   font-size: calc(12px * var(--text-scale));
 }
 
+.trip-settings-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 76px);
+  padding-bottom: calc(16px + var(--safe-bottom));
+}
+
+.trip-settings-danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
 .settings-list-chevron {
   flex-shrink: 0;
   color: var(--color-text-secondary);

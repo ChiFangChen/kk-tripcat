@@ -20,6 +20,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   getDocs,
   getDoc,
   getDocFromServer,
@@ -264,6 +265,17 @@ export async function syncTripPartial(
   fields: Partial<Trip>,
 ): Promise<void> {
   await updateDoc(doc(db, "tcTrips", tripId), fields);
+}
+
+export async function migrateTripTypes(
+  db: Firestore,
+  tripId: string,
+  tripTypes: Trip["tripTypes"],
+): Promise<void> {
+  await updateDoc(doc(db, "tcTrips", tripId), {
+    tripTypes,
+    tripType: deleteField(),
+  });
 }
 
 export async function deleteTripFromFirestore(

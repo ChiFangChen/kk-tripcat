@@ -2,10 +2,8 @@ import { useState } from "react";
 import type { Trip, TripType } from "../types";
 import { useTranslation } from "react-i18next";
 
-type FilledTripType = Exclude<TripType, "">;
-
-const tripTypes: FilledTripType[] = ["情侶", "朋友", "家人", "獨旅"];
-const tripTypeLabelKeys: Record<FilledTripType, string> = {
+const tripTypes: TripType[] = ["情侶", "朋友", "家人", "獨旅"];
+const tripTypeLabelKeys: Record<TripType, string> = {
   情侶: "trips.types.couple",
   朋友: "trips.types.friends",
   家人: "trips.types.family",
@@ -25,7 +23,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
     startDate: trip.startDate,
     endDate: trip.endDate,
     country: trip.country,
-    tripType: trip.tripType,
+    tripTypes: trip.tripTypes,
     tags: trip.tags.join(", "),
   });
 
@@ -73,11 +71,11 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
           {tripTypes.map((type) => (
             <button
               key={type}
-              className={`btn btn-sm ${form.tripType === type ? "btn-primary" : "btn-secondary"}`}
+              className={`btn btn-sm ${form.tripTypes.includes(type) ? "btn-primary" : "btn-secondary"}`}
               onClick={() =>
                 setForm({
                   ...form,
-                  tripType: form.tripType === type ? "" : type,
+                  tripTypes: toggleTripType(form.tripTypes, type),
                 })
               }
               type="button"
@@ -108,7 +106,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
               startDate: form.startDate,
               endDate: form.endDate || form.startDate,
               country: form.country,
-              tripType: form.tripType,
+              tripTypes: form.tripTypes,
               tags: form.tags
                 ? form.tags
                     .split(",")
@@ -123,4 +121,10 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
       </div>
     </div>
   );
+}
+
+function toggleTripType(selected: TripType[], tripType: TripType) {
+  return selected.includes(tripType)
+    ? selected.filter((item) => item !== tripType)
+    : [...selected, tripType];
 }

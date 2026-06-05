@@ -140,6 +140,10 @@ const zhTW = {
     preparationDisabledDescription: "這個旅程目前沒有準備事項清單",
     disablePreparationConfirm:
       "關閉後，這個旅程原本的準備事項會被清空刪除。確定要關閉嗎？",
+    deleteTrip: "刪除旅程",
+    deleteTripDescription: "刪除後會移除這個旅程與所有相關資料",
+    deleteTripConfirm:
+      "確定要刪除「{{name}}」嗎？刪除後會移除這個旅程與所有相關資料，這個動作無法復原。",
   },
 
   // Trip tabs
