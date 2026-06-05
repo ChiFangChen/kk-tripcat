@@ -1597,6 +1597,47 @@ button.settings-list-item {
 }
 
 /* Google Map link icon */
+.address-display {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.address-display.compact {
+  gap: 4px;
+}
+
+.address-display-text {
+  display: inline;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.address-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-border);
+  font-size: calc(12px * var(--text-scale));
+  vertical-align: text-bottom;
+  cursor: pointer;
+}
+
+.address-copy-btn:hover,
+.address-copy-btn:focus-visible {
+  color: var(--color-primary-dark);
+  outline: none;
+}
+
 .map-link {
   display: inline-flex;
   align-items: center;

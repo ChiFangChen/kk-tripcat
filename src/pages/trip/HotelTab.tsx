@@ -7,6 +7,7 @@ import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { InfoRow } from "../../components/InfoRow";
+import { AddressDisplay } from "../../components/AddressDisplay";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { generateId } from "../../utils/id";
@@ -105,21 +106,10 @@ export function HotelTab({ tripId, viewOnly }: Props) {
             <InfoRow
               label={t("hotels.address")}
               value={
-                <div>
-                  {hotel.address && (
-                    <div className="break-all">{hotel.address}</div>
-                  )}
-                  {hotel.googleMapUrl && (
-                    <a
-                      href={hotel.googleMapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="map-link"
-                    >
-                      📍 Google Map
-                    </a>
-                  )}
-                </div>
+                <AddressDisplay
+                  address={hotel.address}
+                  googleMapUrl={hotel.googleMapUrl}
+                />
               }
             />
           )}

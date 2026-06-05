@@ -14,6 +14,8 @@ const en = {
     save: "Save",
     saving: "Saving...",
     empty: "(None)",
+    copyAddress: "Copy address",
+    addressCopied: "Address copied",
   },
 
   // Auth

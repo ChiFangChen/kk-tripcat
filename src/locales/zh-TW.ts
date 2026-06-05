@@ -14,6 +14,8 @@ const zhTW = {
     save: "儲存",
     saving: "儲存中...",
     empty: "(無)",
+    copyAddress: "複製地址",
+    addressCopied: "地址已複製",
   },
 
   // Auth

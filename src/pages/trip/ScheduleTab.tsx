@@ -15,6 +15,7 @@ import { FullScreenModal } from "../../components/FullScreenModal";
 import { Modal } from "../../components/Modal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { InfoRow } from "../../components/InfoRow";
+import { AddressDisplay } from "../../components/AddressDisplay";
 import { generateId } from "../../utils/id";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
@@ -314,19 +315,12 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
               {note.content}
             </p>
             {(note.address || note.googleMapUrl) && (
-              <div className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-                {note.address && <span>{note.address}</span>}
-                {note.googleMapUrl && (
-                  <a
-                    href={note.googleMapUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="map-link"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    📍 Google Map
-                  </a>
-                )}
+              <div className="text-xs text-slate-400 mt-1.5">
+                <AddressDisplay
+                  address={note.address}
+                  googleMapUrl={note.googleMapUrl}
+                  compact
+                />
               </div>
             )}
             <ImageGalleryField images={note.images} className="mt-2" />
@@ -415,23 +409,10 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             <InfoRow
               label={t("schedule.address")}
               value={
-                <div>
-                  {selectedActivity.activity.address && (
-                    <div className="break-all">
-                      {selectedActivity.activity.address}
-                    </div>
-                  )}
-                  {selectedActivity.activity.googleMapUrl && (
-                    <a
-                      href={selectedActivity.activity.googleMapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="map-link"
-                    >
-                      📍 Google Map
-                    </a>
-                  )}
-                </div>
+                <AddressDisplay
+                  address={selectedActivity.activity.address}
+                  googleMapUrl={selectedActivity.activity.googleMapUrl}
+                />
               }
             />
           )}
@@ -528,23 +509,10 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
             <InfoRow
               label={t("schedule.address")}
               value={
-                <div>
-                  {selectedNote.address && (
-                    <div className="break-all schedule-note-text">
-                      {selectedNote.address}
-                    </div>
-                  )}
-                  {selectedNote.googleMapUrl && (
-                    <a
-                      href={selectedNote.googleMapUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="map-link"
-                    >
-                      📍 Google Map
-                    </a>
-                  )}
-                </div>
+                <AddressDisplay
+                  address={selectedNote.address}
+                  googleMapUrl={selectedNote.googleMapUrl}
+                />
               }
             />
           )}
