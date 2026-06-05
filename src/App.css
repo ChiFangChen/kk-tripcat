@@ -718,6 +718,39 @@ body {
   min-width: 0;
 }
 
+.editable-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.editable-title > :first-child {
+  min-width: 0;
+}
+
+.inline-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-border);
+  font-size: calc(12px * var(--text-scale));
+  cursor: pointer;
+}
+
+.inline-edit-btn:hover,
+.inline-edit-btn:focus-visible {
+  color: var(--color-primary-dark);
+  outline: none;
+}
+
 .header-icon-btn {
   width: 32px;
   height: 32px;

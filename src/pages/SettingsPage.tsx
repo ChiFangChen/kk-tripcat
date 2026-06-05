@@ -18,6 +18,7 @@ import { useApp } from "../context/AppContext";
 import { FullScreenModal } from "../components/FullScreenModal";
 import { Modal } from "../components/Modal";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
+import { SwitchControl } from "../components/SwitchControl";
 import { generateId } from "../utils/id";
 import type { TemplateCategory, TemplateItem } from "../types";
 import {
@@ -36,6 +37,8 @@ interface SettingsPageProps {
   onTextScaleChange: (scale: number) => void;
   language: Language;
   onLanguageChange: (language: Language) => void;
+  hideTripEditButtons: boolean;
+  onHideTripEditButtonsChange: (hidden: boolean) => void;
 }
 
 export function SettingsPage({
@@ -45,6 +48,8 @@ export function SettingsPage({
   onTextScaleChange,
   language,
   onLanguageChange,
+  hideTripEditButtons,
+  onHideTripEditButtonsChange,
 }: SettingsPageProps) {
   const { t } = useTranslation();
   const [view, setView] = useState<SettingsView>("index");
@@ -58,6 +63,8 @@ export function SettingsPage({
         onTextScaleChange={onTextScaleChange}
         language={language}
         onLanguageChange={onLanguageChange}
+        hideTripEditButtons={hideTripEditButtons}
+        onHideTripEditButtonsChange={onHideTripEditButtonsChange}
         onBack={() => setView("index")}
       />
     );
@@ -118,6 +125,8 @@ function UiSettingsPage({
   onTextScaleChange,
   language,
   onLanguageChange,
+  hideTripEditButtons,
+  onHideTripEditButtonsChange,
   onBack,
 }: SettingsPageProps & { onBack: () => void }) {
   const { t } = useTranslation();
@@ -210,6 +219,25 @@ function UiSettingsPage({
             step="1"
             value={textScale}
             onChange={(e) => onTextScaleChange(Number(e.target.value))}
+          />
+        </div>
+        <div className="settings-list-item">
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={faPen} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">
+              {t("settings.ui.hideTripEditButtons")}
+            </div>
+            <div className="settings-list-description">
+              {t("settings.ui.hideTripEditButtonsDescription")}
+            </div>
+          </div>
+          <SwitchControl
+            checked={hideTripEditButtons}
+            ariaLabel={t("settings.ui.hideTripEditButtons")}
+            title={t("settings.ui.hideTripEditButtons")}
+            onChange={onHideTripEditButtonsChange}
           />
         </div>
       </div>

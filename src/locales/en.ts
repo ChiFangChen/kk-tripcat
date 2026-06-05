@@ -299,6 +299,9 @@ const en = {
       zhTWShort: "繁中",
       english: "English",
       textSize: "Text size",
+      hideTripEditButtons: "Hide edit buttons in trips",
+      hideTripEditButtonsDescription:
+        "When enabled, trip items return to editing by double-tapping the title.",
     },
     template: {
       menuTitle: "Template settings",

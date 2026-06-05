@@ -16,6 +16,7 @@ import { FullScreenModal } from "../components/FullScreenModal";
 import { SwitchControl } from "../components/SwitchControl";
 import { TemplateSelector } from "../components/TemplateSelector";
 import { TripEditForm } from "../components/TripEditForm";
+import { EditIconButton } from "../components/EditIconButton";
 import { useDoubleTap } from "../hooks/useDoubleTap";
 import { PreparationTab } from "./trip/PreparationTab";
 import { FlightTab } from "./trip/FlightTab";
@@ -38,9 +39,15 @@ interface Props {
   tripId: string;
   onBack: () => void;
   viewOnly?: boolean;
+  hideEditButtons?: boolean;
 }
 
-export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
+export function TripDetailPage({
+  tripId,
+  onBack,
+  viewOnly,
+  hideEditButtons,
+}: Props) {
   const { t } = useTranslation();
   const {
     state,
@@ -57,6 +64,7 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
   const tripData = getTripData(tripId);
   const completed = !!trip?.isCompleted;
   const readOnly = !!viewOnly || completed;
+  const showEditButtons = !readOnly && !hideEditButtons;
 
   const [showMembers, setShowMembers] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -368,18 +376,23 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
                 <FontAwesomeIcon icon={faChevronLeft} />
               </button>
             )}
-            <h1
-              className={admin && !readOnly ? "cursor-pointer" : undefined}
-              onClick={
-                admin && !readOnly
-                  ? doubleTap(`trip-title-${trip.id}`, () =>
-                      setEditingTrip(true),
-                    )
-                  : undefined
-              }
-            >
-              {trip.name}
-            </h1>
+            <div className="editable-title">
+              <h1
+                className={admin && !readOnly ? "cursor-pointer" : undefined}
+                onClick={
+                  admin && !readOnly
+                    ? doubleTap(`trip-title-${trip.id}`, () =>
+                        setEditingTrip(true),
+                      )
+                    : undefined
+                }
+              >
+                {trip.name}
+              </h1>
+              {admin && showEditButtons && (
+                <EditIconButton onClick={() => setEditingTrip(true)} />
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-1">
             {!viewOnly && (
@@ -460,9 +473,10 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
                   <button
                     className="trip-tab-menu-item"
                     onClick={openTripSettings}
+                    title={t("tripDetail.tripSettings")}
+                    aria-label={t("tripDetail.tripSettings")}
                   >
-                    <FontAwesomeIcon icon={faGear} className="mr-2" />
-                    {t("tripDetail.tripSettings")}
+                    <FontAwesomeIcon icon={faGear} />
                   </button>
                 </div>
               </>
@@ -484,22 +498,46 @@ export function TripDetailPage({ tripId, onBack, viewOnly }: Props) {
 
       <div className="page-container">
         {effectiveActiveTab === "preparation" && !viewOnly && (
-          <PreparationTab tripId={tripId} viewOnly={readOnly} />
+          <PreparationTab
+            tripId={tripId}
+            viewOnly={readOnly}
+            hideEditButtons={hideEditButtons}
+          />
         )}
         {effectiveActiveTab === "flight" && (
-          <FlightTab tripId={tripId} viewOnly={readOnly} />
+          <FlightTab
+            tripId={tripId}
+            viewOnly={readOnly}
+            hideEditButtons={hideEditButtons}
+          />
         )}
         {effectiveActiveTab === "hotel" && (
-          <HotelTab tripId={tripId} viewOnly={readOnly} />
+          <HotelTab
+            tripId={tripId}
+            viewOnly={readOnly}
+            hideEditButtons={hideEditButtons}
+          />
         )}
         {effectiveActiveTab === "schedule" && (
-          <ScheduleTab tripId={tripId} viewOnly={readOnly} />
+          <ScheduleTab
+            tripId={tripId}
+            viewOnly={readOnly}
+            hideEditButtons={hideEditButtons}
+          />
         )}
         {effectiveActiveTab === "transport" && (
-          <TransportTab tripId={tripId} viewOnly={readOnly} />
+          <TransportTab
+            tripId={tripId}
+            viewOnly={readOnly}
+            hideEditButtons={hideEditButtons}
+          />
         )}
         {effectiveActiveTab === "shopping" && !viewOnly && (
-          <ShoppingTab tripId={tripId} viewOnly={readOnly} />
+          <ShoppingTab
+            tripId={tripId}
+            viewOnly={readOnly}
+            hideEditButtons={hideEditButtons}
+          />
         )}
         {effectiveActiveTab === "memories" && (
           <MemoriesTab tripId={tripId} viewOnly={viewOnly} />

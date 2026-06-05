@@ -39,6 +39,9 @@ function AppContent() {
   const [language, setLanguage] = useState<Language>(
     () => storage.getItem<Language>("language") || "zh-TW",
   );
+  const [hideTripEditButtons, setHideTripEditButtons] = useState(
+    () => storage.getItem<boolean>("hideTripEditButtons") || false,
+  );
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
     () => storage.getItem<TabType>("activeTab") || "trips",
@@ -101,6 +104,10 @@ function AppContent() {
     void i18n.changeLanguage(language);
   }, [language]);
 
+  useEffect(() => {
+    storage.setItem("hideTripEditButtons", hideTripEditButtons);
+  }, [hideTripEditButtons]);
+
   // Join trip via URL: ?join=<tripId>
   const [joinTripId, setJoinTripId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -145,6 +152,7 @@ function AppContent() {
         <TripDetailPage
           tripId={viewTripId}
           onBack={() => (window.location.href = window.location.pathname)}
+          hideEditButtons={hideTripEditButtons}
           viewOnly
         />
       </div>
@@ -238,6 +246,7 @@ function AppContent() {
         <TripDetailPage
           tripId={selectedTrip.id}
           onBack={() => setSelectedTripId(null)}
+          hideEditButtons={hideTripEditButtons}
         />
         {joinDialog}
         {noticeDialog}
@@ -279,6 +288,8 @@ function AppContent() {
           onTextScaleChange={setTextScale}
           language={language}
           onLanguageChange={setLanguage}
+          hideTripEditButtons={hideTripEditButtons}
+          onHideTripEditButtonsChange={setHideTripEditButtons}
         />
       )}
       <BottomTabBar activeTab={effectiveActiveTab} onTabChange={setActiveTab} />

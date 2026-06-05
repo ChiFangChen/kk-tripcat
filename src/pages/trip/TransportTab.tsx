@@ -13,6 +13,7 @@ import { FullScreenModal } from "../../components/FullScreenModal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
+import { EditIconButton } from "../../components/EditIconButton";
 import { generateId } from "../../utils/id";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
@@ -26,9 +27,10 @@ import type { ImageAsset, PendingImageFile } from "../../types/images";
 interface Props {
   tripId: string;
   viewOnly?: boolean;
+  hideEditButtons?: boolean;
 }
 
-export function TransportTab({ tripId, viewOnly }: Props) {
+export function TransportTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const { t } = useTranslation();
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
@@ -113,15 +115,20 @@ export function TransportTab({ tripId, viewOnly }: Props) {
         return (
           <div key={item.id} className="card">
             <div className="flex justify-between items-center mb-2">
-              <h3
-                className="font-semibold text-sm cursor-pointer"
-                onClick={doubleTap(
-                  item.id,
-                  () => !viewOnly && setEditingItem(item),
+              <div className="editable-title">
+                <h3
+                  className="font-semibold text-sm cursor-pointer"
+                  onClick={doubleTap(
+                    item.id,
+                    () => !viewOnly && setEditingItem(item),
+                  )}
+                >
+                  {item.title || t("transport.fallbackTitle")}
+                </h3>
+                {!viewOnly && !hideEditButtons && (
+                  <EditIconButton onClick={() => setEditingItem(item)} />
                 )}
-              >
-                {item.title || t("transport.fallbackTitle")}
-              </h3>
+              </div>
               {hasCollapsibleContent && (
                 <button
                   className="text-slate-400 p-1"

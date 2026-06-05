@@ -16,6 +16,7 @@ import { Modal } from "../../components/Modal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { InfoRow } from "../../components/InfoRow";
 import { AddressDisplay } from "../../components/AddressDisplay";
+import { EditIconButton } from "../../components/EditIconButton";
 import { generateId } from "../../utils/id";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
@@ -37,9 +38,10 @@ import type { ImageAsset, PendingImageFile } from "../../types/images";
 interface Props {
   tripId: string;
   viewOnly?: boolean;
+  hideEditButtons?: boolean;
 }
 
-export function ScheduleTab({ tripId, viewOnly }: Props) {
+export function ScheduleTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const { t, i18n } = useTranslation();
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
@@ -207,22 +209,29 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
               return (
                 <>
                   <div className="flex items-center justify-between">
-                    <h3
-                      className="font-semibold text-sm cursor-pointer"
-                      onClick={doubleTap(
-                        `day-${dayIndex}`,
-                        () => !viewOnly && setEditingDayIndex(dayIndex),
-                      )}
-                    >
-                      {day.label ||
-                        formatDateWithWeekday(day.date, i18n.language)}
-                      {isToday(day.date) && (
-                        <FontAwesomeIcon
-                          icon={faLocationDot}
-                          className="ml-1.5 text-rose-500"
+                    <div className="editable-title">
+                      <h3
+                        className="font-semibold text-sm cursor-pointer"
+                        onClick={doubleTap(
+                          `day-${dayIndex}`,
+                          () => !viewOnly && setEditingDayIndex(dayIndex),
+                        )}
+                      >
+                        {day.label ||
+                          formatDateWithWeekday(day.date, i18n.language)}
+                        {isToday(day.date) && (
+                          <FontAwesomeIcon
+                            icon={faLocationDot}
+                            className="ml-1.5 text-rose-500"
+                          />
+                        )}
+                      </h3>
+                      {!viewOnly && !hideEditButtons && (
+                        <EditIconButton
+                          onClick={() => setEditingDayIndex(dayIndex)}
                         />
                       )}
-                    </h3>
+                    </div>
                     {hasCollapsibleContent && (
                       <FontAwesomeIcon
                         icon={isCollapsed ? faChevronDown : faChevronUp}
@@ -387,15 +396,25 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
         <Modal
           title={
             !viewOnly ? (
-              <button
-                className="schedule-detail-title-btn"
-                onClick={detailDoubleTap("activity-detail-title", () => {
-                  setEditingActivity(selectedActivity);
-                  setSelectedActivity(null);
-                })}
-              >
-                {selectedActivity.activity.name || t("schedule.activity")}
-              </button>
+              <span className="editable-title">
+                <button
+                  className="schedule-detail-title-btn"
+                  onClick={detailDoubleTap("activity-detail-title", () => {
+                    setEditingActivity(selectedActivity);
+                    setSelectedActivity(null);
+                  })}
+                >
+                  {selectedActivity.activity.name || t("schedule.activity")}
+                </button>
+                {!hideEditButtons && (
+                  <EditIconButton
+                    onClick={() => {
+                      setEditingActivity(selectedActivity);
+                      setSelectedActivity(null);
+                    }}
+                  />
+                )}
+              </span>
             ) : (
               selectedActivity.activity.name || t("schedule.activity")
             )
@@ -484,15 +503,25 @@ export function ScheduleTab({ tripId, viewOnly }: Props) {
         <Modal
           title={
             !viewOnly ? (
-              <button
-                className="schedule-detail-title-btn"
-                onClick={detailDoubleTap("schedule-note-detail-title", () => {
-                  setEditingNote(selectedNote);
-                  setSelectedNote(null);
-                })}
-              >
-                {selectedNote.title || t("schedule.notesTitle")}
-              </button>
+              <span className="editable-title">
+                <button
+                  className="schedule-detail-title-btn"
+                  onClick={detailDoubleTap("schedule-note-detail-title", () => {
+                    setEditingNote(selectedNote);
+                    setSelectedNote(null);
+                  })}
+                >
+                  {selectedNote.title || t("schedule.notesTitle")}
+                </button>
+                {!hideEditButtons && (
+                  <EditIconButton
+                    onClick={() => {
+                      setEditingNote(selectedNote);
+                      setSelectedNote(null);
+                    }}
+                  />
+                )}
+              </span>
             ) : (
               selectedNote.title || t("schedule.notesTitle")
             )

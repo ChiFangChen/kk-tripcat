@@ -20,6 +20,7 @@ import { shoppingThumbnailClassName } from "../../utils/imageDisplayClasses";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { LoadingImage } from "../../components/LoadingImage";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
+import { EditIconButton } from "../../components/EditIconButton";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
@@ -54,9 +55,10 @@ import {
 interface Props {
   tripId: string;
   viewOnly?: boolean;
+  hideEditButtons?: boolean;
 }
 
-export function ShoppingTab({ tripId, viewOnly }: Props) {
+export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const { t } = useTranslation();
   const {
     state,
@@ -626,20 +628,25 @@ export function ShoppingTab({ tripId, viewOnly }: Props) {
             <Modal
               title={
                 shoppingModalMode === "view" ? (
-                  <button
-                    type="button"
-                    className="modal-title-action"
-                    onClick={modalTitleDoubleTap(
-                      `shopping-modal-title-${editingItem.id}`,
-                      handleTitleDoubleClick,
+                  <span className="editable-title">
+                    <button
+                      type="button"
+                      className="modal-title-action"
+                      onClick={modalTitleDoubleTap(
+                        `shopping-modal-title-${editingItem.id}`,
+                        handleTitleDoubleClick,
+                      )}
+                    >
+                      {renderShoppingItemTitle(
+                        resolvedItem.name,
+                        resolvedItem.brand,
+                        resolvedItem.spec,
+                      )}
+                    </button>
+                    {!viewOnly && !hideEditButtons && (
+                      <EditIconButton onClick={handleTitleDoubleClick} />
                     )}
-                  >
-                    {renderShoppingItemTitle(
-                      resolvedItem.name,
-                      resolvedItem.brand,
-                      resolvedItem.spec,
-                    )}
-                  </button>
+                  </span>
                 ) : (
                   titleText
                 )

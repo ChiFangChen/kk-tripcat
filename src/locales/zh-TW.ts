@@ -296,6 +296,9 @@ const zhTW = {
       zhTWShort: "繁中",
       english: "English",
       textSize: "文字尺寸",
+      hideTripEditButtons: "旅程中隱藏編輯按鈕",
+      hideTripEditButtonsDescription:
+        "開啟後，雙擊標題可編輯項目",
     },
     template: {
       menuTitle: "模板設置",

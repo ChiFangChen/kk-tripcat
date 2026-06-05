@@ -9,6 +9,7 @@ import { FullScreenModal } from "../../components/FullScreenModal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { InfoRow } from "../../components/InfoRow";
 import { Accordion } from "../../components/Accordion";
+import { EditIconButton } from "../../components/EditIconButton";
 import { generateId } from "../../utils/id";
 import type { FlightInfo, FlightLeg } from "../../types";
 import { getAirportDisplay, getFlightNumberLabel } from "./flightDisplay";
@@ -21,9 +22,10 @@ import * as storage from "../../utils/storage";
 interface Props {
   tripId: string;
   viewOnly?: boolean;
+  hideEditButtons?: boolean;
 }
 
-export function FlightTab({ tripId, viewOnly }: Props) {
+export function FlightTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const { t } = useTranslation();
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
@@ -162,15 +164,20 @@ export function FlightTab({ tripId, viewOnly }: Props) {
         <div key={flight.id} className="card flight-card">
           <div className="flight-card-header">
             <div>
-              <h3
-                className="flight-card-title"
-                onClick={doubleTap(
-                  flight.id,
-                  () => !viewOnly && setEditingFlight(flight),
+              <div className="editable-title">
+                <h3
+                  className="flight-card-title"
+                  onClick={doubleTap(
+                    flight.id,
+                    () => !viewOnly && setEditingFlight(flight),
+                  )}
+                >
+                  {flight.airline || t("flights.flight")}
+                </h3>
+                {!viewOnly && !hideEditButtons && (
+                  <EditIconButton onClick={() => setEditingFlight(flight)} />
                 )}
-              >
-                {flight.airline || t("flights.flight")}
-              </h3>
+              </div>
               {(flight.memberPlan || flight.memberNumber) && (
                 <div className="flight-card-meta">
                   {(flight.memberPlan || flight.memberNumber) && (
@@ -271,16 +278,26 @@ export function FlightTab({ tripId, viewOnly }: Props) {
 
             return (
               <div key={leg.id} className="flight-leg-card">
-                <button
-                  className="flight-leg-title"
-                  onClick={doubleTap(leg.id, () => {
-                    if (viewOnly) return;
-                    setEditingLeg(leg);
-                    setEditingFlightId(flight.id);
-                  })}
-                >
-                  {leg.direction}
-                </button>
+                <div className="editable-title">
+                  <button
+                    className="flight-leg-title"
+                    onClick={doubleTap(leg.id, () => {
+                      if (viewOnly) return;
+                      setEditingLeg(leg);
+                      setEditingFlightId(flight.id);
+                    })}
+                  >
+                    {leg.direction}
+                  </button>
+                  {!viewOnly && !hideEditButtons && (
+                    <EditIconButton
+                      onClick={() => {
+                        setEditingLeg(leg);
+                        setEditingFlightId(flight.id);
+                      }}
+                    />
+                  )}
+                </div>
 
                 <div className="flight-route">
                   <AirportSide

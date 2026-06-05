@@ -8,6 +8,7 @@ import { FullScreenModal } from "../../components/FullScreenModal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { InfoRow } from "../../components/InfoRow";
 import { AddressDisplay } from "../../components/AddressDisplay";
+import { EditIconButton } from "../../components/EditIconButton";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { generateId } from "../../utils/id";
@@ -22,9 +23,10 @@ import type { ImageAsset, PendingImageFile } from "../../types/images";
 interface Props {
   tripId: string;
   viewOnly?: boolean;
+  hideEditButtons?: boolean;
 }
 
-export function HotelTab({ tripId, viewOnly }: Props) {
+export function HotelTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const { t } = useTranslation();
   const { setSharedTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
@@ -77,12 +79,20 @@ export function HotelTab({ tripId, viewOnly }: Props) {
 
       {hotels.map((hotel) => (
         <div key={hotel.id} className="card">
-          <h3
-            className="font-semibold mb-2 cursor-pointer"
-            onClick={doubleTap(hotel.id, () => !viewOnly && setEditing(hotel))}
-          >
-            {hotel.name || t("hotels.hotel")}
-          </h3>
+          <div className="editable-title mb-2">
+            <h3
+              className="font-semibold cursor-pointer"
+              onClick={doubleTap(
+                hotel.id,
+                () => !viewOnly && setEditing(hotel),
+              )}
+            >
+              {hotel.name || t("hotels.hotel")}
+            </h3>
+            {!viewOnly && !hideEditButtons && (
+              <EditIconButton onClick={() => setEditing(hotel)} />
+            )}
+          </div>
 
           {hotel.booking?.platform && (
             <InfoRow

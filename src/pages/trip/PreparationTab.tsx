@@ -12,6 +12,7 @@ import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { Modal } from "../../components/Modal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
+import { EditIconButton } from "../../components/EditIconButton";
 import { generateId } from "../../utils/id";
 import type { ChecklistItem } from "../../types";
 import { useTranslation } from "react-i18next";
@@ -19,9 +20,10 @@ import { useTranslation } from "react-i18next";
 interface Props {
   tripId: string;
   viewOnly?: boolean;
+  hideEditButtons?: boolean;
 }
 
-export function PreparationTab({ tripId, viewOnly }: Props) {
+export function PreparationTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const { t } = useTranslation();
   const { setUserTripData, getTripData } = useApp();
   const tripData = getTripData(tripId);
@@ -227,10 +229,15 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
             viewOnly ? undefined : doubleTap("prep-notes", openEditNotes)
           }
         >
-          <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">
-            <FontAwesomeIcon icon={faThumbtack} className="mr-1" />
-            {t("settings.template.notes")}
-          </p>
+          <div className="editable-title mb-1">
+            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+              <FontAwesomeIcon icon={faThumbtack} className="mr-1" />
+              {t("settings.template.notes")}
+            </p>
+            {!viewOnly && !hideEditButtons && (
+              <EditIconButton onClick={openEditNotes} />
+            )}
+          </div>
           <p className="text-xs whitespace-pre-wrap text-slate-400 dark:text-slate-500">
             {notes}
           </p>
@@ -316,6 +323,9 @@ export function PreparationTab({ tripId, viewOnly }: Props) {
               className="w-5 h-5 flex-shrink-0"
             />
             <span className="flex-1 text-sm">{item.text}</span>
+            {!viewOnly && !hideEditButtons && (
+              <EditIconButton onClick={() => setEditingItem(item)} />
+            )}
           </div>
         );
 
