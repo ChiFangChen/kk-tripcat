@@ -40,6 +40,7 @@ interface Props {
   onBack: () => void;
   viewOnly?: boolean;
   hideEditButtons?: boolean;
+  hideShoppingList?: boolean;
 }
 
 export function TripDetailPage({
@@ -47,6 +48,7 @@ export function TripDetailPage({
   onBack,
   viewOnly,
   hideEditButtons,
+  hideShoppingList,
 }: Props) {
   const { t } = useTranslation();
   const {
@@ -96,6 +98,7 @@ export function TripDetailPage({
     skipPreparation: tripData.skipPreparation,
     gotReady: tripData.gotReady,
     completed,
+    hideShoppingList,
   });
   const tabs = viewOnly ? viewerTabs : tabGroups.mainTabs;
   const menuTabs = viewOnly ? [] : tabGroups.menuTabs;
@@ -532,7 +535,7 @@ export function TripDetailPage({
             hideEditButtons={hideEditButtons}
           />
         )}
-        {effectiveActiveTab === "shopping" && !viewOnly && (
+        {effectiveActiveTab === "shopping" && !viewOnly && !hideShoppingList && (
           <ShoppingTab
             tripId={tripId}
             viewOnly={readOnly}

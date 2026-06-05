@@ -303,10 +303,22 @@ const en = {
       hideTripEditButtonsDescription:
         "When enabled, trip items return to editing by double-tapping the title.",
     },
+    tripPreferences: {
+      title: "Trip preferences",
+      description: "New trip flow, trip content, and preparation template",
+      preparationSection: "Preparation",
+      shoppingSection: "Shopping list",
+      defaultSkipPreparation: "Skip preparation by default",
+      defaultSkipPreparationDescription:
+        "When enabled, new trips go directly to trip info",
+      defaultHideShoppingList: "Hide shopping list by default",
+      defaultHideShoppingListDescription:
+        "When enabled, trips do not show the Shopping tab",
+    },
     template: {
-      menuTitle: "Template settings",
-      title: "Template settings",
-      description: "Preparation template and notes",
+      menuTitle: "Preparation template",
+      title: "Preparation template",
+      description: "Edit preparation items for new trips",
       syncFailed: "Template was not synced. Check your connection and try again.",
       notes: "Notes",
       categories: "Preparation categories",

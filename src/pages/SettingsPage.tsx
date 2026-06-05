@@ -8,6 +8,7 @@ import {
   faGlobe,
   faMoon,
   faPalette,
+  faRoute,
   faThumbtack,
   faPlus,
   faPen,
@@ -28,7 +29,7 @@ import {
 import type { Language } from "../i18n";
 
 type Theme = "light" | "dark";
-type SettingsView = "index" | "ui" | "template";
+type SettingsView = "index" | "ui" | "trip" | "template";
 
 interface SettingsPageProps {
   theme: Theme;
@@ -39,6 +40,10 @@ interface SettingsPageProps {
   onLanguageChange: (language: Language) => void;
   hideTripEditButtons: boolean;
   onHideTripEditButtonsChange: (hidden: boolean) => void;
+  defaultSkipPreparation: boolean;
+  onDefaultSkipPreparationChange: (skip: boolean) => void;
+  defaultHideShoppingList: boolean;
+  onDefaultHideShoppingListChange: (hidden: boolean) => void;
 }
 
 export function SettingsPage({
@@ -50,6 +55,10 @@ export function SettingsPage({
   onLanguageChange,
   hideTripEditButtons,
   onHideTripEditButtonsChange,
+  defaultSkipPreparation,
+  onDefaultSkipPreparationChange,
+  defaultHideShoppingList,
+  onDefaultHideShoppingListChange,
 }: SettingsPageProps) {
   const { t } = useTranslation();
   const [view, setView] = useState<SettingsView>("index");
@@ -70,8 +79,21 @@ export function SettingsPage({
     );
   }
 
+  if (view === "trip") {
+    return (
+      <TripPreferencesPage
+        defaultSkipPreparation={defaultSkipPreparation}
+        onDefaultSkipPreparationChange={onDefaultSkipPreparationChange}
+        defaultHideShoppingList={defaultHideShoppingList}
+        onDefaultHideShoppingListChange={onDefaultHideShoppingListChange}
+        onOpenTemplate={() => setView("template")}
+        onBack={() => setView("index")}
+      />
+    );
+  }
+
   if (view === "template") {
-    return <TemplateSettingsPage onBack={() => setView("index")} />;
+    return <TemplateSettingsPage onBack={() => setView("trip")} />;
   }
 
   return (
@@ -95,17 +117,17 @@ export function SettingsPage({
         </button>
         <button
           className="settings-list-item"
-          onClick={() => setView("template")}
+          onClick={() => setView("trip")}
         >
           <div className="settings-list-icon">
-            <FontAwesomeIcon icon={faGear} />
+            <FontAwesomeIcon icon={faRoute} />
           </div>
           <div className="settings-list-content">
             <div className="settings-list-title">
-              {t("settings.template.menuTitle")}
+              {t("settings.tripPreferences.title")}
             </div>
             <div className="settings-list-description">
-              {t("settings.template.description")}
+              {t("settings.tripPreferences.description")}
             </div>
           </div>
           <FontAwesomeIcon
@@ -128,7 +150,17 @@ function UiSettingsPage({
   hideTripEditButtons,
   onHideTripEditButtonsChange,
   onBack,
-}: SettingsPageProps & { onBack: () => void }) {
+}: Pick<
+  SettingsPageProps,
+  | "theme"
+  | "onThemeChange"
+  | "textScale"
+  | "onTextScaleChange"
+  | "language"
+  | "onLanguageChange"
+  | "hideTripEditButtons"
+  | "onHideTripEditButtonsChange"
+> & { onBack: () => void }) {
   const { t } = useTranslation();
 
   return (
@@ -238,6 +270,108 @@ function UiSettingsPage({
             ariaLabel={t("settings.ui.hideTripEditButtons")}
             title={t("settings.ui.hideTripEditButtons")}
             onChange={onHideTripEditButtonsChange}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TripPreferencesPage({
+  defaultSkipPreparation,
+  onDefaultSkipPreparationChange,
+  defaultHideShoppingList,
+  onDefaultHideShoppingListChange,
+  onOpenTemplate,
+  onBack,
+}: {
+  defaultSkipPreparation: boolean;
+  onDefaultSkipPreparationChange: (skip: boolean) => void;
+  defaultHideShoppingList: boolean;
+  onDefaultHideShoppingListChange: (hidden: boolean) => void;
+  onOpenTemplate: () => void;
+  onBack: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="page-container">
+      <div className="page-title-group mb-4">
+        <button className="page-back-btn" onClick={onBack}>
+          <FontAwesomeIcon icon={faChevronLeft} />
+        </button>
+        <h2 className="text-xl font-bold">
+          {t("settings.tripPreferences.title")}
+        </h2>
+      </div>
+      <div className="settings-list">
+        <div className="settings-section-title">
+          {t("settings.tripPreferences.preparationSection")}
+        </div>
+        <div className="settings-list-item">
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={faThumbtack} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">
+              {t("settings.tripPreferences.defaultSkipPreparation")}
+            </div>
+            <div className="settings-list-description">
+              {t(
+                "settings.tripPreferences.defaultSkipPreparationDescription",
+              )}
+            </div>
+          </div>
+          <SwitchControl
+            checked={defaultSkipPreparation}
+            ariaLabel={t(
+              "settings.tripPreferences.defaultSkipPreparation",
+            )}
+            title={t("settings.tripPreferences.defaultSkipPreparation")}
+            onChange={onDefaultSkipPreparationChange}
+          />
+        </div>
+        <button className="settings-list-item" onClick={onOpenTemplate}>
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={faThumbtack} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">
+              {t("settings.template.menuTitle")}
+            </div>
+            <div className="settings-list-description">
+              {t("settings.template.description")}
+            </div>
+          </div>
+          <FontAwesomeIcon
+            icon={faChevronRight}
+            className="settings-list-chevron"
+          />
+        </button>
+        <div className="settings-section-title">
+          {t("settings.tripPreferences.shoppingSection")}
+        </div>
+        <div className="settings-list-item">
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={faGear} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">
+              {t("settings.tripPreferences.defaultHideShoppingList")}
+            </div>
+            <div className="settings-list-description">
+              {t(
+                "settings.tripPreferences.defaultHideShoppingListDescription",
+              )}
+            </div>
+          </div>
+          <SwitchControl
+            checked={defaultHideShoppingList}
+            ariaLabel={t(
+              "settings.tripPreferences.defaultHideShoppingList",
+            )}
+            title={t("settings.tripPreferences.defaultHideShoppingList")}
+            onChange={onDefaultHideShoppingListChange}
           />
         </div>
       </div>

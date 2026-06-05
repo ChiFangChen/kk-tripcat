@@ -44,6 +44,17 @@ describe("tripEntry", () => {
     ]);
   });
 
+  it("hides shopping tab when shopping list is hidden", () => {
+    expect(getEditableTabs(false, true).map((tab) => tab.key)).toEqual([
+      "preparation",
+      "flight",
+      "hotel",
+      "schedule",
+      "transport",
+      "memories",
+    ]);
+  });
+
   it("moves preparation out of the main tabs after the user got ready", () => {
     expect(
       getOrderedTripTabs({
@@ -142,5 +153,20 @@ describe("tripEntry", () => {
         ],
       }),
     ).toBe("shopping");
+  });
+
+  it("falls back when shopping is hidden", () => {
+    const groups = getTripTabGroups({
+      skipPreparation: true,
+      hideShoppingList: true,
+    });
+
+    expect(
+      getEffectiveTripTab({
+        activeTab: "shopping",
+        defaultTab: "flight",
+        tabs: [...groups.mainTabs, ...groups.menuTabs],
+      }),
+    ).toBe("flight");
   });
 });

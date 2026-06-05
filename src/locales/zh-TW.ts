@@ -300,10 +300,22 @@ const zhTW = {
       hideTripEditButtonsDescription:
         "開啟後，雙擊標題可編輯項目",
     },
+    tripPreferences: {
+      title: "旅程偏好",
+      description: "新旅程流程、旅程內容與準備事項模板",
+      preparationSection: "準備事項",
+      shoppingSection: "購買清單",
+      defaultSkipPreparation: "預設跳過準備階段",
+      defaultSkipPreparationDescription:
+        "開啟後，建立新旅程會直接填寫旅程資訊",
+      defaultHideShoppingList: "預設隱藏購買清單",
+      defaultHideShoppingListDescription:
+        "開啟後，旅程中不顯示購買清單 tab",
+    },
     template: {
-      menuTitle: "模板設置",
-      title: "模板設定",
-      description: "準備事項模板與注意事項",
+      menuTitle: "準備事項模板",
+      title: "準備事項模板",
+      description: "編輯新旅程可套用的準備事項",
       syncFailed: "模板沒有同步成功，請確認網路後再試一次",
       notes: "注意事項",
       categories: "準備事項分類",

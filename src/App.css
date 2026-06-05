@@ -1188,6 +1188,13 @@ textarea.form-input {
   gap: 10px;
 }
 
+.settings-section-title {
+  margin: 8px 2px -2px;
+  color: var(--color-text-secondary);
+  font-size: calc(12px * var(--text-scale));
+  font-weight: 700;
+}
+
 .settings-list-item {
   display: flex;
   align-items: center;

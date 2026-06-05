@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 
 interface Props {
   onSelectTrip: (tripId: string) => void;
+  defaultSkipPreparation?: boolean;
 }
 
 type FilledTripType = Exclude<TripType, "">;
@@ -53,7 +54,7 @@ function formatTripDateRange(startDate: string, endDate: string) {
   return `${formatDate(startDate)} - ${formatDate(endDate)}`;
 }
 
-export function TripsPage({ onSelectTrip }: Props) {
+export function TripsPage({ onSelectTrip, defaultSkipPreparation }: Props) {
   const { t } = useTranslation();
   const {
     state,
@@ -72,6 +73,7 @@ export function TripsPage({ onSelectTrip }: Props) {
     null,
   );
   const [openTripMenuId, setOpenTripMenuId] = useState<string | null>(null);
+  const [createSkipsPreparation, setCreateSkipsPreparation] = useState(false);
 
   // Stored from template selection step
   const [pendingChecklist, setPendingChecklist] = useState<ChecklistItem[]>([]);
@@ -108,11 +110,13 @@ export function TripsPage({ onSelectTrip }: Props) {
 
     setPendingChecklist(checklist);
     setPendingNotes(notes);
+    setCreateSkipsPreparation(false);
     setStep("info");
   }
 
   function handleSkipPreparation() {
     setCloneSourceTripId(null);
+    setCreateSkipsPreparation(true);
     setPendingChecklist([]);
     setPendingNotes("");
     setFormErrors({});
@@ -121,14 +125,18 @@ export function TripsPage({ onSelectTrip }: Props) {
 
   function startCreateTrip() {
     setCloneSourceTripId(null);
+    setCreateSkipsPreparation(!!defaultSkipPreparation);
     setForm(emptyTripInfoForm);
     setFormErrors({});
-    setStep("template");
+    setPendingChecklist([]);
+    setPendingNotes("");
+    setStep(defaultSkipPreparation ? "info" : "template");
   }
 
   function startCloneTrip(trip: Trip) {
     setOpenTripMenuId(null);
     setCloneSourceTripId(trip.id);
+    setCreateSkipsPreparation(false);
     setPendingChecklist([]);
     setPendingNotes("");
     setFormErrors({});
@@ -232,10 +240,12 @@ export function TripsPage({ onSelectTrip }: Props) {
           transport: [],
         });
         await setUserTripData(tripId, {
-          checklist: pendingChecklist,
+          checklist: createSkipsPreparation ? [] : pendingChecklist,
           shopping: [],
-          preparationNotes: pendingNotes,
+          preparationNotes: createSkipsPreparation ? "" : pendingNotes,
           setupComplete: true,
+          skipPreparation: createSkipsPreparation,
+          gotReady: false,
         });
       }
     } catch {
@@ -252,6 +262,7 @@ export function TripsPage({ onSelectTrip }: Props) {
     setPendingChecklist([]);
     setPendingNotes("");
     setCloneSourceTripId(null);
+    setCreateSkipsPreparation(false);
     setStep("list");
     onSelectTrip(tripId);
   }
@@ -298,6 +309,9 @@ export function TripsPage({ onSelectTrip }: Props) {
               onClick={() => {
                 if (cloneSourceTripId) {
                   setCloneSourceTripId(null);
+                  setStep("list");
+                } else if (createSkipsPreparation) {
+                  setCreateSkipsPreparation(false);
                   setStep("list");
                 } else {
                   setStep("template");

@@ -27,7 +27,10 @@ export function getFirstEntryMode(state: SetupState): EntryMode {
   return "choice";
 }
 
-export function getEditableTabs(skipPreparation?: boolean): Array<{
+export function getEditableTabs(
+  skipPreparation?: boolean,
+  hideShoppingList?: boolean,
+): Array<{
   key: TripTabType;
   label: string;
 }> {
@@ -36,9 +39,12 @@ export function getEditableTabs(skipPreparation?: boolean): Array<{
     { key: "hotel", label: "tripTabs.hotel" },
     { key: "schedule", label: "tripTabs.schedule" },
     { key: "transport", label: "tripTabs.transport" },
-    { key: "shopping", label: "tripTabs.shopping" },
     { key: "memories", label: "tripTabs.memories" },
   ];
+
+  if (!hideShoppingList) {
+    sharedTabs.splice(4, 0, { key: "shopping", label: "tripTabs.shopping" });
+  }
 
   if (skipPreparation) {
     return sharedTabs;
@@ -81,27 +87,36 @@ export function getOrderedTripTabs({
   skipPreparation,
   gotReady,
   completed,
+  hideShoppingList,
 }: {
   skipPreparation?: boolean;
   gotReady?: boolean;
   completed?: boolean;
+  hideShoppingList?: boolean;
 }): Array<{ key: TripTabType; label: string }> {
-  return getTripTabGroups({ skipPreparation, gotReady, completed }).mainTabs;
+  return getTripTabGroups({
+    skipPreparation,
+    gotReady,
+    completed,
+    hideShoppingList,
+  }).mainTabs;
 }
 
 export function getTripTabGroups({
   skipPreparation,
   gotReady,
   completed,
+  hideShoppingList,
 }: {
   skipPreparation?: boolean;
   gotReady?: boolean;
   completed?: boolean;
+  hideShoppingList?: boolean;
 }): {
   mainTabs: Array<{ key: TripTabType; label: string }>;
   menuTabs: Array<{ key: TripTabType; label: string }>;
 } {
-  const tabs = getEditableTabs(skipPreparation);
+  const tabs = getEditableTabs(skipPreparation, hideShoppingList);
 
   if (completed || skipPreparation) {
     return {

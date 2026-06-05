@@ -42,6 +42,12 @@ function AppContent() {
   const [hideTripEditButtons, setHideTripEditButtons] = useState(
     () => storage.getItem<boolean>("hideTripEditButtons") || false,
   );
+  const [defaultSkipPreparation, setDefaultSkipPreparation] = useState(
+    () => storage.getItem<boolean>("defaultSkipPreparation") || false,
+  );
+  const [defaultHideShoppingList, setDefaultHideShoppingList] = useState(
+    () => storage.getItem<boolean>("defaultHideShoppingList") || false,
+  );
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
     () => storage.getItem<TabType>("activeTab") || "trips",
@@ -123,6 +129,14 @@ function AppContent() {
     storage.setItem("hideTripEditButtons", hideTripEditButtons);
   }, [hideTripEditButtons]);
 
+  useEffect(() => {
+    storage.setItem("defaultSkipPreparation", defaultSkipPreparation);
+  }, [defaultSkipPreparation]);
+
+  useEffect(() => {
+    storage.setItem("defaultHideShoppingList", defaultHideShoppingList);
+  }, [defaultHideShoppingList]);
+
   // Join trip via URL: ?join=<tripId>
   const [joinTripId, setJoinTripId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -168,6 +182,7 @@ function AppContent() {
           tripId={viewTripId}
           onBack={() => (window.location.href = window.location.pathname)}
           hideEditButtons={hideTripEditButtons}
+          hideShoppingList={defaultHideShoppingList}
           viewOnly
         />
       </div>
@@ -262,6 +277,7 @@ function AppContent() {
           tripId={selectedTrip.id}
           onBack={() => setSelectedTripId(null)}
           hideEditButtons={hideTripEditButtons}
+          hideShoppingList={defaultHideShoppingList}
         />
         {joinDialog}
         {noticeDialog}
@@ -292,7 +308,10 @@ function AppContent() {
       </div>
 
       {effectiveActiveTab === "trips" && (
-        <TripsPage onSelectTrip={setSelectedTripId} />
+        <TripsPage
+          onSelectTrip={setSelectedTripId}
+          defaultSkipPreparation={defaultSkipPreparation}
+        />
       )}
       {effectiveActiveTab === "notes" && canAccessNotes && <NotesPage />}
       {effectiveActiveTab === "settings" && (
@@ -305,6 +324,10 @@ function AppContent() {
           onLanguageChange={setLanguage}
           hideTripEditButtons={hideTripEditButtons}
           onHideTripEditButtonsChange={setHideTripEditButtons}
+          defaultSkipPreparation={defaultSkipPreparation}
+          onDefaultSkipPreparationChange={setDefaultSkipPreparation}
+          defaultHideShoppingList={defaultHideShoppingList}
+          onDefaultHideShoppingListChange={setDefaultHideShoppingList}
         />
       )}
       <BottomTabBar activeTab={effectiveActiveTab} onTabChange={setActiveTab} />
