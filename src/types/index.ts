@@ -6,6 +6,7 @@ export interface User {
   password: string;
   displayName: string;
   color: string;
+  avatarMode?: "color" | "google";
   authProvider?: "password" | "google";
   googleUid?: string;
   googleEmail?: string;

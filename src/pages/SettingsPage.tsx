@@ -112,7 +112,7 @@ export function SettingsPage({
           </div>
           <div className="settings-list-content">
             <div className="settings-list-title">
-              {t("userMenu.accountSettings")}
+              {t("settings.account.title")}
             </div>
             <div className="settings-list-description">
               {t("settings.account.description")}

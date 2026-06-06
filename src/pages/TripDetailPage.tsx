@@ -12,6 +12,7 @@ import {
 import { shouldRefreshTripOnVisibility, useApp } from "../context/AppContext";
 import { MemberMenu } from "../components/MemberMenu";
 import { UserMenu } from "../components/UserMenu";
+import { UserAvatar } from "../components/UserAvatar";
 import { Modal } from "../components/Modal";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
 import { FullScreenModal } from "../components/FullScreenModal";
@@ -498,11 +499,8 @@ export function TripDetailPage({
                   <button
                     className="identity-badge"
                     onClick={() => setShowUserMenu(true)}
-                    style={{
-                      backgroundColor: state.auth.currentUser.color,
-                      color: "white",
-                    }}
                   >
+                    <UserAvatar user={state.auth.currentUser} />
                     {state.auth.currentUser.displayName}
                   </button>
                 )}

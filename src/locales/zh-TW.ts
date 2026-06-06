@@ -28,6 +28,10 @@ const zhTW = {
     password: "密碼",
     newPassword: "新密碼",
     displayName: "顯示名稱",
+    userColor: "使用者顏色",
+    avatarSource: "代表圖示",
+    avatarSourceColor: "使用色塊",
+    avatarSourceGoogle: "使用 Google 圖片",
     backToLogin: "返回登入",
     createAccount: "建立帳號",
     joinTripCat: "加入 KK TripCat",
@@ -310,6 +314,7 @@ const zhTW = {
   settings: {
     title: "設置",
     account: {
+      title: "帳號",
       description: "管理使用者資料與 Google 登入",
     },
     ui: {
@@ -506,7 +511,7 @@ const zhTW = {
 
   // User menu
   userMenu: {
-    accountSettings: "帳號",
+    accountSettings: "帳號設定",
     manageUsers: "管理使用者",
     addUser: "新增使用者",
     switchUser: "切換使用者",

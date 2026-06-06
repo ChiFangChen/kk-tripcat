@@ -28,6 +28,10 @@ const en = {
     password: "Password",
     newPassword: "New password",
     displayName: "Display name",
+    userColor: "User color",
+    avatarSource: "Avatar",
+    avatarSourceColor: "Use color",
+    avatarSourceGoogle: "Use Google photo",
     backToLogin: "Back to login",
     createAccount: "Create account",
     joinTripCat: "Join KK TripCat",
@@ -314,6 +318,7 @@ const en = {
   settings: {
     title: "Settings",
     account: {
+      title: "Account",
       description: "Manage your profile and Google login",
     },
     ui: {
@@ -510,7 +515,7 @@ const en = {
 
   // User menu
   userMenu: {
-    accountSettings: "Account",
+    accountSettings: "Account settings",
     manageUsers: "Manage users",
     addUser: "Add user",
     switchUser: "Switch user",

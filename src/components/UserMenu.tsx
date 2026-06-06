@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faSync, faTrash, faCheck, faTimes, faXmark, faPlus, faRightLeft } from '@fortawesome/free-solid-svg-icons'
+import { faTrash, faCheck, faTimes, faXmark, faPlus, faRightLeft } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { PasswordInput } from './PasswordInput'
+import { UserAvatar } from './UserAvatar'
 import { useTranslation } from 'react-i18next'
 
 interface Props {
@@ -37,6 +38,10 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
 
   const handleColorChange = (color: string) => {
     updateUser({ ...currentUser, color })
+  }
+
+  const handleAvatarModeChange = (avatarMode: 'color' | 'google') => {
+    updateUser({ ...currentUser, avatarMode })
   }
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -125,16 +130,8 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
           <>
             <div className="modal-header !p-0">
               <div className="flex items-center gap-2 min-w-0">
+                <UserAvatar user={currentUser} size="md" />
                 <h3 className="min-w-0">{currentUser.displayName}</h3>
-                <label className="color-picker-btn" style={{ backgroundColor: currentUser.color }}>
-                  <FontAwesomeIcon icon={faSync} className="color-picker-icon" />
-                  <input
-                    type="color"
-                    value={currentUser.color || '#888888'}
-                    onChange={e => handleColorChange(e.target.value)}
-                    className="color-input-hidden"
-                  />
-                </label>
               </div>
               <button
                 onClick={onClose}
@@ -179,11 +176,51 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
                 <p className="text-sm">{currentUser.displayName}</p>
               </div>
               <div>
+                <p className="form-label">{t('auth.userColor')}</p>
+                <label className="account-color-control">
+                  <span
+                    className="user-avatar user-avatar-md"
+                    aria-hidden="true"
+                    style={{ backgroundColor: currentUser.color || '#888888' }}
+                  />
+                  <span className="text-sm">{currentUser.color || '#888888'}</span>
+                  <input
+                    type="color"
+                    value={currentUser.color || '#888888'}
+                    onChange={e => handleColorChange(e.target.value)}
+                    className="color-input-hidden"
+                  />
+                </label>
+              </div>
+              <div>
                 <p className="form-label">{t('auth.googleAccount')}</p>
                 <p className="text-sm text-slate-500">
                   {currentUser.googleEmail || t('auth.googleNotLinked')}
                 </p>
               </div>
+              {currentUser.googlePhotoURL && (
+                <div>
+                  <p className="form-label">{t('auth.avatarSource')}</p>
+                  <div className="avatar-source-options">
+                    <button
+                      className={`avatar-source-option ${currentUser.avatarMode !== 'google' ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => handleAvatarModeChange('color')}
+                    >
+                      <UserAvatar user={{ ...currentUser, avatarMode: 'color' }} />
+                      <span>{t('auth.avatarSourceColor')}</span>
+                    </button>
+                    <button
+                      className={`avatar-source-option ${currentUser.avatarMode === 'google' ? 'active' : ''}`}
+                      type="button"
+                      onClick={() => handleAvatarModeChange('google')}
+                    >
+                      <UserAvatar user={{ ...currentUser, avatarMode: 'google' }} />
+                      <span>{t('auth.avatarSourceGoogle')}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               {currentUser.authProvider === 'google' ? (
                 <p className="text-xs text-slate-400">{t('auth.googleLinkedPasswordDisabled')}</p>
               ) : (
@@ -243,7 +280,7 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
             <div className="member-list-settings">
               {activeUsers.map(u => (
                 <div key={u.id} className="member-row">
-                  <span className="color-dot" style={{ backgroundColor: u.color, marginRight: '0.5rem' }} />
+                  <UserAvatar user={u} />
                   {editingUserId === u.id ? (
                     <>
                       <input className="form-input flex-1 !py-1" value={editingName} onChange={e => setEditingName(e.target.value)} autoFocus />

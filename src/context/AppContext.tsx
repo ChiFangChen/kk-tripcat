@@ -154,6 +154,15 @@ const emptyUser: UserTripData = {
   gotReady: false,
 };
 
+function normalizeUser(user: User, index = 0): User {
+  const fallbackColorIndex = Math.max(index, 0) % USER_COLORS.length;
+  return {
+    ...user,
+    color: user.color || USER_COLORS[fallbackColorIndex],
+    avatarMode: user.avatarMode || "color",
+  };
+}
+
 function getTemplateStorageKey(userId: string) {
   return `template-${userId}`;
 }
@@ -297,9 +306,7 @@ function reducer(state: AppState, action: Action): AppState {
     case "LOGOUT":
       return { ...state, auth: { currentUser: null } };
     case "SET_USERS": {
-      const users = action.users.map((u, i) =>
-        u.color ? u : { ...u, color: USER_COLORS[i % USER_COLORS.length] },
-      );
+      const users = action.users.map((u, i) => normalizeUser(u, i));
       return { ...state, users };
     }
     case "ADD_USER":
@@ -526,27 +533,35 @@ function needsTripTypesMigration(trip: LegacyTrip) {
 function loadInitialState(): AppState {
   const currentUser = storage.loadAuth();
   const trips = normalizeTrips(storage.getItem<LegacyTrip[]>("trips") || []);
-  const template = currentUser
-    ? storage.getItem<Template>(getTemplateStorageKey(currentUser.id)) ||
+  const users = (storage.getItem<User[]>("users") || []).map((user, index) =>
+    normalizeUser(user, index),
+  );
+  const normalizedCurrentUser = currentUser
+    ? normalizeUser(
+        currentUser,
+        users.findIndex((user) => user.id === currentUser.id),
+      )
+    : null;
+  const template = normalizedCurrentUser
+    ? storage.getItem<Template>(getTemplateStorageKey(normalizedCurrentUser.id)) ||
       defaultTemplate
     : defaultTemplate;
-  const tips = currentUser
+  const tips = normalizedCurrentUser
     ? normalizeTips(
-        storage.getItem<TipNote[]>(getTipsStorageKey(currentUser.id)) || [],
+        storage.getItem<TipNote[]>(getTipsStorageKey(normalizedCurrentUser.id)) || [],
       )
     : [];
-  const items = currentUser
+  const items = normalizedCurrentUser
     ? normalizeItems(
-        storage.getItem<Item[]>(getItemsStorageKey(currentUser.id)) || [],
+        storage.getItem<Item[]>(getItemsStorageKey(normalizedCurrentUser.id)) || [],
       )
     : [];
-  const users = storage.getItem<User[]>("users") || [];
 
   const sharedTripData =
     storage.getItem<Record<string, SharedTripData>>("sharedTripData") || {};
-  const userTripData = currentUser
+  const userTripData = normalizedCurrentUser
     ? storage.getItem<Record<string, UserTripData>>(
-        getUserTripDataStorageKey(currentUser.id),
+        getUserTripDataStorageKey(normalizedCurrentUser.id),
       ) || {}
     : {};
 
@@ -577,7 +592,7 @@ function loadInitialState(): AppState {
   }
 
   return {
-    auth: { currentUser },
+    auth: { currentUser: normalizedCurrentUser },
     users,
     trips,
     template,
@@ -1307,6 +1322,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         password,
         displayName,
         color,
+        avatarMode: "color",
         isAdmin: false,
         createdAt: new Date().toISOString(),
       };
@@ -1366,6 +1382,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...user,
         password: "",
         authProvider: "google",
+        avatarMode: user.avatarMode || "color",
         googleUid: googleAccount.uid,
         googleEmail: googleAccount.email,
         googleDisplayName: googleAccount.displayName,
@@ -1413,6 +1430,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         password: "",
         displayName: displayName.trim() || fallbackName,
         color,
+        avatarMode: "color",
         authProvider: "google",
         googleUid: googleAccount.uid,
         googleEmail: googleAccount.email,

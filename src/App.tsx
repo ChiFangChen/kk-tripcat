@@ -12,6 +12,7 @@ import { TripDetailPage } from "./pages/TripDetailPage";
 import { NotesPage } from "./pages/NotesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { UserMenu } from "./components/UserMenu";
+import { UserAvatar } from "./components/UserAvatar";
 import { Modal } from "./components/Modal";
 import { useTranslation } from "react-i18next";
 import {
@@ -301,11 +302,8 @@ function AppContent() {
               setUserMenuInitialView("menu");
               setShowUserMenu(true);
             }}
-            style={{
-              backgroundColor: state.auth.currentUser.color,
-              color: "white",
-            }}
           >
+            <UserAvatar user={state.auth.currentUser} />
             {state.auth.currentUser.displayName}
           </button>
         </div>
