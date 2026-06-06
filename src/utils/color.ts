@@ -9,7 +9,7 @@ export function getReadableTextColor(backgroundColor?: string) {
       : ((channel + 0.055) / 1.055) ** 2.4;
   });
   const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-  return luminance > 0.62 ? "#1f2937" : "white";
+  return luminance > 0.75 ? "#1f2937" : "white";
 }
 
 function parseHexColor(color?: string): [number, number, number] | null {

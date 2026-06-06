@@ -12,6 +12,7 @@ import { TemplateSelector } from "../components/TemplateSelector";
 import { UserAvatar } from "../components/UserAvatar";
 import { generateId } from "../utils/id";
 import { formatDate } from "../utils/date";
+import { getReadableTextColor } from "../utils/color";
 import type { Trip, TripType, ChecklistItem, Template } from "../types";
 import { useTranslation } from "react-i18next";
 
@@ -477,8 +478,11 @@ export function TripsPage({
                     ) : (
                       <span
                         key={userId}
-                        className="w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center"
-                        style={{ backgroundColor: user.color }}
+                        className="w-5 h-5 rounded-full text-[10px] flex items-center justify-center"
+                        style={{
+                          backgroundColor: user.color,
+                          color: getReadableTextColor(user.color),
+                        }}
                       >
                         {user.displayName.charAt(0)}
                       </span>

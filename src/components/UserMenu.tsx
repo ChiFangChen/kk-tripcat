@@ -13,6 +13,7 @@ import { useApp } from "../context/AppContext";
 import { Modal } from "./Modal";
 import { PasswordInput } from "./PasswordInput";
 import { UserAvatar } from "./UserAvatar";
+import { getReadableTextColor } from "../utils/color";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -63,7 +64,7 @@ export function UserMenu({
   if (!currentUser) return null;
 
   const handleColorChange = (color: string) => {
-    updateUser({ ...currentUser, color });
+    updateUser({ ...currentUser, color, avatarMode: "color" });
   };
 
   const handleAvatarModeChange = (avatarMode: "color" | "google") => {
@@ -260,6 +261,9 @@ export function UserMenu({
                       title={t("auth.avatarSourceColor")}
                       style={{
                         backgroundColor: currentUser.color || "#888888",
+                        color: getReadableTextColor(
+                          currentUser.color || "#888888",
+                        ),
                       }}
                     >
                       {currentUser.displayName.charAt(0)}
@@ -279,7 +283,6 @@ export function UserMenu({
                         value={currentUser.color || "#888888"}
                         onChange={(e) => {
                           handleColorChange(e.target.value);
-                          handleAvatarModeChange("color");
                         }}
                         className="color-input-hidden"
                       />
