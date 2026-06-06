@@ -11,6 +11,7 @@ const en = {
     edit: "Edit",
     none: "None",
     ok: "OK",
+    loading: "Loading...",
     save: "Save",
     saving: "Saving...",
     empty: "(None)",
@@ -38,6 +39,19 @@ const en = {
       "This is a simple account system. Passwords are stored as plain text, so do not use important passwords.",
     showPassword: "Show password",
     hidePassword: "Hide password",
+    loginWithGoogle: "Log in with Google",
+    googleAccount: "Google account",
+    googleNotLinked: "Not linked",
+    googleUnlinked:
+      "{{email}} is not linked to a TripCat account yet. You can link an existing account or create a new one.",
+    linkExistingAccount: "Link existing account",
+    createGoogleAccount: "Create new Google account",
+    linkGoogleAccount: "Link Google account",
+    googleLinkSuccess: "Google account linked successfully",
+    googleLinkPasswordDisabled:
+      "After linking, the old password will stop working. Please log in with Google next time.",
+    googleLinkedPasswordDisabled:
+      "This account is linked to Google. Please log in with Google.",
     errors: {
       invalidLogin: "Incorrect username or password",
       usernameExists: "Username already exists",
@@ -45,6 +59,9 @@ const en = {
       invalidUsernameOrDisplayName: "Username or display name is incorrect",
       missingNewPassword: "Please enter a new password",
       missingUsername: "Please enter a username",
+      missingDisplayName: "Please enter a display name",
+      googleLoginFailed: "Google login failed. Please try again later.",
+      googleAlreadyLinked: "This Google account is already linked to another user",
     },
   },
 
@@ -290,6 +307,9 @@ const en = {
   // Settings
   settings: {
     title: "Settings",
+    account: {
+      description: "Manage your profile and Google login",
+    },
     ui: {
       title: "UI settings",
       description: "Theme and interface preferences",
@@ -484,6 +504,7 @@ const en = {
 
   // User menu
   userMenu: {
+    accountSettings: "Account settings",
     manageUsers: "Manage users",
     addUser: "Add user",
     switchUser: "Switch user",

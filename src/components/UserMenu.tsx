@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faSync, faTrash, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faSync, faTrash, faCheck, faTimes, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { PasswordInput } from './PasswordInput'
 import { useTranslation } from 'react-i18next'
@@ -8,16 +8,17 @@ import { useTranslation } from 'react-i18next'
 interface Props {
   onClose: () => void
   onSwitchUser?: () => void
+  initialView?: 'menu' | 'account'
 }
 
 const ADMIN_SESSION_KEY = 'kk-tripcat-admin-session'
 
-export function UserMenu({ onClose, onSwitchUser }: Props) {
+export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props) {
   const { t } = useTranslation()
-  const { state, login, logout, register, updateUser, isCurrentUserAdmin } = useApp()
+  const { state, login, logout, register, updateUser, bindGoogleAccount, isCurrentUserAdmin } = useApp()
   const currentUser = state.auth.currentUser
   const admin = isCurrentUserAdmin()
-  const [view, setView] = useState<'menu' | 'register' | 'manage' | 'switch' | 'resetpw'>('menu')
+  const [view, setView] = useState<'menu' | 'account' | 'register' | 'manage' | 'switch' | 'resetpw'>(initialView)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -27,6 +28,9 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [googleError, setGoogleError] = useState('')
+  const [googleSuccess, setGoogleSuccess] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   if (!currentUser) return null
 
@@ -85,6 +89,25 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
     onSwitchUser?.()
   }
 
+  const handleBindGoogle = async () => {
+    setGoogleError('')
+    setGoogleSuccess(false)
+    setGoogleLoading(true)
+    try {
+      const linkedUser = await bindGoogleAccount(currentUser)
+      login(linkedUser)
+      setGoogleSuccess(true)
+    } catch (error) {
+      setGoogleError(
+        error instanceof Error && error.message === 'google-account-already-linked'
+          ? 'auth.errors.googleAlreadyLinked'
+          : 'auth.errors.googleLoginFailed',
+      )
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
+
   const activeUsers = state.users.filter(u => !u.deleted).sort((a, b) => {
     if (a.isAdmin && !b.isAdmin) return -1
     if (!a.isAdmin && b.isAdmin) return 1
@@ -116,10 +139,10 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
             {adminSessionId && (
               <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleSwitchBackToAdmin}>{t('userMenu.returnToAdmin')}</button>
             )}
+            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setGoogleError(''); setGoogleSuccess(false); setView('account') }}>{t('userMenu.accountSettings')}</button>
             {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('manage')}>{t('userMenu.manageUsers')}</button>}
             {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('register')}>{t('userMenu.addUser')}</button>}
             {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('switch')}>{t('userMenu.switchUser')}</button>}
-            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setNewPassword(''); setResetSuccess(false); setView('resetpw') }}>{t('auth.resetPassword')}</button>
             <button className="btn w-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" onClick={() => {
               localStorage.removeItem(ADMIN_SESSION_KEY)
               localStorage.removeItem('kk-tripcat-route-trip')
@@ -127,6 +150,49 @@ export function UserMenu({ onClose, onSwitchUser }: Props) {
               logout()
             }}>{t('auth.logout')}</button>
             <button className="btn btn-secondary" style={{ width: '100%' }} onClick={onClose}>{t('common.close')}</button>
+          </>
+        )}
+
+        {view === 'account' && (
+          <>
+            <div className="modal-header !p-0">
+              <h3 style={{ fontWeight: 600 }}>{t('userMenu.accountSettings')}</h3>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+              >
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+            <div className="member-list-settings">
+              <div>
+                <p className="form-label">{t('auth.username')}</p>
+                <p className="text-sm">{currentUser.username}</p>
+              </div>
+              <div>
+                <p className="form-label">{t('auth.displayName')}</p>
+                <p className="text-sm">{currentUser.displayName}</p>
+              </div>
+              <div>
+                <p className="form-label">{t('auth.googleAccount')}</p>
+                <p className="text-sm text-slate-500">
+                  {currentUser.googleEmail || t('auth.googleNotLinked')}
+                </p>
+              </div>
+              {currentUser.authProvider === 'google' ? (
+                <p className="text-xs text-slate-400">{t('auth.googleLinkedPasswordDisabled')}</p>
+              ) : (
+                <>
+                  <p className="text-xs text-slate-400">{t('auth.googleLinkPasswordDisabled')}</p>
+                  {googleError && <div className="auth-error">{t(googleError)}</div>}
+                  {googleSuccess && <p className="text-sm text-slate-500 text-center">{t('auth.googleLinkSuccess')}</p>}
+                  <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleBindGoogle} disabled={googleLoading}>
+                    {googleLoading ? t('common.loading') : t('auth.linkGoogleAccount')}
+                  </button>
+                  <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setNewPassword(''); setResetSuccess(false); setView('resetpw') }}>{t('auth.resetPassword')}</button>
+                </>
+              )}
+            </div>
           </>
         )}
 

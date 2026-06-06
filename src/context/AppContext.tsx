@@ -50,6 +50,8 @@ import {
   syncTrip,
   syncTripPartial,
   migrateTripTypes,
+  signInWithGoogle,
+  type GoogleAccount,
   deleteTripFromFirestore,
   deleteSharedTripData,
   deleteUserTripData,
@@ -441,6 +443,18 @@ interface AppContextType {
   showToast: (toast: { type?: ToastType; message: string }) => void;
   dismissToast: () => void;
   login: (user: User) => void;
+  startGoogleLogin: () => Promise<
+    | { status: "linked"; user: User }
+    | { status: "unlinked"; googleAccount: GoogleAccount }
+  >;
+  bindGoogleAccount: (
+    user: User,
+    googleAccount?: GoogleAccount,
+  ) => Promise<User>;
+  createGoogleUser: (
+    googleAccount: GoogleAccount,
+    displayName: string,
+  ) => Promise<User>;
   logout: () => void;
   register: (
     username: string,
@@ -1240,6 +1254,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     storage.saveAuth(user);
   }, [dispatch]);
 
+  const findGoogleUser = useCallback((googleAccount: GoogleAccount) => {
+    return state.users.find(
+      (user) =>
+        !user.deleted &&
+        (user.googleUid === googleAccount.uid ||
+          (!!googleAccount.email && user.googleEmail === googleAccount.email)),
+    );
+  }, [state.users]);
+
+  const startGoogleLogin = useCallback(async (): Promise<
+    | { status: "linked"; user: User }
+    | { status: "unlinked"; googleAccount: GoogleAccount }
+  > => {
+    const googleAccount = await signInWithGoogle();
+    const user = findGoogleUser(googleAccount);
+    if (!user) {
+      return { status: "unlinked", googleAccount };
+    }
+    dispatch({ type: "LOGIN", user });
+    storage.saveAuth(user);
+    return { status: "linked", user };
+  }, [dispatch, findGoogleUser]);
+
   const logout = useCallback(() => {
     dispatch({ type: "LOGOUT" });
     storage.saveAuth(null);
@@ -1298,6 +1335,100 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     [dispatch, firebaseConnected, showSyncError, state.auth.currentUser],
+  );
+
+  const bindGoogleAccount = useCallback(
+    async (
+      user: User,
+      providedGoogleAccount?: GoogleAccount,
+    ): Promise<User> => {
+      const googleAccount = providedGoogleAccount || (await signInWithGoogle());
+      const usedByAnotherUser = state.users.some(
+        (item) =>
+          !item.deleted &&
+          item.id !== user.id &&
+          (item.googleUid === googleAccount.uid ||
+            (!!googleAccount.email && item.googleEmail === googleAccount.email)),
+      );
+      if (usedByAnotherUser) {
+        throw new Error("google-account-already-linked");
+      }
+      const nextUser: User = {
+        ...user,
+        password: "",
+        authProvider: "google",
+        googleUid: googleAccount.uid,
+        googleEmail: googleAccount.email,
+        googleDisplayName: googleAccount.displayName,
+        googlePhotoURL: googleAccount.photoURL,
+      };
+      await updateUser(nextUser);
+      return nextUser;
+    },
+    [state.users, updateUser],
+  );
+
+  const createGoogleUser = useCallback(
+    async (googleAccount: GoogleAccount, displayName: string): Promise<User> => {
+      const usedColors = state.users.map((u) => u.color);
+      const available = USER_COLORS.filter((c) => !usedColors.includes(c));
+      const colorPool = available.length > 0 ? available : USER_COLORS;
+      const color = colorPool[Math.floor(Math.random() * colorPool.length)];
+      const fallbackName =
+        googleAccount.displayName ||
+        googleAccount.email.split("@")[0] ||
+        "Google user";
+      const baseUsername = (
+        googleAccount.email.split("@")[0] ||
+        displayName ||
+        fallbackName
+      )
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "") || "google-user";
+      let username = baseUsername;
+      let suffix = 2;
+      while (
+        state.users.some(
+          (user) => user.username === username && !user.deleted,
+        )
+      ) {
+        username = `${baseUsername}-${suffix}`;
+        suffix += 1;
+      }
+      const user: User = {
+        id: generateId(),
+        username,
+        password: "",
+        displayName: displayName.trim() || fallbackName,
+        color,
+        authProvider: "google",
+        googleUid: googleAccount.uid,
+        googleEmail: googleAccount.email,
+        googleDisplayName: googleAccount.displayName,
+        googlePhotoURL: googleAccount.photoURL,
+        isAdmin: false,
+        createdAt: new Date().toISOString(),
+      };
+      try {
+        assertCanWriteToCloud({
+          firebaseConnected,
+          hasDb: Boolean(dbRef.current),
+          operation: "user",
+        });
+        await syncUser(dbRef.current!, user);
+        dispatch({ type: "ADD_USER", user });
+      } catch (error) {
+        showSyncError(i18n.t("app.userCreateFailed"));
+        throw error;
+      }
+      dispatch({ type: "LOGIN", user });
+      storage.saveAuth(user);
+      return user;
+    },
+    [dispatch, firebaseConnected, showSyncError, state.users],
   );
 
   const setTips = useCallback(
@@ -1701,6 +1832,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         showToast,
         dismissToast,
         login,
+        startGoogleLogin,
+        bindGoogleAccount,
+        createGoogleUser,
         logout,
         register,
         updateUser,

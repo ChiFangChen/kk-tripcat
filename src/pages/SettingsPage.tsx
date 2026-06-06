@@ -14,6 +14,7 @@ import {
   faPen,
   faSun,
   faTrash,
+  faUserGear,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../context/AppContext";
 import { FullScreenModal } from "../components/FullScreenModal";
@@ -44,6 +45,7 @@ interface SettingsPageProps {
   onDefaultSkipPreparationChange: (skip: boolean) => void;
   defaultHideShoppingList: boolean;
   onDefaultHideShoppingListChange: (hidden: boolean) => void;
+  onOpenAccountSettings: () => void;
 }
 
 export function SettingsPage({
@@ -59,6 +61,7 @@ export function SettingsPage({
   onDefaultSkipPreparationChange,
   defaultHideShoppingList,
   onDefaultHideShoppingListChange,
+  onOpenAccountSettings,
 }: SettingsPageProps) {
   const { t } = useTranslation();
   const [view, setView] = useState<SettingsView>("index");
@@ -100,6 +103,26 @@ export function SettingsPage({
     <div className="page-container">
       <h2 className="text-xl font-bold mb-4">{t("settings.title")}</h2>
       <div className="settings-list">
+        <button
+          className="settings-list-item"
+          onClick={onOpenAccountSettings}
+        >
+          <div className="settings-list-icon">
+            <FontAwesomeIcon icon={faUserGear} />
+          </div>
+          <div className="settings-list-content">
+            <div className="settings-list-title">
+              {t("userMenu.accountSettings")}
+            </div>
+            <div className="settings-list-description">
+              {t("settings.account.description")}
+            </div>
+          </div>
+          <FontAwesomeIcon
+            icon={faChevronRight}
+            className="settings-list-chevron"
+          />
+        </button>
         <button className="settings-list-item" onClick={() => setView("ui")}>
           <div className="settings-list-icon">
             <FontAwesomeIcon icon={faPalette} />

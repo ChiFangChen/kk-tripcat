@@ -6,6 +6,11 @@ export interface User {
   password: string;
   displayName: string;
   color: string;
+  authProvider?: "password" | "google";
+  googleUid?: string;
+  googleEmail?: string;
+  googleDisplayName?: string;
+  googlePhotoURL?: string;
   isAdmin?: boolean;
   deleted?: boolean;
   createdAt: string;

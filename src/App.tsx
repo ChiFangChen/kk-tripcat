@@ -56,6 +56,9 @@ function AppContent() {
     storage.getItem<string>("route-trip"),
   );
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userMenuInitialView, setUserMenuInitialView] = useState<
+    "menu" | "account"
+  >("menu");
   const [notice, setNotice] = useState<string | null>(null);
 
   const currentUserId = state.auth.currentUser?.id;
@@ -296,7 +299,10 @@ function AppContent() {
         <div className="flex items-center gap-2">
           <button
             className="identity-badge"
-            onClick={() => setShowUserMenu(true)}
+            onClick={() => {
+              setUserMenuInitialView("menu");
+              setShowUserMenu(true);
+            }}
             style={{
               backgroundColor: state.auth.currentUser.color,
               color: "white",
@@ -328,12 +334,17 @@ function AppContent() {
           onDefaultSkipPreparationChange={setDefaultSkipPreparation}
           defaultHideShoppingList={defaultHideShoppingList}
           onDefaultHideShoppingListChange={setDefaultHideShoppingList}
+          onOpenAccountSettings={() => {
+            setUserMenuInitialView("account");
+            setShowUserMenu(true);
+          }}
         />
       )}
       <BottomTabBar activeTab={effectiveActiveTab} onTabChange={setActiveTab} />
 
       {showUserMenu && (
         <UserMenu
+          initialView={userMenuInitialView}
           onClose={() => setShowUserMenu(false)}
           onSwitchUser={() => {
             setShowUserMenu(false);

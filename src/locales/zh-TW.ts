@@ -11,6 +11,7 @@ const zhTW = {
     edit: "編輯",
     none: "無",
     ok: "確定",
+    loading: "處理中...",
     save: "儲存",
     saving: "儲存中...",
     empty: "(無)",
@@ -38,6 +39,19 @@ const zhTW = {
       "此為簡易帳號系統，密碼以明碼儲存，請勿使用重要密碼",
     showPassword: "顯示密碼",
     hidePassword: "隱藏密碼",
+    loginWithGoogle: "使用 Google 登入",
+    googleAccount: "Google 帳號",
+    googleNotLinked: "尚未綁定",
+    googleUnlinked:
+      "{{email}} 尚未綁定 TripCat 帳號。你可以綁定既有帳號，或建立新帳號。",
+    linkExistingAccount: "綁定既有帳號",
+    createGoogleAccount: "建立新帳號",
+    linkGoogleAccount: "綁定 Google 帳號",
+    googleLinkSuccess: "Google 帳號已綁定成功",
+    googleLinkPasswordDisabled:
+      "綁定成功後，舊密碼會失效，之後請使用 Google 帳號登入。",
+    googleLinkedPasswordDisabled:
+      "這個帳號已綁定 Google，請使用 Google 登入。",
     errors: {
       invalidLogin: "帳號或密碼錯誤",
       usernameExists: "帳號已存在",
@@ -45,6 +59,9 @@ const zhTW = {
       invalidUsernameOrDisplayName: "帳號或顯示名稱不正確",
       missingNewPassword: "請輸入新密碼",
       missingUsername: "請輸入帳號",
+      missingDisplayName: "請輸入顯示名稱",
+      googleLoginFailed: "Google 登入沒有成功，請稍後再試",
+      googleAlreadyLinked: "這個 Google 帳號已經綁定其他使用者",
     },
   },
 
@@ -287,6 +304,9 @@ const zhTW = {
   // Settings
   settings: {
     title: "設置",
+    account: {
+      description: "管理使用者資料與 Google 登入",
+    },
     ui: {
       title: "UI 設置",
       description: "主題與介面偏好",
@@ -481,6 +501,7 @@ const zhTW = {
 
   // User menu
   userMenu: {
+    accountSettings: "帳號設置",
     manageUsers: "管理使用者",
     addUser: "新增使用者",
     switchUser: "切換使用者",

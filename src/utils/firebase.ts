@@ -1,5 +1,11 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth, signInAnonymously } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInAnonymously,
+  signInWithPopup,
+  type Auth,
+} from "firebase/auth";
 import {
   getStorage,
   ref,
@@ -77,6 +83,7 @@ const firebaseConfig = {
 
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
+let auth: Auth | null = null;
 
 function normalizeImageArray<T extends { images?: unknown }>(
   record: T,
@@ -204,15 +211,46 @@ export async function initFirebase(): Promise<Firestore | null> {
   if (!isFirebaseConfigured()) return null;
   if (db) return db;
   try {
-    app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    await signInAnonymously(auth);
+    if (!app) app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
     db = getFirestore(app);
     return db;
   } catch (error) {
     console.error("Firebase init failed:", error);
     return null;
   }
+}
+
+function getFirebaseAuth(): Auth {
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase is not configured");
+  }
+  if (!app) app = initializeApp(firebaseConfig);
+  if (!auth) auth = getAuth(app);
+  return auth;
+}
+
+export interface GoogleAccount {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string;
+}
+
+export async function signInWithGoogle(): Promise<GoogleAccount> {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  const result = await signInWithPopup(getFirebaseAuth(), provider);
+  const user = result.user;
+  return {
+    uid: user.uid,
+    email: user.email || "",
+    displayName: user.displayName || "",
+    photoURL: user.photoURL || "",
+  };
 }
 
 // --- Users (shared ccUsers collection) ---
