@@ -130,7 +130,7 @@ export function normalizeSharedTripData(
 }
 
 export function normalizeUserTripData(
-  data: Partial<UserTripData> | undefined,
+  data: (Partial<UserTripData> & { skipShopping?: boolean }) | undefined,
 ): UserTripData {
   const checklist = data?.checklist || [];
   return {
@@ -139,6 +139,7 @@ export function normalizeUserTripData(
     preparationNotes: data?.preparationNotes || "",
     setupComplete: data?.setupComplete || checklist.length > 0 || undefined,
     skipPreparation: data?.skipPreparation ?? false,
+    hideShoppingList: data?.hideShoppingList ?? data?.skipShopping ?? false,
     gotReady: data?.gotReady ?? false,
   };
 }

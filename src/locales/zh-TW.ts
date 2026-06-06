@@ -153,10 +153,15 @@ const zhTW = {
     enablePreparation: "開啟準備事項",
     disablePreparation: "關閉準備事項",
     preparationSettingDescription: "關閉會清空並隱藏準備 tab",
+    wishlistSettings: "心願清單",
+    disableWishlist: "關閉心願清單",
+    wishlistSettingDescription: "關閉會清空並隱藏購物 tab",
     preparationEnabledDescription: "這個旅程目前有準備事項清單",
     preparationDisabledDescription: "這個旅程目前沒有準備事項清單",
     disablePreparationConfirm:
       "關閉後，這個旅程原本的準備事項會被清空刪除。確定要關閉嗎？",
+    disableWishlistConfirm:
+      "關閉後，這個旅程原本的心願清單會被清空刪除。確定要關閉嗎？",
     deleteTrip: "刪除旅程",
     deleteTripDescription: "刪除後會移除這個旅程與所有相關資料",
     deleteTripConfirm:

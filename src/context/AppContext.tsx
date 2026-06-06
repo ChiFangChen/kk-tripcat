@@ -85,6 +85,7 @@ export interface UserTripData {
   preparationNotes: string;
   setupComplete?: boolean;
   skipPreparation?: boolean;
+  hideShoppingList?: boolean;
   gotReady?: boolean;
 }
 
@@ -149,6 +150,7 @@ const emptyUser: UserTripData = {
   shopping: [],
   preparationNotes: "",
   skipPreparation: false,
+  hideShoppingList: false,
   gotReady: false,
 };
 
@@ -548,8 +550,9 @@ function loadInitialState(): AppState {
       ) || {}
     : {};
 
-  // Migrate: add setupComplete to existing user trip data
+  // Migrate existing user trip data from older local shapes.
   for (const [tripId, data] of Object.entries(userTripData)) {
+    const legacyData = data as UserTripData & { skipShopping?: boolean };
     if (!data.setupComplete && data.checklist?.length > 0) {
       userTripData[tripId] = { ...data, setupComplete: true };
     }
@@ -557,6 +560,12 @@ function loadInitialState(): AppState {
       userTripData[tripId] = {
         ...userTripData[tripId],
         skipPreparation: false,
+      };
+    }
+    if (data.hideShoppingList === undefined) {
+      userTripData[tripId] = {
+        ...userTripData[tripId],
+        hideShoppingList: legacyData.skipShopping ?? false,
       };
     }
     if (data.gotReady === undefined) {

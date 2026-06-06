@@ -4,6 +4,7 @@ import {
   faChevronLeft,
   faEllipsisVertical,
   faGear,
+  faGift,
   faTrash,
   faUsers,
   faShareNodes,
@@ -41,7 +42,6 @@ interface Props {
   onBack: () => void;
   viewOnly?: boolean;
   hideEditButtons?: boolean;
-  hideShoppingList?: boolean;
 }
 
 export function TripDetailPage({
@@ -49,7 +49,6 @@ export function TripDetailPage({
   onBack,
   viewOnly,
   hideEditButtons,
-  hideShoppingList,
 }: Props) {
   const { t } = useTranslation();
   const {
@@ -78,6 +77,7 @@ export function TripDetailPage({
   const [showTripSettings, setShowTripSettings] = useState(false);
   const [confirmDisablePreparation, setConfirmDisablePreparation] =
     useState(false);
+  const [confirmDisableShopping, setConfirmDisableShopping] = useState(false);
   const [confirmDeleteTrip, setConfirmDeleteTrip] = useState(false);
   const [showPreparationPicker, setShowPreparationPicker] = useState(false);
   const [copied, setCopied] = useState("");
@@ -101,7 +101,7 @@ export function TripDetailPage({
     skipPreparation: tripData.skipPreparation,
     gotReady: tripData.gotReady,
     completed,
-    hideShoppingList,
+    hideShoppingList: tripData.hideShoppingList,
   });
   const tabs = viewOnly ? viewerTabs : tabGroups.mainTabs;
   const menuTabs = viewOnly ? [] : tabGroups.menuTabs;
@@ -215,6 +215,22 @@ export function TripDetailPage({
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  function handleEnableShopping() {
+    setUserTripData(tripId, {
+      hideShoppingList: false,
+    });
+  }
+
+  function handleDisableShopping() {
+    setUserTripData(tripId, {
+      shopping: [],
+      hideShoppingList: true,
+    });
+    setConfirmDisableShopping(false);
+    setActiveTab(defaultTab);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
   async function handleDeleteTrip() {
     await deleteTrip(tripId);
     setConfirmDeleteTrip(false);
@@ -306,6 +322,7 @@ export function TripDetailPage({
             <button
               onClick={() => {
                 setConfirmDisablePreparation(false);
+                setConfirmDisableShopping(false);
                 setShowTripSettings(false);
               }}
               className="text-sky-600"
@@ -345,6 +362,32 @@ export function TripDetailPage({
                 }}
               />
             </div>
+            <div className="settings-list-item">
+              <span className="settings-list-icon">
+                <FontAwesomeIcon icon={faGift} />
+              </span>
+              <div className="settings-list-content">
+                <span className="settings-list-title">
+                  {t("tripDetail.wishlistSettings")}
+                </span>
+                <p className="settings-list-description">
+                  {t("tripDetail.wishlistSettingDescription")}
+                </p>
+              </div>
+              <SwitchControl
+                checked={!tripData.hideShoppingList}
+                disabled={readOnly}
+                ariaLabel={t("tripDetail.wishlistSettings")}
+                title={t("tripDetail.wishlistSettings")}
+                onChange={(checked) => {
+                  if (checked) {
+                    handleEnableShopping();
+                  } else {
+                    setConfirmDisableShopping(true);
+                  }
+                }}
+              />
+            </div>
           </div>
           {admin && (
             <div className="trip-settings-danger-zone">
@@ -366,6 +409,15 @@ export function TripDetailPage({
             confirmLabel="common.confirm"
             onCancel={() => setConfirmDisablePreparation(false)}
             onConfirm={handleDisablePreparation}
+          />
+        )}
+        {confirmDisableShopping && (
+          <ConfirmDeleteModal
+            title={t("tripDetail.disableWishlist")}
+            message={t("tripDetail.disableWishlistConfirm")}
+            confirmLabel="common.confirm"
+            onCancel={() => setConfirmDisableShopping(false)}
+            onConfirm={handleDisableShopping}
           />
         )}
         {confirmDeleteTrip && (
@@ -565,7 +617,9 @@ export function TripDetailPage({
             hideEditButtons={hideEditButtons}
           />
         )}
-        {effectiveActiveTab === "shopping" && !viewOnly && !hideShoppingList && (
+        {effectiveActiveTab === "shopping" &&
+          !viewOnly &&
+          !tripData.hideShoppingList && (
           <ShoppingTab
             tripId={tripId}
             viewOnly={readOnly}

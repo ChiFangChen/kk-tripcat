@@ -106,6 +106,23 @@ describe("normalizeSharedTripData", () => {
       preparationNotes: "",
       setupComplete: true,
       skipPreparation: false,
+      hideShoppingList: false,
+      gotReady: false,
+    });
+  });
+
+  it("keeps legacy skipShopping data as hideShoppingList", () => {
+    expect(
+      normalizeUserTripData({
+        skipShopping: true,
+      }),
+    ).toEqual({
+      checklist: [],
+      shopping: [],
+      preparationNotes: "",
+      setupComplete: undefined,
+      skipPreparation: false,
+      hideShoppingList: true,
       gotReady: false,
     });
   });

@@ -185,7 +185,6 @@ function AppContent() {
           tripId={viewTripId}
           onBack={() => (window.location.href = window.location.pathname)}
           hideEditButtons={hideTripEditButtons}
-          hideShoppingList={defaultHideShoppingList}
           viewOnly
         />
       </div>
@@ -280,7 +279,6 @@ function AppContent() {
           tripId={selectedTrip.id}
           onBack={() => setSelectedTripId(null)}
           hideEditButtons={hideTripEditButtons}
-          hideShoppingList={defaultHideShoppingList}
         />
         {joinDialog}
         {noticeDialog}
@@ -317,6 +315,7 @@ function AppContent() {
         <TripsPage
           onSelectTrip={setSelectedTripId}
           defaultSkipPreparation={defaultSkipPreparation}
+          defaultHideShoppingList={defaultHideShoppingList}
         />
       )}
       {effectiveActiveTab === "notes" && canAccessNotes && <NotesPage />}

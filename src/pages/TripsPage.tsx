@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 interface Props {
   onSelectTrip: (tripId: string) => void;
   defaultSkipPreparation?: boolean;
+  defaultHideShoppingList?: boolean;
 }
 
 const tripTypes: TripType[] = ["情侶", "朋友", "家人", "獨旅"];
@@ -52,7 +53,11 @@ function formatTripDateRange(startDate: string, endDate: string) {
   return `${formatDate(startDate)} - ${formatDate(endDate)}`;
 }
 
-export function TripsPage({ onSelectTrip, defaultSkipPreparation }: Props) {
+export function TripsPage({
+  onSelectTrip,
+  defaultSkipPreparation,
+  defaultHideShoppingList,
+}: Props) {
   const { t } = useTranslation();
   const {
     state,
@@ -243,6 +248,7 @@ export function TripsPage({ onSelectTrip, defaultSkipPreparation }: Props) {
           preparationNotes: createSkipsPreparation ? "" : pendingNotes,
           setupComplete: true,
           skipPreparation: createSkipsPreparation,
+          hideShoppingList: !!defaultHideShoppingList,
           gotReady: false,
         });
       }
@@ -576,6 +582,7 @@ function cloneTripUserData(tripData: TripData) {
     preparationNotes: tripData.preparationNotes,
     setupComplete: tripData.setupComplete,
     skipPreparation: tripData.skipPreparation,
+    hideShoppingList: tripData.hideShoppingList,
     gotReady: tripData.gotReady,
   });
 }

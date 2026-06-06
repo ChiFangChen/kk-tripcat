@@ -156,10 +156,16 @@ const en = {
     disablePreparation: "Disable preparation items",
     preparationSettingDescription:
       "Turning this off will clear the list and hide the Preparation tab",
+    wishlistSettings: "Wishlist",
+    disableWishlist: "Disable wishlist",
+    wishlistSettingDescription:
+      "Turning this off will clear the list and hide the Shopping tab",
     preparationEnabledDescription: "This trip currently has preparation items",
     preparationDisabledDescription: "This trip currently has no preparation items",
     disablePreparationConfirm:
       "Turning this off will clear and delete this trip's preparation items. Are you sure?",
+    disableWishlistConfirm:
+      "Turning this off will clear and delete this trip's wishlist. Are you sure?",
     deleteTrip: "Delete trip",
     deleteTripDescription: "Deletes this trip and all related data",
     deleteTripConfirm:
