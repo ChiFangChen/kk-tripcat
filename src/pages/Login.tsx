@@ -197,7 +197,7 @@ export function Login({ onSwitchToRegister }: Props) {
             {error && <div className="auth-error">{t(error)}</div>}
             <button type="submit" className="btn btn-primary w-full">{t('auth.login')}</button>
           </form>
-          <button className="btn btn-secondary w-full max-w-xs" onClick={handleGoogleLogin} disabled={googleLoading}>
+          <button className="btn btn-secondary w-full max-w-xs mt-3" onClick={handleGoogleLogin} disabled={googleLoading}>
             {googleLoading ? t('common.loading') : t('auth.loginWithGoogle')}
           </button>
           <button className="btn-link" onClick={onSwitchToRegister}>{t('auth.switchToRegister')}</button>
