@@ -4,8 +4,10 @@ import {
   canDeleteMemoryEntry,
   canEditMemoryEntry,
   canSaveMemoryEntry,
+  filterViewerMemoryPosts,
   formatMemoryTimestamp,
   getMemoryPostImagePaths,
+  isMemoryEntryPublic,
   sortMemoryComments,
   sortMemoryPosts,
 } from "./memoriesModel";
@@ -80,6 +82,63 @@ describe("memoriesModel", () => {
         },
       ]).map((comment) => comment.id),
     ).toEqual(["comment-a", "comment-b"]);
+  });
+
+  it("treats legacy memory entries without visibility as public", () => {
+    expect(isMemoryEntryPublic({})).toBe(true);
+    expect(isMemoryEntryPublic({ visibility: "public" })).toBe(true);
+    expect(isMemoryEntryPublic({ visibility: "private" })).toBe(false);
+  });
+
+  it("filters private posts and private comments for viewers", () => {
+    const posts = filterViewerMemoryPosts([
+      {
+        ...postA,
+        id: "private-post",
+        visibility: "private",
+        comments: [
+          {
+            id: "public-comment-under-private",
+            content: "hidden with parent",
+            images: [],
+            authorId: "user-2",
+            visibility: "public",
+            createdAt: "2026-05-08T10:00:00.000Z",
+            updatedAt: "2026-05-08T10:00:00.000Z",
+          },
+        ],
+      },
+      {
+        ...postB,
+        id: "public-post",
+        visibility: "public",
+        comments: [
+          {
+            id: "private-comment",
+            content: "hidden",
+            images: [],
+            authorId: "user-2",
+            visibility: "private",
+            createdAt: "2026-05-08T10:00:00.000Z",
+            updatedAt: "2026-05-08T10:00:00.000Z",
+          },
+          {
+            id: "public-comment",
+            content: "visible",
+            images: [],
+            authorId: "user-2",
+            visibility: "public",
+            createdAt: "2026-05-08T11:00:00.000Z",
+            updatedAt: "2026-05-08T11:00:00.000Z",
+          },
+        ],
+      },
+    ]);
+
+    expect(posts.map((post) => post.id)).toEqual(["public-post"]);
+    expect(posts[0].comments.map((comment) => comment.id)).toEqual([
+      "public-comment",
+    ]);
   });
 
   it("allows authors to edit only their own entries", () => {

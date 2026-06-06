@@ -20,6 +20,21 @@ export function sortMemoryComments(
   return [...comments].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
+export function isMemoryEntryPublic(
+  entry: { visibility?: "public" | "private" },
+): boolean {
+  return entry.visibility !== "private";
+}
+
+export function filterViewerMemoryPosts(posts: MemoryPost[]): MemoryPost[] {
+  return posts
+    .filter(isMemoryEntryPublic)
+    .map((post) => ({
+      ...post,
+      comments: post.comments.filter(isMemoryEntryPublic),
+    }));
+}
+
 export function canEditMemoryEntry(
   entry: { authorId: string },
   currentUserId: string | null | undefined,

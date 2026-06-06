@@ -187,6 +187,7 @@ export interface MemoryComment {
   content: string;
   images: ImageAsset[];
   authorId: string;
+  visibility?: "public" | "private";
   createdAt: string;
   updatedAt: string;
 }
@@ -197,6 +198,7 @@ export interface MemoryPost {
   content: string;
   images: ImageAsset[];
   authorId: string;
+  visibility?: "public" | "private";
   comments: MemoryComment[];
   createdAt: string;
   updatedAt: string;

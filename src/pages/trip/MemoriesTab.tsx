@@ -25,8 +25,10 @@ import {
   canDeleteMemoryEntry,
   canEditMemoryEntry,
   canSaveMemoryEntry,
+  filterViewerMemoryPosts,
   formatMemoryTimestamp,
   getMemoryPostImagePaths,
+  isMemoryEntryPublic,
   sortMemoryComments,
   sortMemoryPosts,
 } from "./memoriesModel";
@@ -49,7 +51,8 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
   } = useApp();
   const trip = state.trips.find((entry) => entry.id === tripId);
   const tripData = getTripData(tripId);
-  const posts = sortMemoryPosts(tripData.memories || []);
+  const allPosts = sortMemoryPosts(tripData.memories || []);
+  const posts = viewOnly ? filterViewerMemoryPosts(allPosts) : allPosts;
   const currentUserId = state.auth.currentUser?.id || null;
   const admin = !!trip && isTripAdmin(trip);
   const canWrite = !viewOnly && !!currentUserId;
@@ -78,6 +81,7 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
       content: "",
       images: [],
       authorId: currentUserId || "anonymous",
+      visibility: "public",
       comments: [],
       createdAt: now,
       updatedAt: now,
@@ -108,6 +112,7 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
       content: "",
       images: [],
       authorId: currentUserId || "anonymous",
+      visibility: "public",
       createdAt: now,
       updatedAt: now,
     };
@@ -138,6 +143,44 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
     });
     setSharedTripData(tripId, { memories: nextPosts });
     setEditingComment(null);
+  }
+
+  function updatePostVisibility(postId: string, publicToViewers: boolean) {
+    const nextPosts = allPosts.map((post) =>
+      post.id === postId
+        ? {
+            ...post,
+            visibility: getMemoryVisibility(publicToViewers),
+            updatedAt: new Date().toISOString(),
+          }
+        : post,
+    );
+    setSharedTripData(tripId, { memories: nextPosts });
+  }
+
+  function updateCommentVisibility(
+    postId: string,
+    commentId: string,
+    publicToViewers: boolean,
+  ) {
+    const nextPosts = allPosts.map((post) =>
+      post.id === postId
+        ? {
+            ...post,
+            comments: post.comments.map((comment) =>
+              comment.id === commentId
+                ? {
+                    ...comment,
+                    visibility: getMemoryVisibility(publicToViewers),
+                    updatedAt: new Date().toISOString(),
+                  }
+                : comment,
+            ),
+            updatedAt: new Date().toISOString(),
+          }
+        : post,
+    );
+    setSharedTripData(tripId, { memories: nextPosts });
   }
 
   async function deletePost(post: MemoryPost) {
@@ -218,22 +261,25 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
           {posts.map((post) => {
             const canEdit = canEditMemoryEntry(post, currentUserId);
             const canDelete = canDeleteMemoryEntry(post, currentUserId, admin);
+            const postPublic = isMemoryEntryPublic(post);
 
             return (
               <div key={post.id} className="card">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   {renderAuthorMeta(post.authorId, post.createdAt)}
                   {canWrite && (canEdit || canDelete) && (
-                    <button
-                      className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                      onClick={() =>
-                        canEdit
-                          ? setEditingPost(post)
-                          : setConfirmDeletePost(post)
-                      }
-                    >
-                      <FontAwesomeIcon icon={canEdit ? faPen : faTrash} />
-                    </button>
+                    <div className="memory-card-actions">
+                      <button
+                        className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
+                        onClick={() =>
+                          canEdit
+                            ? setEditingPost(post)
+                            : setConfirmDeletePost(post)
+                        }
+                      >
+                        <FontAwesomeIcon icon={canEdit ? faPen : faTrash} />
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -271,24 +317,26 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
                             )}
                             {canWrite &&
                               (canEditComment || canDeleteComment) && (
-                                <button
-                                  className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                                  onClick={() =>
-                                    canEditComment
-                                      ? setEditingComment({
-                                          postId: post.id,
-                                          comment,
-                                        })
-                                      : setConfirmDeleteComment({
-                                          postId: post.id,
-                                          comment,
-                                        })
-                                  }
-                                >
-                                  <FontAwesomeIcon
-                                    icon={canEditComment ? faPen : faTrash}
-                                  />
-                                </button>
+                                <div className="memory-card-actions">
+                                  <button
+                                    className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
+                                    onClick={() =>
+                                      canEditComment
+                                        ? setEditingComment({
+                                            postId: post.id,
+                                            comment,
+                                          })
+                                        : setConfirmDeleteComment({
+                                            postId: post.id,
+                                            comment,
+                                          })
+                                    }
+                                  >
+                                    <FontAwesomeIcon
+                                      icon={canEditComment ? faPen : faTrash}
+                                    />
+                                  </button>
+                                </div>
                               )}
                           </div>
                           {comment.content && (
@@ -361,6 +409,12 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
           <MemoryCommentForm
             tripId={tripId}
             postId={editingComment.postId}
+            parentPostPublic={
+              !!posts.find((post) => post.id === editingComment.postId) &&
+              isMemoryEntryPublic(
+                posts.find((post) => post.id === editingComment.postId)!,
+              )
+            }
             comment={editingComment.comment}
             onSave={saveComment}
             onCancel={() => setEditingComment(null)}
@@ -382,9 +436,7 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
           title={t("memories.deleteMemory")}
           onClose={() => setConfirmDeletePost(null)}
         >
-          <p className="text-sm mb-4">
-            {t("memories.deleteMemoryConfirm")}
-          </p>
+          <p className="text-sm mb-4">{t("memories.deleteMemoryConfirm")}</p>
           <div className="flex gap-2">
             <button
               className="btn btn-secondary flex-1"
@@ -407,9 +459,7 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
           title={t("memories.deleteComment")}
           onClose={() => setConfirmDeleteComment(null)}
         >
-          <p className="text-sm mb-4">
-            {t("memories.deleteCommentConfirm")}
-          </p>
+          <p className="text-sm mb-4">{t("memories.deleteCommentConfirm")}</p>
           <div className="flex gap-2">
             <button
               className="btn btn-secondary flex-1"
@@ -516,6 +566,26 @@ function MemoryPostForm({
   return (
     <div>
       <div className="form-group">
+        <div className="flex items-center gap-2">
+          <span className="memory-visibility-label">
+            {isMemoryEntryPublic(form)
+              ? t("memories.visibilityPublic")
+              : t("memories.visibilityPrivate")}
+          </span>
+          <SwitchControl
+            checked={isMemoryEntryPublic(form)}
+            onChange={(checked) =>
+              setForm({
+                ...form,
+                visibility: getMemoryVisibility(checked),
+              })
+            }
+            ariaLabel={t("memories.visibleToViewers")}
+            title={t("memories.visibleToViewers")}
+          />
+        </div>
+      </div>
+      <div className="form-group">
         <label className="form-label">{t("memories.formTitle")}</label>
         <input
           className="form-input"
@@ -589,6 +659,7 @@ function MemoryPostForm({
 function MemoryCommentForm({
   tripId,
   postId,
+  parentPostPublic,
   comment,
   onSave,
   onCancel,
@@ -596,6 +667,7 @@ function MemoryCommentForm({
 }: {
   tripId: string;
   postId: string;
+  parentPostPublic: boolean;
   comment: MemoryComment;
   onSave: (postId: string, comment: MemoryComment) => void;
   onCancel: () => void;
@@ -633,6 +705,28 @@ function MemoryCommentForm({
 
   return (
     <div>
+      {parentPostPublic && (
+        <div className="form-group">
+          <div className="flex items-center gap-2">
+            <span className="memory-visibility-label">
+              {isMemoryEntryPublic(form)
+                ? t("memories.visibilityPublic")
+                : t("memories.visibilityPrivate")}
+            </span>
+            <SwitchControl
+              checked={isMemoryEntryPublic(form)}
+              onChange={(checked) =>
+                setForm({
+                  ...form,
+                  visibility: getMemoryVisibility(checked),
+                })
+              }
+              ariaLabel={t("memories.visibleToViewers")}
+              title={t("memories.visibleToViewers")}
+            />
+          </div>
+        </div>
+      )}
       <div className="form-group">
         <label className="form-label">{t("memories.content")}</label>
         <textarea
@@ -694,4 +788,8 @@ function MemoryCommentForm({
       )}
     </div>
   );
+}
+
+function getMemoryVisibility(publicToViewers: boolean): "public" | "private" {
+  return publicToViewers ? "public" : "private";
 }
