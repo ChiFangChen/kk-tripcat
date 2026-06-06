@@ -311,7 +311,7 @@ const en = {
       description: "Manage your profile and Google login",
     },
     ui: {
-      title: "UI settings",
+      title: "UI",
       description: "Theme and interface preferences",
       theme: "Theme",
       darkMode: "Dark mode",
@@ -504,7 +504,7 @@ const en = {
 
   // User menu
   userMenu: {
-    accountSettings: "Account settings",
+    accountSettings: "Account",
     manageUsers: "Manage users",
     addUser: "Add user",
     switchUser: "Switch user",

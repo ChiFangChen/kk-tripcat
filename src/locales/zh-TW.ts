@@ -308,7 +308,7 @@ const zhTW = {
       description: "管理使用者資料與 Google 登入",
     },
     ui: {
-      title: "UI 設置",
+      title: "UI",
       description: "主題與介面偏好",
       theme: "主題",
       darkMode: "深色模式",
@@ -501,7 +501,7 @@ const zhTW = {
 
   // User menu
   userMenu: {
-    accountSettings: "帳號設置",
+    accountSettings: "帳號",
     manageUsers: "管理使用者",
     addUser: "新增使用者",
     switchUser: "切換使用者",
