@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faSync, faTrash, faCheck, faTimes, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faSync, faTrash, faCheck, faTimes, faXmark, faPlus, faRightLeft } from '@fortawesome/free-solid-svg-icons'
 import { useApp } from '../context/AppContext'
 import { PasswordInput } from './PasswordInput'
 import { useTranslation } from 'react-i18next'
@@ -18,7 +18,8 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
   const { state, login, logout, register, updateUser, bindGoogleAccount, isCurrentUserAdmin } = useApp()
   const currentUser = state.auth.currentUser
   const admin = isCurrentUserAdmin()
-  const [view, setView] = useState<'menu' | 'account' | 'register' | 'manage' | 'switch' | 'resetpw'>(initialView)
+  const [view, setView] = useState<'menu' | 'account' | 'register' | 'manage' | 'resetpw'>(initialView)
+  const [returnView, setReturnView] = useState<'menu' | 'account' | 'manage'>('menu')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -46,7 +47,7 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
     try {
       await register(username, password, displayName || username)
       setUsername(''); setPassword(''); setDisplayName('')
-      setView('menu')
+      setView('manage')
     } catch {
       setRegError('auth.errors.createFailed')
     }
@@ -114,7 +115,6 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
     return 0
   })
   const isAdminSession = admin || !!adminSessionId
-  const otherUsers = activeUsers.filter(u => u.id !== currentUser.id)
   const realAdminId = state.users.find(u => u.isAdmin)?.id
   const deleteTarget = confirmDelete ? state.users.find(u => u.id === confirmDelete) : null
 
@@ -123,17 +123,25 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
       <div className="dialog" onClick={e => e.stopPropagation()}>
         {view === 'menu' && (
           <>
-            <div className="user-menu-header">
-              <h3>{currentUser.displayName}</h3>
-              <label className="color-picker-btn" style={{ backgroundColor: currentUser.color }}>
-                <FontAwesomeIcon icon={faSync} className="color-picker-icon" />
-                <input
-                  type="color"
-                  value={currentUser.color || '#888888'}
-                  onChange={e => handleColorChange(e.target.value)}
-                  className="color-input-hidden"
-                />
-              </label>
+            <div className="modal-header !p-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="min-w-0">{currentUser.displayName}</h3>
+                <label className="color-picker-btn" style={{ backgroundColor: currentUser.color }}>
+                  <FontAwesomeIcon icon={faSync} className="color-picker-icon" />
+                  <input
+                    type="color"
+                    value={currentUser.color || '#888888'}
+                    onChange={e => handleColorChange(e.target.value)}
+                    className="color-input-hidden"
+                  />
+                </label>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+              >
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
             </div>
 
             {adminSessionId && (
@@ -141,15 +149,12 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
             )}
             <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setGoogleError(''); setGoogleSuccess(false); setView('account') }}>{t('userMenu.accountSettings')}</button>
             {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('manage')}>{t('userMenu.manageUsers')}</button>}
-            {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('register')}>{t('userMenu.addUser')}</button>}
-            {isAdminSession && <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('switch')}>{t('userMenu.switchUser')}</button>}
             <button className="btn w-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" onClick={() => {
               localStorage.removeItem(ADMIN_SESSION_KEY)
               localStorage.removeItem('kk-tripcat-route-trip')
               onSwitchUser?.()
               logout()
             }}>{t('auth.logout')}</button>
-            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={onClose}>{t('common.close')}</button>
           </>
         )}
 
@@ -189,7 +194,7 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
                   <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleBindGoogle} disabled={googleLoading}>
                     {googleLoading ? t('common.loading') : t('auth.linkGoogleAccount')}
                   </button>
-                  <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setNewPassword(''); setResetSuccess(false); setView('resetpw') }}>{t('auth.resetPassword')}</button>
+                  <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => { setNewPassword(''); setResetSuccess(false); setReturnView('account'); setView('resetpw') }}>{t('auth.resetPassword')}</button>
                 </>
               )}
             </div>
@@ -208,7 +213,7 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
               <div className="form-group"><label className="form-label">{t('auth.displayName')}</label><input className="form-input" value={displayName} onChange={e => setDisplayName(e.target.value)} /></div>
               {regError && <div className="auth-error">{t(regError)}</div>}
               <div className="flex gap-2">
-                <button type="button" className="btn btn-secondary flex-1" onClick={() => setView('menu')}>{t('common.cancel')}</button>
+                <button type="button" className="btn btn-secondary flex-1" onClick={() => setView('manage')}>{t('common.cancel')}</button>
                 <button type="submit" className="btn btn-primary flex-1">{t('common.create')}</button>
               </div>
             </form>
@@ -217,7 +222,24 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
 
         {view === 'manage' && (
           <>
-            <h3 style={{ fontWeight: 600 }}>{t('userMenu.manageUsers')}</h3>
+            <div className="modal-header !p-0">
+              <h3 style={{ fontWeight: 600 }}>{t('userMenu.manageUsers')}</h3>
+              <button
+                className="header-icon-btn"
+                onClick={() => {
+                  setUsername('')
+                  setPassword('')
+                  setDisplayName('')
+                  setRegError('')
+                  setReturnView('manage')
+                  setView('register')
+                }}
+                title={t('userMenu.addUser')}
+                aria-label={t('userMenu.addUser')}
+              >
+                <FontAwesomeIcon icon={faPlus} />
+              </button>
+            </div>
             <div className="member-list-settings">
               {activeUsers.map(u => (
                 <div key={u.id} className="member-row">
@@ -231,8 +253,25 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
                   ) : (
                     <>
                       <span style={{ flex: 1, cursor: 'pointer', fontSize: '0.875rem' }} onClick={() => { setEditingUserId(u.id); setEditingName(u.displayName) }}>{u.displayName}</span>
+                      {(u.id !== currentUser.id || !!adminSessionId) && (
+                        <button
+                          className="header-icon-btn"
+                          onClick={() => handleSwitchUser(u)}
+                          title={t('userMenu.switchUser')}
+                          aria-label={t('userMenu.switchUser')}
+                        >
+                          <FontAwesomeIcon icon={faRightLeft} />
+                        </button>
+                      )}
                       {u.id !== realAdminId && (u.id !== currentUser.id || !!adminSessionId) && (
-                        <button className="header-icon-btn text-red-400" onClick={() => setConfirmDelete(u.id)}><FontAwesomeIcon icon={faTrash} /></button>
+                        <button
+                          className="header-icon-btn text-red-400"
+                          onClick={() => setConfirmDelete(u.id)}
+                          title={t('common.delete')}
+                          aria-label={t('common.delete')}
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
                       )}
                     </>
                   )}
@@ -253,29 +292,13 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
           </>
         )}
 
-        {view === 'switch' && (
-          <>
-            <h3 style={{ fontWeight: 600 }}>{t('userMenu.switchUser')}</h3>
-            <div className="member-list-settings">
-              {otherUsers.map(u => (
-                <button key={u.id} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'flex-start', display: 'flex', alignItems: 'center' }} onClick={() => handleSwitchUser(u)}>
-                  <span className="color-dot" style={{ backgroundColor: u.color, marginRight: '0.5rem' }} />
-                  {u.displayName}
-                </button>
-              ))}
-              {otherUsers.length === 0 && <p className="text-sm text-slate-400 text-center py-2">{t('userMenu.noOtherUsers')}</p>}
-            </div>
-            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('menu')}>{t('common.back')}</button>
-          </>
-        )}
-
         {view === 'resetpw' && (
           <>
             <h3 style={{ fontWeight: 600 }}>{t('auth.resetPassword')}</h3>
             {resetSuccess ? (
               <>
                 <p className="text-sm text-slate-500 text-center">{t('auth.passwordResetSuccess')}</p>
-                <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView('menu')}>{t('common.back')}</button>
+                <button className="btn btn-secondary" style={{ width: '100%' }} onClick={() => setView(returnView)}>{t('common.back')}</button>
               </>
             ) : (
               <form onSubmit={e => { e.preventDefault(); if (!newPassword) return; updateUser({ ...currentUser, password: newPassword }); setResetSuccess(true) }}>
@@ -285,7 +308,7 @@ export function UserMenu({ onClose, onSwitchUser, initialView = 'menu' }: Props)
                   <p className="text-xs text-slate-400 mt-1">{t('auth.passwordWarning')}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" className="btn btn-secondary flex-1" onClick={() => setView('menu')}>{t('common.cancel')}</button>
+                  <button type="button" className="btn btn-secondary flex-1" onClick={() => setView(returnView)}>{t('common.cancel')}</button>
                   <button type="submit" className="btn btn-primary flex-1">{t('common.confirm')}</button>
                 </div>
               </form>
