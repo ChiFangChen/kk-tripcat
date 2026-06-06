@@ -1200,6 +1200,14 @@ textarea.form-input {
   min-height: 80px;
 }
 
+textarea.memory-post-content-input {
+  min-height: 160px;
+}
+
+textarea.memory-comment-content-input {
+  min-height: 120px;
+}
+
 /* Settings */
 .settings-list {
   display: flex;
@@ -1697,6 +1705,17 @@ button.settings-list-item {
   padding-bottom: calc(24px + var(--safe-bottom));
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+.fullscreen-modal-body > * {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-modal-body .form-actions {
+  margin-top: auto;
+  padding-top: 24px;
 }
 
 .schedule-note-text {

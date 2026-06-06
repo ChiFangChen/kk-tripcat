@@ -145,44 +145,6 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
     setEditingComment(null);
   }
 
-  function updatePostVisibility(postId: string, publicToViewers: boolean) {
-    const nextPosts = allPosts.map((post) =>
-      post.id === postId
-        ? {
-            ...post,
-            visibility: getMemoryVisibility(publicToViewers),
-            updatedAt: new Date().toISOString(),
-          }
-        : post,
-    );
-    setSharedTripData(tripId, { memories: nextPosts });
-  }
-
-  function updateCommentVisibility(
-    postId: string,
-    commentId: string,
-    publicToViewers: boolean,
-  ) {
-    const nextPosts = allPosts.map((post) =>
-      post.id === postId
-        ? {
-            ...post,
-            comments: post.comments.map((comment) =>
-              comment.id === commentId
-                ? {
-                    ...comment,
-                    visibility: getMemoryVisibility(publicToViewers),
-                    updatedAt: new Date().toISOString(),
-                  }
-                : comment,
-            ),
-            updatedAt: new Date().toISOString(),
-          }
-        : post,
-    );
-    setSharedTripData(tripId, { memories: nextPosts });
-  }
-
   async function deletePost(post: MemoryPost) {
     await Promise.all(getMemoryPostImagePaths(post).map(deleteImage));
     setSharedTripData(tripId, {
@@ -261,7 +223,6 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
           {posts.map((post) => {
             const canEdit = canEditMemoryEntry(post, currentUserId);
             const canDelete = canDeleteMemoryEntry(post, currentUserId, admin);
-            const postPublic = isMemoryEntryPublic(post);
 
             return (
               <div key={post.id} className="card">
@@ -597,7 +558,7 @@ function MemoryPostForm({
       <div className="form-group">
         <label className="form-label">{t("memories.content")}</label>
         <textarea
-          className="form-input"
+          className="form-input memory-post-content-input"
           value={form.content}
           onChange={(event) =>
             setForm({ ...form, content: event.target.value })
@@ -730,7 +691,7 @@ function MemoryCommentForm({
       <div className="form-group">
         <label className="form-label">{t("memories.content")}</label>
         <textarea
-          className="form-input"
+          className="form-input memory-comment-content-input"
           value={form.content}
           onChange={(event) =>
             setForm({ ...form, content: event.target.value })
