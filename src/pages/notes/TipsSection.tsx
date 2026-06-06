@@ -244,7 +244,7 @@ function TipForm({
   }
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("notes.titleLabel")}</label>
         <input

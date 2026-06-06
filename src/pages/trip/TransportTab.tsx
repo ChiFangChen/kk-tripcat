@@ -230,7 +230,7 @@ function TransportForm({
   }
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("transport.formTitle")}</label>
         <input

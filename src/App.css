@@ -1808,6 +1808,8 @@ button.settings-list-item {
 
 .fullscreen-modal-body {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   padding: 16px;
   padding-bottom: calc(24px + var(--safe-bottom));
@@ -1815,8 +1817,9 @@ button.settings-list-item {
   -webkit-overflow-scrolling: touch;
 }
 
-.fullscreen-modal-body > * {
-  min-height: 100%;
+.fullscreen-modal-form {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }

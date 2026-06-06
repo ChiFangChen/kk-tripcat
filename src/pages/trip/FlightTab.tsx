@@ -542,7 +542,7 @@ function FlightForm({
   });
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("flights.airline")}</label>
         <input
@@ -702,7 +702,7 @@ function LegForm({
   const [form, setForm] = useState(leg);
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("flights.direction")}</label>
         <input

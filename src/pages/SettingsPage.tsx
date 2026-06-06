@@ -1046,12 +1046,14 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                     autoFocus={subs.length === 0}
                   />
                 </div>
-                <button
-                  className="btn btn-primary w-full"
-                  onClick={() => addItem(addingItemTo)}
-                >
-                  {t("common.add")}
-                </button>
+                <div className="form-actions">
+                  <button
+                    className="btn btn-primary w-full"
+                    onClick={() => addItem(addingItemTo)}
+                  >
+                    {t("common.add")}
+                  </button>
+                </div>
               </>
             );
           })()}
@@ -1137,13 +1139,15 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                     autoFocus={subs.length === 0}
                   />
                 </div>
-                <button
-                  className="btn btn-primary w-full"
-                  data-e2e-id="template_item_save_button"
-                  onClick={saveEditItem}
-                >
-                  {t("common.save")}
-                </button>
+                <div className="form-actions">
+                  <button
+                    className="btn btn-primary w-full"
+                    data-e2e-id="template_item_save_button"
+                    onClick={saveEditItem}
+                  >
+                    {t("common.save")}
+                  </button>
+                </div>
               </>
             );
           })()}

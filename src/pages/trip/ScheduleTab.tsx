@@ -661,7 +661,7 @@ function ActivityForm({
   }
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("schedule.name")}</label>
         <input
@@ -812,7 +812,7 @@ function DayForm({
   const [label, setLabel] = useState(day.label);
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("schedule.date")}</label>
         <input
@@ -889,7 +889,7 @@ function NoteForm({
   }
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("schedule.noteTitle")}</label>
         <input

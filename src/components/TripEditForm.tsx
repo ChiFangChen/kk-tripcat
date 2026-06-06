@@ -28,7 +28,7 @@ export function TripEditForm({ trip, onSave, onCancel }: Props) {
   });
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("trips.tripName")}</label>
         <input

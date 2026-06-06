@@ -531,7 +531,7 @@ function MemoryPostForm({
   }
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <div className="flex items-center gap-2">
           <span className="memory-visibility-label">
@@ -671,7 +671,7 @@ function MemoryCommentForm({
   }
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       {parentPostPublic && (
         <div className="form-group">
           <div className="flex items-center gap-2">

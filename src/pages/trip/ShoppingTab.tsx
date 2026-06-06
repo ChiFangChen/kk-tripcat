@@ -1061,7 +1061,7 @@ function PurchaseForm({
   }));
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("shopping.form.amount")}</label>
         <input
@@ -1147,7 +1147,7 @@ function DraftShoppingForm({
   }
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("shopping.form.itemName")}</label>
         <input
@@ -1316,7 +1316,7 @@ function PoolItemForm({
   }
 
   return (
-    <div>
+    <div className="fullscreen-modal-form">
       <div className="form-group">
         <label className="form-label">{t("shopping.form.name")}</label>
         <input
