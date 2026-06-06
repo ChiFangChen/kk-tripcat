@@ -53,7 +53,7 @@ const en = {
     linkGoogleAccount: "Link Google account",
     googleLinkSuccess: "Google account linked successfully",
     googleLinkPasswordDisabled:
-      "After linking, the old password will stop working. Please log in with Google next time.",
+      "After linking, the account and the password will stop working. Please log in with Google next time.",
     googleLinkedPasswordDisabled:
       "This account is linked to Google. Please log in with Google.",
     errors: {

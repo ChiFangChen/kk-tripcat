@@ -10,6 +10,7 @@ import {
 import { useApp } from "../../context/AppContext";
 import { FullScreenModal } from "../../components/FullScreenModal";
 import { Modal } from "../../components/Modal";
+import { UserAvatar } from "../../components/UserAvatar";
 import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { SwitchControl } from "../../components/SwitchControl";
@@ -46,7 +47,6 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
     setSharedTripData,
     updateTrip,
     getUserName,
-    getUserColor,
     isTripAdmin,
   } = useApp();
   const trip = state.trips.find((entry) => entry.id === tripId);
@@ -171,12 +171,18 @@ export function MemoriesTab({ tripId, viewOnly }: Props) {
   }
 
   function renderAuthorMeta(authorId: string, createdAt: string) {
+    const author = state.users.find((user) => user.id === authorId);
     return (
       <div className="flex items-center gap-2 min-w-0">
-        <span
-          className="w-6 h-6 rounded-full flex-shrink-0"
-          style={{ backgroundColor: getUserColor(authorId) }}
-        />
+        {author &&
+          (author.avatarMode === "google" && author.googlePhotoURL ? (
+            <UserAvatar user={author} />
+          ) : (
+            <span
+              className="w-6 h-6 rounded-full flex-shrink-0"
+              style={{ backgroundColor: author.color }}
+            />
+          ))}
         <div className="min-w-0 text-xs text-slate-400">
           <span>{getUserName(authorId)}</span>
           <span> · {formatMemoryTimestamp(createdAt)}</span>

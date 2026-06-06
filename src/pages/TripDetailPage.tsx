@@ -30,6 +30,7 @@ import { ShoppingTab } from "./trip/ShoppingTab";
 import { MemoriesTab } from "./trip/MemoriesTab";
 import type { TripTabType, ChecklistItem, Template } from "../types";
 import * as storage from "../utils/storage";
+import { getReadableTextColor } from "../utils/color";
 import {
   getEffectiveTripTab,
   getFirstEntryMode,
@@ -480,7 +481,7 @@ export function TripDetailPage({
               )}
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center">
             {!viewOnly && (
               <>
                 <button
@@ -497,10 +498,22 @@ export function TripDetailPage({
                 </button>
                 {state.auth.currentUser && (
                   <button
-                    className="identity-badge"
+                    className={`identity-badge ${
+                      state.auth.currentUser.avatarMode === "google" &&
+                      state.auth.currentUser.googlePhotoURL
+                        ? "with-avatar"
+                        : ""
+                    }`}
                     onClick={() => setShowUserMenu(true)}
+                    style={{
+                      backgroundColor: state.auth.currentUser.color,
+                      color: getReadableTextColor(state.auth.currentUser.color),
+                    }}
                   >
-                    <UserAvatar user={state.auth.currentUser} />
+                    {state.auth.currentUser.avatarMode === "google" &&
+                      state.auth.currentUser.googlePhotoURL && (
+                        <UserAvatar user={state.auth.currentUser} />
+                      )}
                     {state.auth.currentUser.displayName}
                   </button>
                 )}

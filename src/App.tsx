@@ -19,6 +19,7 @@ import {
   getEffectiveMainTab,
   getEffectiveSelectedTripId,
 } from "./navigationState";
+import { getReadableTextColor } from "./utils/color";
 import type { TabType } from "./types";
 import i18n, { type Language } from "./i18n";
 import "./App.css";
@@ -297,13 +298,25 @@ function AppContent() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="identity-badge"
+            className={`identity-badge ${
+              state.auth.currentUser.avatarMode === "google" &&
+              state.auth.currentUser.googlePhotoURL
+                ? "with-avatar"
+                : ""
+            }`}
             onClick={() => {
               setUserMenuInitialView("menu");
               setShowUserMenu(true);
             }}
+            style={{
+              backgroundColor: state.auth.currentUser.color,
+              color: getReadableTextColor(state.auth.currentUser.color),
+            }}
           >
-            <UserAvatar user={state.auth.currentUser} />
+            {state.auth.currentUser.avatarMode === "google" &&
+              state.auth.currentUser.googlePhotoURL && (
+                <UserAvatar user={state.auth.currentUser} />
+              )}
             {state.auth.currentUser.displayName}
           </button>
         </div>

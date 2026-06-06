@@ -9,6 +9,7 @@ import {
 import { useApp } from "../context/AppContext";
 import { Modal } from "./Modal";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
+import { UserAvatar } from "./UserAvatar";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -19,7 +20,7 @@ interface Props {
 
 export function MemberMenu({ tripId, onClose, readOnly }: Props) {
   const { t } = useTranslation();
-  const { state, updateTrip, getUserName, getUserColor, isTripAdmin } =
+  const { state, updateTrip, getUserName, isTripAdmin } =
     useApp();
   const trip = state.trips.find((t) => t.id === tripId);
   const [showAddMember, setShowAddMember] = useState(false);
@@ -55,31 +56,39 @@ export function MemberMenu({ tripId, onClose, readOnly }: Props) {
         {members.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-2">{t("members.empty")}</p>
         ) : (
-          members.map((userId) => (
-            <div key={userId} className="flex items-center gap-2 py-1.5">
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: getUserColor(userId) }}
-              />
-              {userId === trip.creatorId && (
-                <FontAwesomeIcon
-                  icon={faCrown}
-                  className="text-amber-400 text-xs"
-                />
-              )}
-              <span className="flex-1 text-sm font-medium">
-                {getUserName(userId)}
-              </span>
-              {canEdit && userId !== trip.creatorId && (
-                <button
-                  className="text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                  onClick={() => setConfirmRemoveMemberId(userId)}
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
-              )}
-            </div>
-          ))
+          members.map((userId) => {
+            const user = state.users.find((entry) => entry.id === userId);
+            return (
+              <div key={userId} className="flex items-center gap-2 py-1.5">
+                {user &&
+                  (user.avatarMode === "google" && user.googlePhotoURL ? (
+                    <UserAvatar user={user} />
+                  ) : (
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: user.color }}
+                    />
+                  ))}
+                {userId === trip.creatorId && (
+                  <FontAwesomeIcon
+                    icon={faCrown}
+                    className="text-amber-400 text-xs"
+                  />
+                )}
+                <span className="flex-1 text-sm font-medium">
+                  {getUserName(userId)}
+                </span>
+                {canEdit && userId !== trip.creatorId && (
+                  <button
+                    className="text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
+                    onClick={() => setConfirmRemoveMemberId(userId)}
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                )}
+              </div>
+            );
+          })
         )}
 
         {canEdit && !showAddMember && nonMembers.length > 0 && (

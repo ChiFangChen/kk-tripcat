@@ -9,6 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { type TripData, useApp } from "../context/AppContext";
 import { TemplateSelector } from "../components/TemplateSelector";
+import { UserAvatar } from "../components/UserAvatar";
 import { generateId } from "../utils/id";
 import { formatDate } from "../utils/date";
 import type { Trip, TripType, ChecklistItem, Template } from "../types";
@@ -66,7 +67,6 @@ export function TripsPage({
     setSharedTripData,
     setUserTripData,
     getTripData,
-    getUserColor,
     isTripAdmin,
     updateTrip,
     showToast,
@@ -469,18 +469,21 @@ export function TripsPage({
             <div className="flex justify-between mt-1.5 gap-2">
               <div className="flex items-center gap-1">
                 {trip.members.length > 0 &&
-                  trip.members.map((userId) => (
-                    <span
-                      key={userId}
-                      className="w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center"
-                      style={{ backgroundColor: getUserColor(userId) }}
-                    >
-                      {(
-                        state.users.find((u) => u.id === userId)?.displayName ||
-                        "?"
-                      ).charAt(0)}
-                    </span>
-                  ))}
+                  trip.members.map((userId) => {
+                    const user = state.users.find((u) => u.id === userId);
+                    if (!user) return null;
+                    return user.avatarMode === "google" && user.googlePhotoURL ? (
+                      <UserAvatar key={userId} user={user} />
+                    ) : (
+                      <span
+                        key={userId}
+                        className="w-5 h-5 rounded-full text-white text-[10px] flex items-center justify-center"
+                        style={{ backgroundColor: user.color }}
+                      >
+                        {user.displayName.charAt(0)}
+                      </span>
+                    );
+                  })}
               </div>
               <div className="trip-list-actions">
                 {isTripAdmin(trip) && (

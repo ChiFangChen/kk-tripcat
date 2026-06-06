@@ -53,9 +53,9 @@ const zhTW = {
     linkGoogleAccount: "綁定 Google 帳號",
     googleLinkSuccess: "Google 帳號已綁定成功",
     googleLinkPasswordDisabled:
-      "綁定成功後，舊密碼會失效，之後請使用 Google 帳號登入。",
+      "綁定成功後，帳號密碼會失效，之後請使用 Google 登入。",
     googleLinkedPasswordDisabled:
-      "這個帳號已綁定 Google，請使用 Google 登入。",
+      "已綁定 Google，請使用 Google 登入。",
     errors: {
       invalidLogin: "帳號或密碼錯誤",
       usernameExists: "帳號已存在",

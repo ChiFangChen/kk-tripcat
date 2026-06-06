@@ -21,6 +21,7 @@ import { ImageGalleryField } from "../../components/ImageGalleryField";
 import { LoadingImage } from "../../components/LoadingImage";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { EditIconButton } from "../../components/EditIconButton";
+import { UserAvatar } from "../../components/UserAvatar";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
@@ -799,55 +800,70 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                 <p>{t("shopping.noReviewItems")}</p>
               </div>
             ) : (
-              reviewItems.map((entry) => (
-                <div key={`${entry.userId}-${entry.item.id}`} className="card">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div>
-                      <div className="font-semibold">
-                        {entry.item.textSnapshot}
+              reviewItems.map((entry) => {
+                const user = state.users.find(
+                  (candidate) => candidate.id === entry.userId,
+                );
+                return (
+                  <div key={`${entry.userId}-${entry.item.id}`} className="card">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div>
+                        <div className="font-semibold">
+                          {entry.item.textSnapshot}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                          {user &&
+                            (user.avatarMode === "google" &&
+                            user.googlePhotoURL ? (
+                              <UserAvatar user={user} />
+                            ) : (
+                              <span
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: user.color }}
+                              />
+                            ))}
+                          {t("shopping.createdAt", {
+                            name: getUserName(entry.userId),
+                            date: formatDate(entry.item.createdAt),
+                          })}
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-400">
-                        {t("shopping.createdAt", {
-                          name: getUserName(entry.userId),
-                          date: formatDate(entry.item.createdAt),
+                      {entry.item.promotedToPoolAt ? (
+                        <span className="tag">{t("shopping.promoted")}</span>
+                      ) : (
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={() => promoteToPool(entry)}
+                        >
+                          {t("shopping.addToPool")}
+                        </button>
+                      )}
+                    </div>
+                    <div className="mb-2">
+                      <PriceBadges
+                        badges={buildShoppingPriceBadges({
+                          estimatedAmount: entry.item.estimatedAmount,
+                          currency: entry.item.currency,
+                          purchases: draftPurchaseSnapshot(entry.item),
                         })}
+                      />
+                    </div>
+                    {(entry.item.brand || entry.item.spec) && (
+                      <div className="text-sm text-slate-500 mb-2">
+                        {[entry.item.brand, entry.item.spec]
+                          .filter(Boolean)
+                          .join(" / ")}
                       </div>
-                    </div>
-                    {entry.item.promotedToPoolAt ? (
-                      <span className="tag">{t("shopping.promoted")}</span>
-                    ) : (
-                      <button
-                        className="btn btn-primary btn-sm"
-                        onClick={() => promoteToPool(entry)}
-                      >
-                        {t("shopping.addToPool")}
-                      </button>
                     )}
+                    {entry.item.note && (
+                      <div className="text-sm text-slate-500 whitespace-pre-wrap mb-2">
+                        {entry.item.note}
+                      </div>
+                    )}
+                    <ImageGalleryField images={entry.item.images} />
                   </div>
-                  <div className="mb-2">
-                    <PriceBadges
-                      badges={buildShoppingPriceBadges({
-                        estimatedAmount: entry.item.estimatedAmount,
-                        currency: entry.item.currency,
-                        purchases: draftPurchaseSnapshot(entry.item),
-                      })}
-                    />
-                  </div>
-                  {(entry.item.brand || entry.item.spec) && (
-                    <div className="text-sm text-slate-500 mb-2">
-                      {[entry.item.brand, entry.item.spec]
-                        .filter(Boolean)
-                        .join(" / ")}
-                    </div>
-                  )}
-                  {entry.item.note && (
-                    <div className="text-sm text-slate-500 whitespace-pre-wrap mb-2">
-                      {entry.item.note}
-                    </div>
-                  )}
-                  <ImageGalleryField images={entry.item.images} />
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </FullScreenModal>
