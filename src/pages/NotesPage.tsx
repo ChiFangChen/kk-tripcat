@@ -10,7 +10,7 @@ export function NotesPage() {
 
   return (
     <div>
-      <div className="trip-tabs">
+      <div className="trip-tabs notes-tabs">
         <button
           className={`trip-tab ${activeTab === "tips" ? "active" : ""}`}
           onClick={() => setActiveTab("tips")}

@@ -208,6 +208,11 @@ body {
   top: auto;
 }
 
+.notes-tabs {
+  top: 56px;
+  z-index: 35;
+}
+
 .trip-tabs-main {
   display: flex;
   flex: 1;
