@@ -12,6 +12,7 @@ import {
 } from "react";
 import type {
   User,
+  UserSettings,
   Trip,
   Template,
   TipNote,
@@ -160,6 +161,20 @@ function normalizeUser(user: User, index = 0): User {
     ...user,
     color: user.color || USER_COLORS[fallbackColorIndex],
     avatarMode: user.avatarMode || "color",
+    settings: normalizeUserSettings(user.settings),
+  };
+}
+
+function normalizeUserSettings(
+  settings: UserSettings | undefined,
+): UserSettings | undefined {
+  if (!settings) return undefined;
+  return {
+    ...settings,
+    textScale:
+      typeof settings.textScale === "number"
+        ? Math.max(100, Math.min(200, settings.textScale))
+        : undefined,
   };
 }
 
@@ -307,7 +322,11 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, auth: { currentUser: null } };
     case "SET_USERS": {
       const users = action.users.map((u, i) => normalizeUser(u, i));
-      return { ...state, users };
+      const currentUser = state.auth.currentUser
+        ? users.find((user) => user.id === state.auth.currentUser?.id) ||
+          state.auth.currentUser
+        : null;
+      return { ...state, users, auth: { currentUser } };
     }
     case "ADD_USER":
       return { ...state, users: [...state.users, action.user] };
@@ -759,6 +778,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     latestItemsRef.current = state.items;
   }, [state.items]);
+
+  useEffect(() => {
+    storage.saveAuth(state.auth.currentUser);
+  }, [state.auth.currentUser]);
 
   useEffect(() => {
     if (!currentUserId) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AppProvider, useApp } from "./context/AppContext";
 import * as storage from "./utils/storage";
@@ -20,35 +20,76 @@ import {
   getEffectiveSelectedTripId,
 } from "./navigationState";
 import { getReadableTextColor } from "./utils/color";
-import type { TabType } from "./types";
+import type { TabType, UserSettings, UserTheme } from "./types";
 import i18n, { type Language } from "./i18n";
 import "./App.css";
 
-function AppContent() {
-  const { t } = useTranslation();
-  const { state, loading, updateTrip, viewTripId, isCurrentUserAdmin } =
-    useApp();
-  const [theme, setTheme] = useState<"light" | "dark">(
-    () =>
-      storage.getItem<"light" | "dark">("theme") ||
+type SettingsKey = keyof UserSettings;
+type AppSettings = Required<UserSettings>;
+
+function getInitialSettings(): AppSettings {
+  return {
+    theme:
+      storage.getItem<UserTheme>("theme") ||
       (window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light"),
+    textScale: storage.getItem<number>("textScale") || 100,
+    language: storage.getItem<Language>("language") || "zh-TW",
+    hideTripEditButtons:
+      storage.getItem<boolean>("hideTripEditButtons") || false,
+    defaultSkipPreparation:
+      storage.getItem<boolean>("defaultSkipPreparation") || false,
+    defaultHideShoppingList:
+      storage.getItem<boolean>("defaultHideShoppingList") || false,
+  };
+}
+
+function hasSetting(settings: UserSettings | undefined, key: SettingsKey) {
+  return settings?.[key] !== undefined;
+}
+
+function removeLocalSettingsCache() {
+  storage.removeItem("theme");
+  storage.removeItem("textScale");
+  storage.removeItem("language");
+  storage.removeItem("hideTripEditButtons");
+  storage.removeItem("defaultSkipPreparation");
+  storage.removeItem("defaultHideShoppingList");
+}
+
+function AppContent() {
+  const { t } = useTranslation();
+  const {
+    state,
+    loading,
+    updateTrip,
+    updateUser,
+    viewTripId,
+    isCurrentUserAdmin,
+  } = useApp();
+  const initialSettingsRef = useRef(getInitialSettings());
+  const latestUserSettingsRef = useRef<UserSettings>(
+    initialSettingsRef.current,
+  );
+  const migratedSettingsUserRef = useRef<string | null>(null);
+  const [theme, setTheme] = useState<UserTheme>(
+    () => initialSettingsRef.current.theme,
   );
   const [textScale, setTextScale] = useState(
-    () => storage.getItem<number>("textScale") || 100,
+    () => initialSettingsRef.current.textScale,
   );
   const [language, setLanguage] = useState<Language>(
-    () => storage.getItem<Language>("language") || "zh-TW",
+    () => initialSettingsRef.current.language,
   );
   const [hideTripEditButtons, setHideTripEditButtons] = useState(
-    () => storage.getItem<boolean>("hideTripEditButtons") || false,
+    () => initialSettingsRef.current.hideTripEditButtons,
   );
   const [defaultSkipPreparation, setDefaultSkipPreparation] = useState(
-    () => storage.getItem<boolean>("defaultSkipPreparation") || false,
+    () => initialSettingsRef.current.defaultSkipPreparation,
   );
   const [defaultHideShoppingList, setDefaultHideShoppingList] = useState(
-    () => storage.getItem<boolean>("defaultHideShoppingList") || false,
+    () => initialSettingsRef.current.defaultHideShoppingList,
   );
   const [authPage, setAuthPage] = useState<"login" | "register">("login");
   const [activeTab, setActiveTab] = useState<TabType>(
@@ -90,7 +131,6 @@ function AppContent() {
   }, [effectiveActiveTab]);
 
   useEffect(() => {
-    storage.setItem("theme", theme);
     document.documentElement.className = `theme-${theme}`;
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     if (themeColorMeta) {
@@ -104,7 +144,6 @@ function AppContent() {
   useEffect(() => {
     const scaleProgress = Math.max(0, Math.min(1, (textScale - 100) / 100));
     const leadingBoost = scaleProgress * 0.08;
-    storage.setItem("textScale", textScale);
     document.documentElement.style.setProperty(
       "--text-scale",
       String(textScale / 100),
@@ -125,22 +164,149 @@ function AppContent() {
   }, [textScale]);
 
   useEffect(() => {
-    storage.setItem("language", language);
     document.documentElement.lang = language;
     void i18n.changeLanguage(language);
   }, [language]);
 
   useEffect(() => {
-    storage.setItem("hideTripEditButtons", hideTripEditButtons);
-  }, [hideTripEditButtons]);
+    const settings = state.auth.currentUser?.settings;
+    if (!settings) return;
+    latestUserSettingsRef.current = {
+      ...latestUserSettingsRef.current,
+      ...settings,
+    };
+    if (settings.theme) setTheme(settings.theme);
+    if (typeof settings.textScale === "number") setTextScale(settings.textScale);
+    if (settings.language) setLanguage(settings.language);
+    if (typeof settings.hideTripEditButtons === "boolean") {
+      setHideTripEditButtons(settings.hideTripEditButtons);
+    }
+    if (typeof settings.defaultSkipPreparation === "boolean") {
+      setDefaultSkipPreparation(settings.defaultSkipPreparation);
+    }
+    if (typeof settings.defaultHideShoppingList === "boolean") {
+      setDefaultHideShoppingList(settings.defaultHideShoppingList);
+    }
+  }, [
+    state.auth.currentUser?.settings?.theme,
+    state.auth.currentUser?.settings?.textScale,
+    state.auth.currentUser?.settings?.language,
+    state.auth.currentUser?.settings?.hideTripEditButtons,
+    state.auth.currentUser?.settings?.defaultSkipPreparation,
+    state.auth.currentUser?.settings?.defaultHideShoppingList,
+  ]);
 
   useEffect(() => {
-    storage.setItem("defaultSkipPreparation", defaultSkipPreparation);
-  }, [defaultSkipPreparation]);
+    const currentUser = state.auth.currentUser;
+    if (loading || !currentUser) return;
+    if (migratedSettingsUserRef.current === currentUser.id) return;
 
-  useEffect(() => {
-    storage.setItem("defaultHideShoppingList", defaultHideShoppingList);
-  }, [defaultHideShoppingList]);
+    const settings = currentUser.settings;
+    const nextSettings: Required<UserSettings> = {
+      theme: settings?.theme ?? theme,
+      textScale: settings?.textScale ?? textScale,
+      language: settings?.language ?? language,
+      hideTripEditButtons:
+        settings?.hideTripEditButtons ?? hideTripEditButtons,
+      defaultSkipPreparation:
+        settings?.defaultSkipPreparation ?? defaultSkipPreparation,
+      defaultHideShoppingList:
+        settings?.defaultHideShoppingList ?? defaultHideShoppingList,
+    };
+    const settingKeys: SettingsKey[] = [
+      "theme",
+      "textScale",
+      "language",
+      "hideTripEditButtons",
+      "defaultSkipPreparation",
+      "defaultHideShoppingList",
+    ];
+    const missingSettings = settingKeys.filter(
+      (key) => !hasSetting(settings, key),
+    );
+
+    migratedSettingsUserRef.current = currentUser.id;
+    if (missingSettings.length > 0) {
+      latestUserSettingsRef.current = nextSettings;
+      void updateUser({ ...currentUser, settings: nextSettings });
+    }
+    removeLocalSettingsCache();
+  }, [
+    loading,
+    state.auth.currentUser,
+    theme,
+    textScale,
+    language,
+    hideTripEditButtons,
+    defaultSkipPreparation,
+    defaultHideShoppingList,
+    updateUser,
+  ]);
+
+  const updateCurrentUserSettings = useCallback(
+    (settings: Partial<UserSettings>) => {
+      const currentUser = state.auth.currentUser;
+      if (!currentUser) return;
+      const nextSettings = {
+        ...latestUserSettingsRef.current,
+        ...settings,
+      };
+      latestUserSettingsRef.current = nextSettings;
+      void updateUser({
+        ...currentUser,
+        settings: nextSettings,
+      });
+    },
+    [state.auth.currentUser, updateUser],
+  );
+
+  const handleThemeChange = useCallback(
+    (nextTheme: UserTheme) => {
+      setTheme(nextTheme);
+      updateCurrentUserSettings({ theme: nextTheme });
+    },
+    [updateCurrentUserSettings],
+  );
+
+  const handleTextScaleChange = useCallback(
+    (nextTextScale: number) => {
+      setTextScale(nextTextScale);
+      updateCurrentUserSettings({ textScale: nextTextScale });
+    },
+    [updateCurrentUserSettings],
+  );
+
+  const handleLanguageChange = useCallback(
+    (nextLanguage: Language) => {
+      setLanguage(nextLanguage);
+      updateCurrentUserSettings({ language: nextLanguage });
+    },
+    [updateCurrentUserSettings],
+  );
+
+  const handleHideTripEditButtonsChange = useCallback(
+    (hidden: boolean) => {
+      setHideTripEditButtons(hidden);
+      updateCurrentUserSettings({ hideTripEditButtons: hidden });
+    },
+    [updateCurrentUserSettings],
+  );
+
+  const handleDefaultSkipPreparationChange = useCallback(
+    (skip: boolean) => {
+      setDefaultSkipPreparation(skip);
+      updateCurrentUserSettings({ defaultSkipPreparation: skip });
+    },
+    [updateCurrentUserSettings],
+  );
+
+  const handleDefaultHideShoppingListChange = useCallback(
+    (hidden: boolean) => {
+      setDefaultHideShoppingList(hidden);
+      updateCurrentUserSettings({ defaultHideShoppingList: hidden });
+    },
+    [updateCurrentUserSettings],
+  );
 
   // Join trip via URL: ?join=<tripId>
   const [joinTripId, setJoinTripId] = useState<string | null>(() => {
@@ -333,17 +499,17 @@ function AppContent() {
       {effectiveActiveTab === "settings" && (
         <SettingsPage
           theme={theme}
-          onThemeChange={setTheme}
+          onThemeChange={handleThemeChange}
           textScale={textScale}
-          onTextScaleChange={setTextScale}
+          onTextScaleChange={handleTextScaleChange}
           language={language}
-          onLanguageChange={setLanguage}
+          onLanguageChange={handleLanguageChange}
           hideTripEditButtons={hideTripEditButtons}
-          onHideTripEditButtonsChange={setHideTripEditButtons}
+          onHideTripEditButtonsChange={handleHideTripEditButtonsChange}
           defaultSkipPreparation={defaultSkipPreparation}
-          onDefaultSkipPreparationChange={setDefaultSkipPreparation}
+          onDefaultSkipPreparationChange={handleDefaultSkipPreparationChange}
           defaultHideShoppingList={defaultHideShoppingList}
-          onDefaultHideShoppingListChange={setDefaultHideShoppingList}
+          onDefaultHideShoppingListChange={handleDefaultHideShoppingListChange}
           onOpenAccountSettings={() => {
             setUserMenuInitialView("account");
             setShowUserMenu(true);

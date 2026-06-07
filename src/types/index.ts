@@ -1,5 +1,17 @@
 import type { ImageAsset } from "./images";
 
+export type UserTheme = "light" | "dark";
+export type UserLanguage = "zh-TW" | "en";
+
+export interface UserSettings {
+  theme?: UserTheme;
+  textScale?: number;
+  language?: UserLanguage;
+  hideTripEditButtons?: boolean;
+  defaultSkipPreparation?: boolean;
+  defaultHideShoppingList?: boolean;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -14,6 +26,7 @@ export interface User {
   googlePhotoURL?: string;
   isAdmin?: boolean;
   deleted?: boolean;
+  settings?: UserSettings;
   createdAt: string;
 }
 
