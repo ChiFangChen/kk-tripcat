@@ -157,11 +157,12 @@ const emptyUser: UserTripData = {
 
 function normalizeUser(user: User, index = 0): User {
   const fallbackColorIndex = Math.max(index, 0) % USER_COLORS.length;
+  const settings = normalizeUserSettings(user.settings);
   return {
     ...user,
     color: user.color || USER_COLORS[fallbackColorIndex],
     avatarMode: user.avatarMode || "color",
-    settings: normalizeUserSettings(user.settings),
+    ...(settings ? { settings } : {}),
   };
 }
 
@@ -170,12 +171,20 @@ function normalizeUserSettings(
 ): UserSettings | undefined {
   if (!settings) return undefined;
   return {
-    ...settings,
-    textScale:
+    ...stripUndefinedObject({
+      ...settings,
+      textScale:
       typeof settings.textScale === "number"
         ? Math.max(100, Math.min(200, settings.textScale))
         : undefined,
+    }),
   };
+}
+
+function stripUndefinedObject<T extends Record<string, unknown>>(value: T): T {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entryValue]) => entryValue !== undefined),
+  ) as T;
 }
 
 function getTemplateStorageKey(userId: string) {
@@ -489,7 +498,7 @@ interface AppContextType {
     password: string,
     displayName: string,
   ) => Promise<User>;
-  updateUser: (user: User) => Promise<void>;
+  updateUser: (user: User, options?: { silent?: boolean }) => Promise<boolean>;
   setTips: (tips: TipNote[]) => Promise<void>;
   setItems: (items: Item[]) => Promise<void>;
   setTemplate: (template: Template) => Promise<void>;
@@ -1367,7 +1376,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const updateUser = useCallback(
-    async (user: User) => {
+    async (user: User, options?: { silent?: boolean }) => {
       try {
         assertCanWriteToCloud({
           firebaseConnected,
@@ -1377,9 +1386,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await syncUser(dbRef.current!, user);
         dispatch({ type: "UPDATE_USER", user });
         if (user.id === state.auth.currentUser?.id) storage.saveAuth(user);
+        return true;
       } catch (error) {
-        showSyncError(i18n.t("app.userSyncFailed"));
+        if (!options?.silent) showSyncError(i18n.t("app.userSyncFailed"));
         console.error("Failed to sync user:", error);
+        return false;
       }
     },
     [dispatch, firebaseConnected, showSyncError, state.auth.currentUser],

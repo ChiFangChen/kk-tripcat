@@ -268,7 +268,7 @@ export function subscribeToUsers(
 }
 
 export async function syncUser(db: Firestore, user: User): Promise<void> {
-  await setDoc(doc(db, "ccUsers", user.id), user);
+  await setDoc(doc(db, "ccUsers", user.id), stripUndefinedDeep(user));
 }
 
 export async function findUserByUsername(

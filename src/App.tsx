@@ -228,7 +228,10 @@ function AppContent() {
     migratedSettingsUserRef.current = currentUser.id;
     if (missingSettings.length > 0) {
       latestUserSettingsRef.current = nextSettings;
-      void updateUser({ ...currentUser, settings: nextSettings });
+      void updateUser(
+        { ...currentUser, settings: nextSettings },
+        { silent: true },
+      );
     }
     removeLocalSettingsCache();
   }, [
