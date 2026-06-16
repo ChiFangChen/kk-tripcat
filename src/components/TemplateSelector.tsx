@@ -22,8 +22,8 @@ export function TemplateSelector({ template, onConfirm, confirmLabel, confirmWit
   const [selectedSubcategories, setSelectedSubcategories] = useState<Record<string, boolean>>(() => {
     const subcats: Record<string, boolean> = {}
     for (const cat of template.categories) {
-      for (const item of cat.items) {
-        if (item.subcategory) subcats[`${cat.name}:${item.subcategory}`] = true
+      for (const sub of cat.subcategories) {
+        subcats[`${cat.name}:${sub}`] = true
       }
     }
     return subcats
@@ -103,11 +103,7 @@ export function TemplateSelector({ template, onConfirm, confirmLabel, confirmWit
   }
 
   function getSubcategories(cat: TemplateCategory) {
-    const subs: string[] = []
-    for (const item of cat.items) {
-      if (item.subcategory && !subs.includes(item.subcategory)) subs.push(item.subcategory)
-    }
-    return subs
+    return cat.subcategories
   }
 
   function buildChecklist(): ChecklistItem[] {

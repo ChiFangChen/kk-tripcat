@@ -12,14 +12,10 @@ const template: Template = {
   categories: [
     {
       name: "必要",
+      subcategories: ["冬季"],
       items: [
-        { id: "item-1", text: "護照", category: "必要" },
-        {
-          id: "item-2",
-          text: "圍巾",
-          category: "必要",
-          subcategory: "冬季",
-        },
+        { id: "item-1", text: "護照" },
+        { id: "item-2", text: "圍巾", subcategory: "冬季" },
       ],
     },
   ],
@@ -35,7 +31,6 @@ describe("updateTemplateItem", () => {
     expect(result.categories[0].items[1]).toEqual({
       id: "item-2",
       text: "手套",
-      category: "必要",
       subcategory: "冬季用品",
     });
   });
@@ -49,7 +44,6 @@ describe("updateTemplateItem", () => {
     expect(result.categories[0].items[1]).toEqual({
       id: "item-2",
       text: "手套",
-      category: "必要",
     });
   });
 });

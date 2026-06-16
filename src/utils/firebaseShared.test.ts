@@ -279,11 +279,11 @@ describe("prepareTemplateForSync", () => {
         categories: [
           {
             name: "必要",
+            subcategories: [],
             items: [
               {
                 id: "tp-neck-pillow",
                 text: "頸枕 & 靠枕",
-                category: "必要",
                 subcategory: undefined,
               },
             ],
@@ -297,11 +297,11 @@ describe("prepareTemplateForSync", () => {
       categories: [
         {
           name: "必要",
+          subcategories: [],
           items: [
             {
               id: "tp-neck-pillow",
               text: "頸枕 & 靠枕",
-              category: "必要",
             },
           ],
         },

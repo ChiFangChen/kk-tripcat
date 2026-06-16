@@ -162,13 +162,13 @@ export interface Template {
 
 export interface TemplateCategory {
   name: string;
+  subcategories: string[];
   items: TemplateItem[];
 }
 
 export interface TemplateItem {
   id: string;
   text: string;
-  category: string;
   subcategory?: string;
 }
 

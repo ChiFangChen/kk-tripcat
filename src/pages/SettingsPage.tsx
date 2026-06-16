@@ -464,7 +464,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
 
   function addCategory() {
     if (!newCatName.trim()) return;
-    const cat: TemplateCategory = { name: newCatName.trim(), items: [] };
+    const cat: TemplateCategory = { name: newCatName.trim(), subcategories: [], items: [] };
     void saveTemplate(
       { ...template, categories: [...template.categories, cat] },
       () => {
@@ -478,14 +478,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     if (!editingCatName || !editCatNewName.trim()) return;
     const updated = template.categories.map((c) =>
       c.name === editingCatName
-        ? {
-            ...c,
-            name: editCatNewName.trim(),
-            items: c.items.map((i) => ({
-              ...i,
-              category: editCatNewName.trim(),
-            })),
-          }
+        ? { ...c, name: editCatNewName.trim() }
         : c,
     );
     void saveTemplate({ ...template, categories: updated }, () => {
@@ -503,24 +496,36 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
   // Subcategory management
   function getSubcategories(catName: string): string[] {
     const cat = template.categories.find((c) => c.name === catName);
-    if (!cat) return [];
-    const subs: string[] = [];
-    for (const item of cat.items) {
-      if (item.subcategory && !subs.includes(item.subcategory))
-        subs.push(item.subcategory);
-    }
-    return subs;
+    return cat?.subcategories ?? [];
+  }
+
+  function addSubcategory() {
+    if (!editingCatName || !addSubName.trim()) return;
+    const name = addSubName.trim();
+    const updated = template.categories.map((c) =>
+      c.name === editingCatName && !c.subcategories.includes(name)
+        ? { ...c, subcategories: [...c.subcategories, name] }
+        : c,
+    );
+    void saveTemplate({ ...template, categories: updated }, () => {
+      setAddSubName("");
+      setAddingSubTo(false);
+    });
   }
 
   function renameSubcategory(catName: string) {
     if (!renamingSub || !renamingSub.new.trim()) return;
+    const newName = renamingSub.new.trim();
     const updated = template.categories.map((c) => {
       if (c.name !== catName) return c;
       return {
         ...c,
+        subcategories: c.subcategories.map((s) =>
+          s === renamingSub.old ? newName : s,
+        ),
         items: c.items.map((i) =>
           i.subcategory === renamingSub.old
-            ? { ...i, subcategory: renamingSub.new.trim() }
+            ? { ...i, subcategory: newName }
             : i,
         ),
       };
@@ -535,6 +540,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
       if (c.name !== catName) return c;
       return {
         ...c,
+        subcategories: c.subcategories.filter((s) => s !== subName),
         items: c.items.map((i) =>
           i.subcategory === subName ? { ...i, subcategory: undefined } : i,
         ),
@@ -561,12 +567,16 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     const item: TemplateItem = {
       id: generateId(),
       text: newItemText.trim(),
-      category: catName,
       subcategory,
     };
-    const updated = template.categories.map((c) =>
-      c.name === catName ? { ...c, items: [...c.items, item] } : c,
-    );
+    const updated = template.categories.map((c) => {
+      if (c.name !== catName) return c;
+      const newSubs =
+        subcategory && !c.subcategories.includes(subcategory)
+          ? [...c.subcategories, subcategory]
+          : c.subcategories;
+      return { ...c, subcategories: newSubs, items: [...c.items, item] };
+    });
     void saveTemplate({ ...template, categories: updated }, () => {
       setNewItemText("");
       setAddingItemTo(null);
@@ -846,51 +856,13 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && addSubName.trim()) {
-                      // Create a placeholder item with this subcategory so it appears
-                      const item: TemplateItem = {
-                        id: generateId(),
-                        text: addSubName.trim(),
-                        category: editingCatName,
-                        subcategory: addSubName.trim(),
-                      };
-                      const updated = template.categories.map((c) =>
-                        c.name === editingCatName
-                          ? { ...c, items: [...c.items, item] }
-                          : c,
-                      );
-                      void saveTemplate(
-                        { ...template, categories: updated },
-                        () => {
-                          setAddSubName("");
-                          setAddingSubTo(false);
-                        },
-                      );
+                      addSubcategory();
                     }
                   }}
                 />
                 <button
                   className="btn btn-primary btn-sm"
-                  onClick={() => {
-                    if (!addSubName.trim()) return;
-                    const item: TemplateItem = {
-                      id: generateId(),
-                      text: addSubName.trim(),
-                      category: editingCatName,
-                      subcategory: addSubName.trim(),
-                    };
-                    const updated = template.categories.map((c) =>
-                      c.name === editingCatName
-                        ? { ...c, items: [...c.items, item] }
-                        : c,
-                    );
-                    void saveTemplate(
-                      { ...template, categories: updated },
-                      () => {
-                        setAddSubName("");
-                        setAddingSubTo(false);
-                      },
-                    );
-                  }}
+                  onClick={addSubcategory}
                 >
                   {t("common.add")}
                 </button>

@@ -51,40 +51,17 @@ describe("defaultTemplate", () => {
     );
     expect(totalItems).toBe(73);
 
+    expect(defaultTemplate.categories[1].subcategories).toEqual(["冬季"]);
     expect(defaultTemplate.categories[1].items.slice(-2)).toEqual([
-      {
-        id: "tp-22",
-        text: "圍巾",
-        category: "穿著",
-        subcategory: "冬季",
-      },
-      {
-        id: "tp-23",
-        text: "手套",
-        category: "穿著",
-        subcategory: "冬季",
-      },
+      { id: "tp-22", text: "圍巾", subcategory: "冬季" },
+      { id: "tp-23", text: "手套", subcategory: "冬季" },
     ]);
 
+    expect(defaultTemplate.categories[10].subcategories).toEqual(["護具"]);
     expect(defaultTemplate.categories[10].items.slice(-3)).toEqual([
-      {
-        id: "tp-71",
-        text: "手腕",
-        category: "滑雪",
-        subcategory: "護具",
-      },
-      {
-        id: "tp-72",
-        text: "屁股",
-        category: "滑雪",
-        subcategory: "護具",
-      },
-      {
-        id: "tp-73",
-        text: "膝蓋",
-        category: "滑雪",
-        subcategory: "護具",
-      },
+      { id: "tp-71", text: "手腕", subcategory: "護具" },
+      { id: "tp-72", text: "屁股", subcategory: "護具" },
+      { id: "tp-73", text: "膝蓋", subcategory: "護具" },
     ]);
 
     expect(defaultTemplate.shoppingItems).toEqual([]);
