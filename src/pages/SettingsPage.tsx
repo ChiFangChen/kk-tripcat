@@ -594,15 +594,42 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
 
   function handleEditItem(result: ItemEditorResult) {
     if (!editingItem) return;
-    void saveTemplate(
-      updateTemplateItem(
-        template,
-        editingItem.categoryName,
-        editingItem.itemId,
-        { text: result.text, subcategory: result.subcategory ?? "" },
-      ),
-      () => setEditingItem(null),
-    );
+    const targetCat = result.category || editingItem.categoryName;
+    const sameCategory = targetCat === editingItem.categoryName;
+
+    if (sameCategory) {
+      void saveTemplate(
+        updateTemplateItem(
+          template,
+          editingItem.categoryName,
+          editingItem.itemId,
+          { text: result.text, subcategory: result.subcategory ?? "" },
+        ),
+        () => setEditingItem(null),
+      );
+    } else {
+      const updatedItem: TemplateItem = {
+        id: editingItem.itemId,
+        text: result.text,
+        subcategory: result.subcategory,
+      };
+      const updated = template.categories.map((c) => {
+        if (c.name === editingItem.categoryName) {
+          return { ...c, items: c.items.filter((i) => i.id !== editingItem.itemId) };
+        }
+        if (c.name === targetCat) {
+          const newSubs =
+            result.subcategory && !c.subcategories.includes(result.subcategory)
+              ? [...c.subcategories, result.subcategory]
+              : c.subcategories;
+          return { ...c, subcategories: newSubs, items: [...c.items, updatedItem] };
+        }
+        return c;
+      });
+      void saveTemplate({ ...template, categories: updated }, () =>
+        setEditingItem(null),
+      );
+    }
   }
 
   // Open edit category
@@ -701,9 +728,40 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
               return subs.map((sub) => (
                 <div key={sub || "_none"}>
                   {hasSubs && sub && (
-                    <p className="text-xs font-medium text-slate-400 mt-2 mb-0.5 first:mt-0">
-                      {sub}
-                    </p>
+                    <div className="flex justify-between items-center mt-2 mb-0.5 first:mt-0">
+                      <p className="text-xs font-medium text-slate-400">
+                        {sub}
+                      </p>
+                      <div className="flex gap-1">
+                        <button
+                          className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
+                          onClick={() => {
+                            openEditCategory(cat.name);
+                            setRenamingSub({ old: sub, new: sub });
+                          }}
+                        >
+                          <FontAwesomeIcon
+                            icon={faPen}
+                            className="text-[10px]"
+                          />
+                        </button>
+                        <button
+                          className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
+                          onClick={() =>
+                            setConfirmDelete({
+                              type: "subcategory",
+                              categoryName: cat.name,
+                              subcategoryName: sub,
+                            })
+                          }
+                        >
+                          <FontAwesomeIcon
+                            icon={faTrash}
+                            className="text-[10px]"
+                          />
+                        </button>
+                      </div>
+                    </div>
                   )}
                   {grouped[sub].map((item) => (
                     <div
@@ -1005,13 +1063,18 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
           );
           const item = cat?.items.find((i) => i.id === editingItem.itemId);
           if (!item) return null;
+          const categoryInfos = template.categories.map((c) => ({
+            name: c.name,
+            subcategories: c.subcategories,
+          }));
           return (
             <FullScreenModal
               title={t("settings.template.editPreparationItem")}
               onClose={() => setEditingItem(null)}
             >
               <ItemEditorForm
-                subcategories={cat?.subcategories ?? []}
+                categories={categoryInfos}
+                initialCategory={editingItem.categoryName}
                 initialText={item.text}
                 initialSubcategory={item.subcategory}
                 saveLabel={t("common.save")}
