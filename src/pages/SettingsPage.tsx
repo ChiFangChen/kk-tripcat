@@ -24,6 +24,10 @@ import { SwitchControl } from "../components/SwitchControl";
 import { generateId } from "../utils/id";
 import type { TemplateCategory, TemplateItem } from "../types";
 import {
+  ItemEditorForm,
+  type ItemEditorResult,
+} from "../components/ItemEditorForm";
+import {
   buildTemplateItemDeleteMessage,
   updateTemplateItem,
 } from "./settingsTemplate";
@@ -417,19 +421,12 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     | null
   >(null);
 
-  // Add item state
+  // Add/edit item state
   const [addingItemTo, setAddingItemTo] = useState<string | null>(null);
-  const [newItemText, setNewItemText] = useState("");
-  const [newItemSubcategory, setNewItemSubcategory] = useState("");
-  const [creatingNewSub, setCreatingNewSub] = useState(false);
-  const [newSubName, setNewSubName] = useState("");
   const [editingItem, setEditingItem] = useState<{
     categoryName: string;
     itemId: string;
   } | null>(null);
-  const [editItemText, setEditItemText] = useState("");
-  const [editItemSubcategory, setEditItemSubcategory] = useState("");
-  const [editingItemNewSub, setEditingItemNewSub] = useState(false);
 
   // Edit category state (rename + manage subcategories)
   const [editingCatName, setEditingCatName] = useState<string | null>(null);
@@ -549,36 +546,21 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     void saveTemplate({ ...template, categories: updated });
   }
 
-  // Add item with subcategory
-  function openAddItem(catName: string) {
-    const subs = getSubcategories(catName);
-    setAddingItemTo(catName);
-    setNewItemText("");
-    setNewItemSubcategory(subs.length > 0 ? subs[0] : "");
-    setCreatingNewSub(false);
-    setNewSubName("");
-  }
-
-  function addItem(catName: string) {
-    if (!newItemText.trim()) return;
-    const subcategory = creatingNewSub
-      ? newSubName.trim() || undefined
-      : newItemSubcategory || undefined;
+  function handleAddItem(catName: string, result: ItemEditorResult) {
     const item: TemplateItem = {
       id: generateId(),
-      text: newItemText.trim(),
-      subcategory,
+      text: result.text,
+      subcategory: result.subcategory,
     };
     const updated = template.categories.map((c) => {
       if (c.name !== catName) return c;
       const newSubs =
-        subcategory && !c.subcategories.includes(subcategory)
-          ? [...c.subcategories, subcategory]
+        result.subcategory && !c.subcategories.includes(result.subcategory)
+          ? [...c.subcategories, result.subcategory]
           : c.subcategories;
       return { ...c, subcategories: newSubs, items: [...c.items, item] };
     });
     void saveTemplate({ ...template, categories: updated }, () => {
-      setNewItemText("");
       setAddingItemTo(null);
     });
   }
@@ -592,31 +574,16 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     void saveTemplate({ ...template, categories: updated });
   }
 
-  function openEditItem(catName: string, item: TemplateItem) {
-    setEditingItem({ categoryName: catName, itemId: item.id });
-    setEditItemText(item.text);
-    setEditItemSubcategory(item.subcategory || "");
-    setEditingItemNewSub(false);
-  }
-
-  function saveEditItem() {
-    if (!editingItem || !editItemText.trim()) return;
+  function handleEditItem(result: ItemEditorResult) {
+    if (!editingItem) return;
     void saveTemplate(
       updateTemplateItem(
         template,
         editingItem.categoryName,
         editingItem.itemId,
-        {
-          text: editItemText.trim(),
-          subcategory: editItemSubcategory,
-        },
+        { text: result.text, subcategory: result.subcategory ?? "" },
       ),
-      () => {
-        setEditingItem(null);
-        setEditItemText("");
-        setEditItemSubcategory("");
-        setEditingItemNewSub(false);
-      },
+      () => setEditingItem(null),
     );
   }
 
@@ -680,7 +647,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
             <div className="flex gap-2">
               <button
                 className="text-slate-500 dark:text-slate-400 text-xs p-1.5 bg-slate-100 dark:bg-slate-700 rounded"
-                onClick={() => openAddItem(cat.name)}
+                onClick={() => setAddingItemTo(cat.name)}
               >
                 <FontAwesomeIcon icon={faPlus} />
               </button>
@@ -732,7 +699,12 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                         <button
                           className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
                           data-e2e-id={`template_item_edit_button--${item.id}`}
-                          onClick={() => openEditItem(cat.name, item)}
+                          onClick={() =>
+                            setEditingItem({
+                              categoryName: cat.name,
+                              itemId: item.id,
+                            })
+                          }
                         >
                           <FontAwesomeIcon
                             icon={faPen}
@@ -946,185 +918,52 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
         </FullScreenModal>
       )}
 
-      {/* Add item full-screen modal */}
+      {/* Add item */}
       {addingItemTo && (
         <FullScreenModal
           title={t("settings.template.addItemTo", { name: addingItemTo })}
           onClose={() => setAddingItemTo(null)}
         >
-          {(() => {
-            const subs = getSubcategories(addingItemTo);
-            return (
-              <>
-                {subs.length > 0 && (
-                  <div className="form-group">
-                    <label className="form-label">
-                      {t("settings.template.subcategory")}
-                    </label>
-                    {!creatingNewSub ? (
-                      <div className="flex gap-2 flex-wrap">
-                        <button
-                          className={`btn btn-sm ${!newItemSubcategory ? "btn-primary" : "btn-secondary"}`}
-                          onClick={() => setNewItemSubcategory("")}
-                        >
-                          {t("common.none")}
-                        </button>
-                        {subs.map((sub) => (
-                          <button
-                            key={sub}
-                            className={`btn btn-sm ${newItemSubcategory === sub ? "btn-primary" : "btn-secondary"}`}
-                            onClick={() => setNewItemSubcategory(sub)}
-                          >
-                            {sub}
-                          </button>
-                        ))}
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => setCreatingNewSub(true)}
-                        >
-                          <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                          {t("settings.template.newSubitem")}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <input
-                          className="form-input flex-1"
-                          value={newSubName}
-                          onChange={(e) => setNewSubName(e.target.value)}
-                          autoFocus
-                        />
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => setCreatingNewSub(false)}
-                        >
-                          {t("common.cancel")}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="form-group">
-                  <label className="form-label">
-                    {t("settings.template.itemName")}
-                  </label>
-                  <input
-                    className="form-input"
-                    value={newItemText}
-                    onChange={(e) => setNewItemText(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" && addItem(addingItemTo)
-                    }
-                    autoFocus={subs.length === 0}
-                  />
-                </div>
-                <div className="form-actions">
-                  <button
-                    className="btn btn-primary w-full"
-                    onClick={() => addItem(addingItemTo)}
-                  >
-                    {t("common.add")}
-                  </button>
-                </div>
-              </>
-            );
-          })()}
+          <ItemEditorForm
+            subcategories={getSubcategories(addingItemTo)}
+            saveLabel={t("common.add")}
+            onSave={(r) => handleAddItem(addingItemTo, r)}
+            onCancel={() => setAddingItemTo(null)}
+          />
         </FullScreenModal>
       )}
-      {editingItem && (
-        <FullScreenModal
-          title={t("settings.template.editPreparationItem")}
-          onClose={() => setEditingItem(null)}
-        >
-          {(() => {
-            const subs = getSubcategories(editingItem.categoryName);
-            return (
-              <>
-                {subs.length > 0 && (
-                  <div className="form-group">
-                    <label className="form-label">
-                      {t("settings.template.subcategory")}
-                    </label>
-                    {!editingItemNewSub ? (
-                      <div className="flex gap-2 flex-wrap">
-                        <button
-                          className={`btn btn-sm ${!editItemSubcategory ? "btn-primary" : "btn-secondary"}`}
-                          data-e2e-id="template_item_subcategory_button--none"
-                          onClick={() => setEditItemSubcategory("")}
-                        >
-                          {t("common.none")}
-                        </button>
-                        {subs.map((sub) => (
-                          <button
-                            key={sub}
-                            className={`btn btn-sm ${editItemSubcategory === sub ? "btn-primary" : "btn-secondary"}`}
-                            data-e2e-id={`template_item_subcategory_button--${sub}`}
-                            onClick={() => setEditItemSubcategory(sub)}
-                          >
-                            {sub}
-                          </button>
-                        ))}
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          data-e2e-id="template_item_new_subcategory_button"
-                          onClick={() => {
-                            setEditItemSubcategory("");
-                            setEditingItemNewSub(true);
-                          }}
-                        >
-                          <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                          {t("settings.template.newSubitem")}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <input
-                          className="form-input flex-1"
-                          data-e2e-id="template_item_subcategory_field"
-                          value={editItemSubcategory}
-                          onChange={(e) =>
-                            setEditItemSubcategory(e.target.value)
-                          }
-                          autoFocus
-                        />
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          data-e2e-id="template_item_cancel_new_subcategory_button"
-                          onClick={() => setEditingItemNewSub(false)}
-                        >
-                          {t("common.cancel")}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="form-group">
-                  <label className="form-label">
-                    {t("settings.template.itemName")}
-                  </label>
-                  <input
-                    className="form-input"
-                    data-e2e-id="template_item_name_field"
-                    value={editItemText}
-                    onChange={(e) => setEditItemText(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && saveEditItem()}
-                    autoFocus={subs.length === 0}
-                  />
-                </div>
-                <div className="form-actions">
-                  <button
-                    className="btn btn-primary w-full"
-                    data-e2e-id="template_item_save_button"
-                    onClick={saveEditItem}
-                  >
-                    {t("common.save")}
-                  </button>
-                </div>
-              </>
-            );
-          })()}
-        </FullScreenModal>
-      )}
+
+      {/* Edit item */}
+      {editingItem &&
+        (() => {
+          const cat = template.categories.find(
+            (c) => c.name === editingItem.categoryName,
+          );
+          const item = cat?.items.find((i) => i.id === editingItem.itemId);
+          if (!item) return null;
+          return (
+            <FullScreenModal
+              title={t("settings.template.editPreparationItem")}
+              onClose={() => setEditingItem(null)}
+            >
+              <ItemEditorForm
+                subcategories={cat?.subcategories ?? []}
+                initialText={item.text}
+                initialSubcategory={item.subcategory}
+                saveLabel={t("common.save")}
+                onSave={handleEditItem}
+                onCancel={() => setEditingItem(null)}
+                onDelete={() =>
+                  setConfirmDelete({
+                    type: "item",
+                    categoryName: editingItem.categoryName,
+                    itemId: editingItem.itemId,
+                  })
+                }
+              />
+            </FullScreenModal>
+          );
+        })()}
       {confirmDelete && (
         <ConfirmDeleteModal
           title={
