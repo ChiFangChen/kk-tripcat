@@ -423,6 +423,13 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     | null
   >(null);
 
+  // Inline subcategory rename on card list
+  const [inlineRenamingSub, setInlineRenamingSub] = useState<{
+    categoryName: string;
+    old: string;
+    new: string;
+  } | null>(null);
+
   // Add/edit item state
   const [addingItemTo, setAddingItemTo] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<{
@@ -525,6 +532,25 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     void saveTemplate({ ...template, categories: updated }, () => {
       setAddSubName("");
       setAddingSubTo(false);
+    });
+  }
+
+  function saveInlineRenameSub() {
+    if (!inlineRenamingSub || !inlineRenamingSub.new.trim()) return;
+    const { categoryName, old: oldName, new: newRaw } = inlineRenamingSub;
+    const newName = newRaw.trim();
+    const updated = template.categories.map((c) => {
+      if (c.name !== categoryName) return c;
+      return {
+        ...c,
+        subcategories: c.subcategories.map((s) => (s === oldName ? newName : s)),
+        items: c.items.map((i) =>
+          i.subcategory === oldName ? { ...i, subcategory: newName } : i,
+        ),
+      };
+    });
+    void saveTemplate({ ...template, categories: updated }, () => {
+      setInlineRenamingSub(null);
     });
   }
 
@@ -729,38 +755,75 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                 <div key={sub || "_none"}>
                   {hasSubs && sub && (
                     <div className="flex justify-between items-center mt-2 mb-0.5 first:mt-0">
-                      <p className="text-xs font-medium text-slate-400">
-                        {sub}
-                      </p>
-                      <div className="flex gap-1">
-                        <button
-                          className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
-                          onClick={() => {
-                            openEditCategory(cat.name);
-                            setRenamingSub({ old: sub, new: sub });
-                          }}
-                        >
-                          <FontAwesomeIcon
-                            icon={faPen}
-                            className="text-[10px]"
+                      {inlineRenamingSub?.categoryName === cat.name &&
+                      inlineRenamingSub?.old === sub ? (
+                        <div className="flex gap-2 flex-1 mr-2">
+                          <input
+                            className="form-input flex-1 !py-0.5 !text-xs"
+                            value={inlineRenamingSub.new}
+                            onChange={(e) =>
+                              setInlineRenamingSub({
+                                ...inlineRenamingSub,
+                                new: e.target.value,
+                              })
+                            }
+                            onKeyDown={(e) =>
+                              e.key === "Enter" && saveInlineRenameSub()
+                            }
+                            autoFocus
                           />
-                        </button>
-                        <button
-                          className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
-                          onClick={() =>
-                            setConfirmDelete({
-                              type: "subcategory",
-                              categoryName: cat.name,
-                              subcategoryName: sub,
-                            })
-                          }
-                        >
-                          <FontAwesomeIcon
-                            icon={faTrash}
-                            className="text-[10px]"
-                          />
-                        </button>
-                      </div>
+                          <button
+                            className="btn btn-primary btn-sm !text-[10px] !px-2 !py-0.5"
+                            onClick={saveInlineRenameSub}
+                          >
+                            {t("common.save")}
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm !text-[10px] !px-2 !py-0.5"
+                            onClick={() => setInlineRenamingSub(null)}
+                          >
+                            {t("common.cancel")}
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-xs font-medium text-slate-400">
+                            {sub}
+                          </p>
+                          <div className="flex gap-1">
+                            <button
+                              className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
+                              onClick={() =>
+                                setInlineRenamingSub({
+                                  categoryName: cat.name,
+                                  old: sub,
+                                  new: sub,
+                                })
+                              }
+                            >
+                              <FontAwesomeIcon
+                                icon={faPen}
+                                className="text-[10px]"
+                              />
+                            </button>
+                            <button
+                              className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
+                              onClick={() =>
+                                setConfirmDelete({
+                                  type: "subcategory",
+                                  categoryName: cat.name,
+                                  subcategoryName: sub,
+                                })
+                              }
+                            >
+                              <FontAwesomeIcon
+                                icon={faTrash}
+                                className="text-[10px]"
+                              />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                   {grouped[sub].map((item) => (
