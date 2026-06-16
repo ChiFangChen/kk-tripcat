@@ -757,21 +757,26 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
 
       {/* Add category modal */}
       {addingCategory && (
-        <Modal
+        <FullScreenModal
           title={t("settings.template.addCategory")}
           onClose={() => setAddingCategory(false)}
         >
-          <input
-            className="form-input"
-            value={newCatName}
-            onChange={(e) => setNewCatName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addCategory()}
-            autoFocus
-          />
-          <button className="btn btn-primary w-full mt-3" onClick={addCategory}>
+          <div className="form-group">
+            <label className="form-label">
+              {t("settings.template.categoryName")}
+            </label>
+            <input
+              className="form-input"
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addCategory()}
+              autoFocus
+            />
+          </div>
+          <button className="btn btn-primary w-full" onClick={addCategory}>
             {t("common.add")}
           </button>
-        </Modal>
+        </FullScreenModal>
       )}
 
       {/* Edit category full-screen modal (rename + subcategory management) */}
