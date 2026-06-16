@@ -414,6 +414,8 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
   const [notesText, setNotesText] = useState(template.notes);
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [newCatSubs, setNewCatSubs] = useState<string[]>([]);
+  const [newCatSubInput, setNewCatSubInput] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<
     | { type: "category"; categoryName: string }
     | { type: "item"; categoryName: string; itemId: string }
@@ -459,13 +461,29 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     });
   }
 
+  function openAddCategory() {
+    setNewCatName("");
+    setNewCatSubs([]);
+    setNewCatSubInput("");
+    setAddingCategory(true);
+  }
+
+  function addNewCatSub() {
+    const name = newCatSubInput.trim();
+    if (!name || newCatSubs.includes(name)) return;
+    setNewCatSubs((prev) => [...prev, name]);
+    setNewCatSubInput("");
+  }
+
   function addCategory() {
     if (!newCatName.trim()) return;
-    const cat: TemplateCategory = { name: newCatName.trim(), subcategories: [], items: [] };
+    const cat: TemplateCategory = { name: newCatName.trim(), subcategories: newCatSubs, items: [] };
     void saveTemplate(
       { ...template, categories: [...template.categories, cat] },
       () => {
         setNewCatName("");
+        setNewCatSubs([]);
+        setNewCatSubInput("");
         setAddingCategory(false);
       },
     );
@@ -632,7 +650,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
         <h3 className="font-semibold">{t("settings.template.categories")}</h3>
         <button
           className="btn-round-add"
-          onClick={() => setAddingCategory(true)}
+          onClick={openAddCategory}
         >
           <FontAwesomeIcon icon={faPlus} className="text-xs" />
         </button>
@@ -769,10 +787,51 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
               className="form-input"
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addCategory()}
               autoFocus
             />
           </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              {t("settings.template.subcategory")}
+            </label>
+            {newCatSubs.length > 0 && (
+              <div className="flex gap-2 flex-wrap mb-2">
+                {newCatSubs.map((sub) => (
+                  <span
+                    key={sub}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-slate-100 dark:bg-slate-700 rounded"
+                  >
+                    {sub}
+                    <button
+                      className="text-slate-400 hover:text-slate-600"
+                      onClick={() =>
+                        setNewCatSubs((prev) => prev.filter((s) => s !== sub))
+                      }
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                className="form-input flex-1"
+                value={newCatSubInput}
+                onChange={(e) => setNewCatSubInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addNewCatSub()}
+                placeholder={t("settings.template.newSubcategory")}
+              />
+              <button
+                className="btn btn-sm btn-secondary"
+                onClick={addNewCatSub}
+              >
+                <FontAwesomeIcon icon={faPlus} />
+              </button>
+            </div>
+          </div>
+
           <button className="btn btn-primary w-full" onClick={addCategory}>
             {t("common.add")}
           </button>
