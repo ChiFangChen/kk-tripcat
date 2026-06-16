@@ -5,7 +5,6 @@ import {
   faSuitcaseRolling,
   faThumbtack,
   faPlus,
-  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
@@ -13,6 +12,10 @@ import { FullScreenModal } from "../../components/FullScreenModal";
 import { Modal } from "../../components/Modal";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal";
 import { EditIconButton } from "../../components/EditIconButton";
+import {
+  ItemEditorForm,
+  type ItemEditorResult,
+} from "../../components/ItemEditorForm";
 import { generateId } from "../../utils/id";
 import type { ChecklistItem } from "../../types";
 import { useTranslation } from "react-i18next";
@@ -38,17 +41,6 @@ export function PreparationTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const [notesText, setNotesText] = useState("");
   const doubleTap = useDoubleTap();
 
-  // Add form state
-  const [newItem, setNewItem] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [creatingCategory, setCreatingCategory] = useState(false);
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(
-    null,
-  );
-  const [newSubName, setNewSubName] = useState("");
-  const [creatingSubcategory, setCreatingSubcategory] = useState(false);
-
   const items = tripData.checklist;
   const notes = tripData.preparationNotes;
   const unchecked = items.filter((i) => !i.checked);
@@ -56,11 +48,18 @@ export function PreparationTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const displayed = showCompleted ? items : unchecked;
   const otherCategory = t("preparation.other");
 
-  // Get existing categories
-  const existingCategories: string[] = [];
-  for (const item of items) {
-    const cat = item.category || otherCategory;
-    if (!existingCategories.includes(cat)) existingCategories.push(cat);
+  // Build categories with subcategories from flat checklist
+  function getCategoryInfos() {
+    const catMap = new Map<string, Set<string>>();
+    for (const item of items) {
+      const cat = item.category || otherCategory;
+      if (!catMap.has(cat)) catMap.set(cat, new Set());
+      if (item.subcategory) catMap.get(cat)!.add(item.subcategory);
+    }
+    return Array.from(catMap.entries()).map(([name, subs]) => ({
+      name,
+      subcategories: Array.from(subs),
+    }));
   }
 
   // Group by category, preserving order
@@ -83,65 +82,32 @@ export function PreparationTab({ tripId, viewOnly, hideEditButtons }: Props) {
     setUserTripData(tripId, { checklist: updated });
   }
 
-  // Get subcategories for a given category
-  function getSubcategories(cat: string): string[] {
-    const subs: string[] = [];
-    for (const item of items) {
-      if (
-        (item.category || otherCategory) === cat &&
-        item.subcategory &&
-        !subs.includes(item.subcategory)
-      ) {
-        subs.push(item.subcategory);
-      }
-    }
-    return subs;
-  }
-
-  function selectCategory(cat: string) {
-    setSelectedCategory(cat);
-    setSelectedSubcategory(null);
-    setCreatingSubcategory(false);
-    setNewSubName("");
-  }
-
-  function openAddModal() {
+  function handleAddItem(result: ItemEditorResult) {
     if (viewOnly) return;
-    setNewItem("");
-    setSelectedCategory(existingCategories[0] || otherCategory);
-    setNewCategoryName("");
-    setCreatingCategory(false);
-    setSelectedSubcategory(null);
-    setNewSubName("");
-    setCreatingSubcategory(false);
-    setShowAddModal(true);
-  }
-
-  function addItem() {
-    if (viewOnly) return;
-    if (!newItem.trim()) return;
-    const category = creatingCategory
-      ? newCategoryName.trim() || otherCategory
-      : selectedCategory || otherCategory;
-    const subcategory = creatingSubcategory
-      ? newSubName.trim() || undefined
-      : selectedSubcategory || undefined;
     const item: ChecklistItem = {
       id: generateId(),
-      text: newItem.trim(),
+      text: result.text,
       checked: false,
-      category,
-      subcategory,
+      category: result.category || otherCategory,
+      subcategory: result.subcategory,
     };
     setUserTripData(tripId, { checklist: [...items, item] });
-    setNewItem("");
     setShowAddModal(false);
   }
 
-  function updateItem(updated: ChecklistItem) {
-    if (viewOnly) return;
+  function handleEditItem(result: ItemEditorResult) {
+    if (viewOnly || !editingItem) return;
     setUserTripData(tripId, {
-      checklist: items.map((i) => (i.id === updated.id ? updated : i)),
+      checklist: items.map((i) =>
+        i.id === editingItem.id
+          ? {
+              ...i,
+              text: result.text,
+              category: result.category || i.category,
+              subcategory: result.subcategory,
+            }
+          : i,
+      ),
     });
     setEditingItem(null);
   }
@@ -152,21 +118,13 @@ export function PreparationTab({ tripId, viewOnly, hideEditButtons }: Props) {
     setEditingItem(null);
   }
 
-  function openFab() {
-    setFabExpanded(true);
-  }
-
   function closeFab() {
     setFabExpanded(false);
   }
 
   function handleFabToggle() {
     if (viewOnly) return;
-    if (fabExpanded) {
-      closeFab();
-      return;
-    }
-    openFab();
+    setFabExpanded((prev) => !prev);
   }
 
   function handleFabConfirm() {
@@ -285,7 +243,10 @@ export function PreparationTab({ tripId, viewOnly, hideEditButtons }: Props) {
           </button>
         </div>
         {!viewOnly && (
-          <button className="btn-round-add" onClick={openAddModal}>
+          <button
+            className="btn-round-add"
+            onClick={() => setShowAddModal(true)}
+          >
             <FontAwesomeIcon icon={faPlus} className="text-xs" />
           </button>
         )}
@@ -356,18 +317,23 @@ export function PreparationTab({ tripId, viewOnly, hideEditButtons }: Props) {
         </div>
       )}
 
-      {/* Edit item popup with category/subcategory */}
+      {/* Edit item */}
       {editingItem && (
-        <Modal title={t("settings.template.editItem")} onClose={() => setEditingItem(null)}>
-          <EditItemForm
-            item={editingItem}
-            existingCategories={existingCategories}
-            getSubcategories={getSubcategories}
-            onSave={updateItem}
+        <FullScreenModal
+          title={t("settings.template.editItem")}
+          onClose={() => setEditingItem(null)}
+        >
+          <ItemEditorForm
+            categories={getCategoryInfos()}
+            initialCategory={editingItem.category || otherCategory}
+            initialSubcategory={editingItem.subcategory}
+            initialText={editingItem.text}
+            saveLabel={t("common.save")}
+            onSave={handleEditItem}
             onCancel={() => setEditingItem(null)}
             onDelete={() => setConfirmDeleteItemId(editingItem.id)}
           />
-        </Modal>
+        </FullScreenModal>
       )}
       {confirmDeleteItemId && (
         <ConfirmDeleteModal
@@ -405,223 +371,20 @@ export function PreparationTab({ tripId, viewOnly, hideEditButtons }: Props) {
         </Modal>
       )}
 
-      {/* Add item full-screen popup */}
+      {/* Add item */}
       {showAddModal && (
         <FullScreenModal
           title={t("settings.template.addPreparationItem")}
           onClose={() => setShowAddModal(false)}
         >
-          <div className="form-group">
-            <label className="form-label">{t("settings.template.category")}</label>
-            {!creatingCategory ? (
-              <div className="flex gap-2 flex-wrap">
-                {existingCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    className={`btn btn-sm ${selectedCategory === cat ? "btn-primary" : "btn-secondary"}`}
-                    onClick={() => selectCategory(cat)}
-                  >
-                    {cat}
-                  </button>
-                ))}
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => setCreatingCategory(true)}
-                >
-                  <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                  {t("settings.template.newCategory")}
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  className="form-input flex-1"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  autoFocus
-                />
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() => setCreatingCategory(false)}
-                >
-                  {t("common.cancel")}
-                </button>
-              </div>
-            )}
-          </div>
-          {/* Subcategory picker */}
-          {!creatingCategory &&
-            (() => {
-              const subs = getSubcategories(selectedCategory);
-              return (
-                <div className="form-group">
-                  <label className="form-label">{t("settings.template.shortSubcategory")}</label>
-                  {!creatingSubcategory ? (
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        className={`btn btn-sm ${selectedSubcategory === null ? "btn-primary" : "btn-secondary"}`}
-                        onClick={() => setSelectedSubcategory(null)}
-                      >
-                        {t("common.none")}
-                      </button>
-                      {subs.map((sub) => (
-                        <button
-                          key={sub}
-                          className={`btn btn-sm ${selectedSubcategory === sub ? "btn-primary" : "btn-secondary"}`}
-                          onClick={() => setSelectedSubcategory(sub)}
-                        >
-                          {sub}
-                        </button>
-                      ))}
-                      <button
-                        className="btn btn-sm btn-secondary"
-                        onClick={() => setCreatingSubcategory(true)}
-                      >
-                        <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                        {t("settings.template.newSubcategory")}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        className="form-input flex-1"
-                        value={newSubName}
-                        onChange={(e) => setNewSubName(e.target.value)}
-                        autoFocus
-                      />
-                      <button
-                        className="btn btn-sm btn-secondary"
-                        onClick={() => setCreatingSubcategory(false)}
-                      >
-                        {t("common.cancel")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-          <div className="form-group">
-            <label className="form-label">{t("settings.template.itemContent")}</label>
-            <input
-              className="form-input"
-              value={newItem}
-              onChange={(e) => setNewItem(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addItem()}
-              autoFocus={!creatingCategory}
-            />
-          </div>
-          <div className="form-actions">
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowAddModal(false)}
-            >
-              {t("common.cancel")}
-            </button>
-            <button className="btn btn-primary" onClick={addItem}>
-              {t("common.add")}
-            </button>
-          </div>
+          <ItemEditorForm
+            categories={getCategoryInfos()}
+            saveLabel={t("common.add")}
+            onSave={handleAddItem}
+            onCancel={() => setShowAddModal(false)}
+          />
         </FullScreenModal>
       )}
-    </div>
-  );
-}
-
-function EditItemForm({
-  item,
-  existingCategories,
-  getSubcategories,
-  onSave,
-  onCancel,
-  onDelete,
-}: {
-  item: ChecklistItem;
-  existingCategories: string[];
-  getSubcategories: (cat: string) => string[];
-  onSave: (i: ChecklistItem) => void;
-  onCancel: () => void;
-  onDelete: () => void;
-}) {
-  const { t } = useTranslation();
-  const otherCategory = t("preparation.other");
-  const [text, setText] = useState(item.text);
-  const [category, setCategory] = useState(item.category || otherCategory);
-  const [subcategory, setSubcategory] = useState<string | undefined>(
-    item.subcategory,
-  );
-
-  const subs = getSubcategories(category);
-
-  return (
-    <div className="fullscreen-modal-form">
-      <div className="form-group">
-        <label className="form-label">{t("settings.template.itemContent")}</label>
-        <input
-          className="form-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          autoFocus
-        />
-      </div>
-      <div className="form-group">
-        <label className="form-label">{t("settings.template.category")}</label>
-        <div className="flex gap-2 flex-wrap">
-          {existingCategories.map((cat) => (
-            <button
-              key={cat}
-              className={`btn btn-sm ${category === cat ? "btn-primary" : "btn-secondary"}`}
-              onClick={() => {
-                setCategory(cat);
-                setSubcategory(undefined);
-              }}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-      {subs.length > 0 && (
-        <div className="form-group">
-          <label className="form-label">{t("settings.template.shortSubcategory")}</label>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              className={`btn btn-sm ${!subcategory ? "btn-primary" : "btn-secondary"}`}
-              onClick={() => setSubcategory(undefined)}
-            >
-              {t("common.none")}
-            </button>
-            {subs.map((sub) => (
-              <button
-                key={sub}
-                className={`btn btn-sm ${subcategory === sub ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => setSubcategory(sub)}
-              >
-                {sub}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      <button
-        className="btn btn-primary"
-        onClick={() => onSave({ ...item, text, category, subcategory })}
-      >
-        {t("common.save")}
-      </button>
-      <div className="form-actions">
-        <button className="btn btn-secondary" onClick={onCancel} type="button">
-          {t("common.cancel")}
-        </button>
-        <button
-          className="btn btn-secondary btn-danger"
-          onClick={onDelete}
-          type="button"
-        >
-          <FontAwesomeIcon icon={faTrash} className="mr-1" />
-          {t("common.delete")}
-        </button>
-      </div>
     </div>
   );
 }
