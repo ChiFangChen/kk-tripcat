@@ -423,12 +423,12 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     | null
   >(null);
 
-  // Inline subcategory rename on card list
-  const [inlineRenamingSub, setInlineRenamingSub] = useState<{
+  // Edit subcategory via FullScreenModal (from card list)
+  const [editingSubFromCard, setEditingSubFromCard] = useState<{
     categoryName: string;
-    old: string;
-    new: string;
+    subcategoryName: string;
   } | null>(null);
+  const [editSubNewName, setEditSubNewName] = useState("");
 
   // Add/edit item state
   const [addingItemTo, setAddingItemTo] = useState<string | null>(null);
@@ -535,10 +535,14 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
     });
   }
 
-  function saveInlineRenameSub() {
-    if (!inlineRenamingSub || !inlineRenamingSub.new.trim()) return;
-    const { categoryName, old: oldName, new: newRaw } = inlineRenamingSub;
-    const newName = newRaw.trim();
+  function saveEditSubFromCard() {
+    if (!editingSubFromCard || !editSubNewName.trim()) return;
+    const { categoryName, subcategoryName: oldName } = editingSubFromCard;
+    const newName = editSubNewName.trim();
+    if (newName === oldName) {
+      setEditingSubFromCard(null);
+      return;
+    }
     const updated = template.categories.map((c) => {
       if (c.name !== categoryName) return c;
       return {
@@ -550,7 +554,7 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
       };
     });
     void saveTemplate({ ...template, categories: updated }, () => {
-      setInlineRenamingSub(null);
+      setEditingSubFromCard(null);
     });
   }
 
@@ -754,76 +758,42 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
               return subs.map((sub) => (
                 <div key={sub || "_none"}>
                   {hasSubs && sub && (
-                    <div className="flex justify-between items-center mt-2 mb-0.5 first:mt-0">
-                      {inlineRenamingSub?.categoryName === cat.name &&
-                      inlineRenamingSub?.old === sub ? (
-                        <div className="flex gap-2 flex-1 mr-2">
-                          <input
-                            className="form-input flex-1 !py-0.5 !text-xs"
-                            value={inlineRenamingSub.new}
-                            onChange={(e) =>
-                              setInlineRenamingSub({
-                                ...inlineRenamingSub,
-                                new: e.target.value,
-                              })
-                            }
-                            onKeyDown={(e) =>
-                              e.key === "Enter" && saveInlineRenameSub()
-                            }
-                            autoFocus
+                    <div className="flex justify-between items-center mt-3 mb-1 first:mt-1 pl-1 border-l-2 border-slate-300 dark:border-slate-600">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1">
+                        {sub}
+                      </p>
+                      <div className="flex gap-1">
+                        <button
+                          className="text-slate-400 dark:text-slate-500 text-xs p-1 rounded hover:text-slate-600 dark:hover:text-slate-300"
+                          onClick={() => {
+                            setEditingSubFromCard({
+                              categoryName: cat.name,
+                              subcategoryName: sub,
+                            });
+                            setEditSubNewName(sub);
+                          }}
+                        >
+                          <FontAwesomeIcon
+                            icon={faPen}
+                            className="text-[10px]"
                           />
-                          <button
-                            className="btn btn-primary btn-sm !text-[10px] !px-2 !py-0.5"
-                            onClick={saveInlineRenameSub}
-                          >
-                            {t("common.save")}
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-sm !text-[10px] !px-2 !py-0.5"
-                            onClick={() => setInlineRenamingSub(null)}
-                          >
-                            {t("common.cancel")}
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <p className="text-xs font-medium text-slate-400">
-                            {sub}
-                          </p>
-                          <div className="flex gap-1">
-                            <button
-                              className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
-                              onClick={() =>
-                                setInlineRenamingSub({
-                                  categoryName: cat.name,
-                                  old: sub,
-                                  new: sub,
-                                })
-                              }
-                            >
-                              <FontAwesomeIcon
-                                icon={faPen}
-                                className="text-[10px]"
-                              />
-                            </button>
-                            <button
-                              className="text-slate-400 dark:text-slate-500 text-xs p-1 bg-slate-100 dark:bg-slate-700 rounded"
-                              onClick={() =>
-                                setConfirmDelete({
-                                  type: "subcategory",
-                                  categoryName: cat.name,
-                                  subcategoryName: sub,
-                                })
-                              }
-                            >
-                              <FontAwesomeIcon
-                                icon={faTrash}
-                                className="text-[10px]"
-                              />
-                            </button>
-                          </div>
-                        </>
-                      )}
+                        </button>
+                        <button
+                          className="text-slate-400 dark:text-slate-500 text-xs p-1 rounded hover:text-red-500"
+                          onClick={() =>
+                            setConfirmDelete({
+                              type: "subcategory",
+                              categoryName: cat.name,
+                              subcategoryName: sub,
+                            })
+                          }
+                        >
+                          <FontAwesomeIcon
+                            icon={faTrash}
+                            className="text-[10px]"
+                          />
+                        </button>
+                      </div>
                     </div>
                   )}
                   {grouped[sub].map((item) => (
@@ -1099,6 +1069,37 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
                 </div>
               ))
             )}
+          </div>
+        </FullScreenModal>
+      )}
+
+      {/* Edit subcategory from card */}
+      {editingSubFromCard && (
+        <FullScreenModal
+          title={t("settings.template.editNamed", {
+            name: editingSubFromCard.subcategoryName,
+          })}
+          onClose={() => setEditingSubFromCard(null)}
+        >
+          <div className="form-group">
+            <label className="form-label">
+              {t("settings.template.subcategory")}
+            </label>
+            <input
+              className="form-input"
+              value={editSubNewName}
+              onChange={(e) => setEditSubNewName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveEditSubFromCard()}
+              autoFocus
+            />
+          </div>
+          <div className="form-actions">
+            <button
+              className="btn btn-primary w-full"
+              onClick={saveEditSubFromCard}
+            >
+              {t("common.save")}
+            </button>
           </div>
         </FullScreenModal>
       )}
