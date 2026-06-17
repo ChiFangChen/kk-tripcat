@@ -758,8 +758,8 @@ function TemplateSettingsPage({ onBack }: { onBack: () => void }) {
               return subs.map((sub) => (
                 <div key={sub || "_none"}>
                   {hasSubs && sub && (
-                    <div className="flex justify-between items-center mt-3 mb-1 first:mt-1 pl-1 border-l-2 border-slate-300 dark:border-slate-600">
-                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1">
+                    <div className="flex justify-between items-center mt-3 mb-1 first:mt-1">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                         {sub}
                       </p>
                       <div className="flex gap-1">
