@@ -84,6 +84,31 @@ describe("shoppingTypes", () => {
     ]);
   });
 
+  it("filters untagged pool items when includeUntagged is set", () => {
+    const items: Item[] = [
+      { ...poolItem, id: "pool-jp", tags: ["日本", "藥妝"] },
+      { ...poolItem, id: "pool-kr", tags: ["韓國"] },
+      { ...poolItem, id: "pool-empty" },
+      { ...poolItem, id: "pool-blank", tags: ["", "  "] },
+    ];
+
+    expect(
+      filterPoolItemsByTags(items, [], { includeUntagged: true }).map(
+        (item) => item.id,
+      ),
+    ).toEqual(["pool-empty", "pool-blank"]);
+    expect(
+      filterPoolItemsByTags(items, ["日本"], { includeUntagged: true }).map(
+        (item) => item.id,
+      ),
+    ).toEqual(["pool-jp", "pool-empty", "pool-blank"]);
+    expect(
+      filterPoolItemsByTags(items, [], { includeUntagged: false }).map(
+        (item) => item.id,
+      ),
+    ).toEqual(["pool-jp", "pool-kr", "pool-empty", "pool-blank"]);
+  });
+
   it("identifies linked trip shopping items by itemId", () => {
     expect(
       isLinkedTripShoppingItem({

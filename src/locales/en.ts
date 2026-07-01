@@ -448,6 +448,7 @@ const en = {
     pool: {
       empty: "The pool has no items yet",
       noMatchingTags: "No pool items match these category tags",
+      untagged: "Untagged",
       addItem: "Add pool item",
       editItem: "Edit pool item",
       deleteItem: "Delete pool item",

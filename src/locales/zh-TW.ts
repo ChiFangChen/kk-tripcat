@@ -444,6 +444,7 @@ const zhTW = {
     pool: {
       empty: "魚池目前沒有項目",
       noMatchingTags: "沒有符合分類標籤的魚池項目",
+      untagged: "未分類",
       addItem: "新增魚池項目",
       editItem: "編輯魚池項目",
       deleteItem: "刪除魚池項目",

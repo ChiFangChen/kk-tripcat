@@ -72,14 +72,19 @@ export function getPoolItemTags(items: Item[]): string[] {
 export function filterPoolItemsByTags(
   items: Item[],
   selectedTags: string[],
+  options?: { includeUntagged?: boolean },
 ): Item[] {
   const normalizedSelectedTags = normalizePoolItemTags(selectedTags);
-  if (normalizedSelectedTags.length === 0) return items;
+  const includeUntagged = options?.includeUntagged ?? false;
+  if (normalizedSelectedTags.length === 0 && !includeUntagged) return items;
 
   const selectedTagSet = new Set(normalizedSelectedTags);
-  return items.filter((item) =>
-    normalizePoolItemTags(item.tags).some((tag) => selectedTagSet.has(tag)),
-  );
+  return items.filter((item) => {
+    const tags = normalizePoolItemTags(item.tags);
+    const matchesTag = tags.some((tag) => selectedTagSet.has(tag));
+    const matchesUntagged = includeUntagged && tags.length === 0;
+    return matchesTag || matchesUntagged;
+  });
 }
 
 export function isLinkedTripShoppingItem(item: TripShoppingItem): boolean {

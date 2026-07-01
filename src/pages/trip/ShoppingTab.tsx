@@ -82,6 +82,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const [showAddDraftModal, setShowAddDraftModal] = useState(false);
   const [showPoolModal, setShowPoolModal] = useState(false);
   const [selectedPoolTags, setSelectedPoolTags] = useState<string[]>([]);
+  const [includeUntagged, setIncludeUntagged] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(
     null,
@@ -125,9 +126,13 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     ...selectedPoolTags,
     ...getPoolItemTags(state.items),
   ]);
+  const hasUntaggedPoolItem = availablePoolItems.some(
+    (item) => normalizePoolItemTags(item.tags).length === 0,
+  );
   const filteredAvailablePoolItems = filterPoolItemsByTags(
     availablePoolItems,
     selectedPoolTags,
+    { includeUntagged },
   );
   const ownPromotionCandidateIds = new Set(
     state.auth.currentUser
@@ -237,7 +242,14 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
   }
 
   function openPoolModal() {
-    setSelectedPoolTags(normalizePoolItemTags([trip?.country ?? ""]));
+    const country = trip?.country?.trim();
+    const countryHasItems =
+      !!country &&
+      availablePoolItems.some((item) =>
+        normalizePoolItemTags(item.tags).includes(country),
+      );
+    setSelectedPoolTags(countryHasItems ? [country] : []);
+    setIncludeUntagged(false);
     setShowPoolModal(true);
   }
 
@@ -728,7 +740,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
           onClose={() => setShowPoolModal(false)}
         >
           <div className="space-y-3">
-            {poolTagOptions.length > 0 && (
+            {(poolTagOptions.length > 0 || hasUntaggedPoolItem) && (
               <div className="pool-filter-panel">
                 <div className="pool-tag-row">
                   {poolTagOptions.map((tag) => {
@@ -745,6 +757,16 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                       </button>
                     );
                   })}
+                  {hasUntaggedPoolItem && (
+                    <button
+                      type="button"
+                      className={`tag-filter-chip ${includeUntagged ? "active" : ""}`}
+                      aria-pressed={includeUntagged}
+                      onClick={() => setIncludeUntagged((value) => !value)}
+                    >
+                      {t("shopping.pool.untagged")}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
