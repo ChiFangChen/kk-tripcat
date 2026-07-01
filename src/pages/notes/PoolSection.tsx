@@ -320,6 +320,15 @@ export function PoolSection() {
                           )}
                         </h3>
                       </div>
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="pool-tag-row mt-1 mb-1.5">
+                          {item.tags.map((tag) => (
+                            <span key={tag} className="pool-tag-chip">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <div className="pool-item-meta">
                         {priceBadges.map((badge) => (
                           <span key={badge.label}>
@@ -330,15 +339,6 @@ export function PoolSection() {
                           </span>
                         ))}
                       </div>
-                      {item.tags && item.tags.length > 0 && (
-                        <div className="pool-tag-row mt-1">
-                          {item.tags.map((tag) => (
-                            <span key={tag} className="pool-tag-chip">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                       {item.notes && (
                         <p className="pool-item-note">{item.notes}</p>
                       )}
@@ -376,106 +376,113 @@ export function PoolSection() {
                   </div>
                   <div className="pool-item-history">
                     <button
-                      className="btn-round-add !w-7 !h-7"
-                      onClick={() => setAddingPurchaseTo(item.id)}
-                      disabled={!firebaseConnected}
-                      aria-label={t("shopping.purchase.add")}
+                      className="pool-item-history-button"
+                      onClick={() => togglePurchaseHistory(item.id)}
+                      aria-label={
+                        purchaseHistoryExpanded
+                          ? t("shopping.purchase.collapse")
+                          : t("shopping.purchase.expand")
+                      }
                       title={
-                        firebaseConnected
-                          ? t("shopping.purchase.add")
-                          : t("shopping.pool.readOnlyOffline")
+                        purchaseHistoryExpanded
+                          ? t("shopping.purchase.collapse")
+                          : t("shopping.purchase.expand")
                       }
                     >
-                      <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
+                      <FontAwesomeIcon icon={faReceipt} />
+                      <FontAwesomeIcon
+                        icon={
+                          purchaseHistoryExpanded ? faChevronUp : faChevronDown
+                        }
+                        className="text-[10px]"
+                      />
                     </button>
-                    {item.purchases.length > 0 && (
-                      <button
-                        className="pool-item-history-button"
-                        onClick={() => togglePurchaseHistory(item.id)}
-                        aria-label={
-                          purchaseHistoryExpanded
-                            ? t("shopping.purchase.collapse")
-                            : t("shopping.purchase.expand")
-                        }
-                        title={
-                          purchaseHistoryExpanded
-                            ? t("shopping.purchase.collapse")
-                            : t("shopping.purchase.expand")
-                        }
-                      >
-                        <FontAwesomeIcon icon={faReceipt} />
-                        <FontAwesomeIcon
-                          icon={
-                            purchaseHistoryExpanded
-                              ? faChevronUp
-                              : faChevronDown
-                          }
-                          className="text-[10px]"
-                        />
-                      </button>
-                    )}
                   </div>
                 </div>
 
                 {purchaseHistoryExpanded && (
                   <div className="pool-purchase-history">
-                    {item.purchases.map((purchase) => (
-                      <div key={purchase.id} className="pool-purchase-row">
-                        <div className="pool-purchase-content">
-                          <span>{formatDate(purchase.date)}</span>
-                          <span className="font-medium">
-                            {formatPurchaseAmount(purchase)}
-                          </span>
-                          {purchase.tripName && (
-                            <span>{purchase.tripName}</span>
-                          )}
-                          {purchase.note && (
-                            <span className="pool-purchase-note">
-                              {purchase.note}
+                    <div className="pool-purchase-history-header">
+                      <button
+                        className="btn-round-add !w-7 !h-7"
+                        onClick={() => setAddingPurchaseTo(item.id)}
+                        disabled={!firebaseConnected}
+                        aria-label={t("shopping.purchase.add")}
+                        title={
+                          firebaseConnected
+                            ? t("shopping.purchase.add")
+                            : t("shopping.pool.readOnlyOffline")
+                        }
+                      >
+                        <FontAwesomeIcon
+                          icon={faPlus}
+                          className="text-[10px]"
+                        />
+                      </button>
+                    </div>
+                    {item.purchases.length === 0 ? (
+                      <p className="pool-purchase-empty">
+                        {t("shopping.purchase.empty")}
+                      </p>
+                    ) : (
+                      item.purchases.map((purchase) => (
+                        <div key={purchase.id} className="pool-purchase-row">
+                          <div className="pool-purchase-content">
+                            <span>{formatDate(purchase.date)}</span>
+                            <span className="font-medium">
+                              {formatPurchaseAmount(purchase)}
                             </span>
-                          )}
+                            {purchase.tripName && (
+                              <span>{purchase.tripName}</span>
+                            )}
+                            {purchase.note && (
+                              <span className="pool-purchase-note">
+                                {purchase.note}
+                              </span>
+                            )}
+                          </div>
+                          <div className="pool-purchase-actions">
+                            <button
+                              className="pool-item-icon-button"
+                              onClick={() =>
+                                setEditingPurchase({
+                                  itemId: item.id,
+                                  purchase,
+                                })
+                              }
+                              disabled={!firebaseConnected}
+                              aria-label={t("shopping.purchase.edit")}
+                              title={
+                                firebaseConnected
+                                  ? t("shopping.purchase.edit")
+                                  : t("shopping.pool.readOnlyOffline")
+                              }
+                            >
+                              <FontAwesomeIcon icon={faPen} />
+                            </button>
+                            <button
+                              className="pool-item-icon-button"
+                              onClick={() =>
+                                setConfirmDelete({
+                                  type: "purchase",
+                                  itemId: item.id,
+                                  purchaseId: purchase.id,
+                                })
+                              }
+                              disabled={!firebaseConnected}
+                              aria-label={t("shopping.purchase.delete")}
+                              title={
+                                firebaseConnected
+                                  ? t("shopping.purchase.delete")
+                                  : t("shopping.pool.readOnlyOffline")
+                              }
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
                         </div>
-                        <div className="pool-purchase-actions">
-                          <button
-                            className="pool-item-icon-button"
-                            onClick={() =>
-                              setEditingPurchase({
-                                itemId: item.id,
-                                purchase,
-                              })
-                            }
-                            disabled={!firebaseConnected}
-                            aria-label={t("shopping.purchase.edit")}
-                            title={
-                              firebaseConnected
-                                ? t("shopping.purchase.edit")
-                                : t("shopping.pool.readOnlyOffline")
-                            }
-                          >
-                            <FontAwesomeIcon icon={faPen} />
-                          </button>
-                          <button
-                            className="pool-item-icon-button"
-                            onClick={() =>
-                              setConfirmDelete({
-                                type: "purchase",
-                                itemId: item.id,
-                                purchaseId: purchase.id,
-                              })
-                            }
-                            disabled={!firebaseConnected}
-                            aria-label={t("shopping.purchase.delete")}
-                            title={
-                              firebaseConnected
-                                ? t("shopping.purchase.delete")
-                                : t("shopping.pool.readOnlyOffline")
-                            }
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 )}
               </div>
@@ -519,14 +526,20 @@ export function PoolSection() {
       )}
 
       {addingPurchaseTo && (
-        <Modal title={t("shopping.purchase.add")} onClose={() => setAddingPurchaseTo(null)}>
+        <Modal
+          title={t("shopping.purchase.add")}
+          onClose={() => setAddingPurchaseTo(null)}
+        >
           <PurchaseForm
             onSave={(purchase) => addPurchase(addingPurchaseTo, purchase)}
           />
         </Modal>
       )}
       {editingPurchase && (
-        <Modal title={t("shopping.purchase.edit")} onClose={() => setEditingPurchase(null)}>
+        <Modal
+          title={t("shopping.purchase.edit")}
+          onClose={() => setEditingPurchase(null)}
+        >
           <PurchaseForm
             purchase={editingPurchase.purchase}
             onSave={(purchase) =>
@@ -617,9 +630,7 @@ function ItemForm({
         <input
           className="form-input"
           value={form.brand || ""}
-          onChange={(event) =>
-            setForm({ ...form, brand: event.target.value })
-          }
+          onChange={(event) => setForm({ ...form, brand: event.target.value })}
         />
       </div>
       <div className="form-group">
@@ -636,7 +647,9 @@ function ItemForm({
         onChange={(tags) => setForm({ ...form, tags })}
       />
       <div className="form-group">
-        <label className="form-label">{t("shopping.form.suggestedPrice")}</label>
+        <label className="form-label">
+          {t("shopping.form.suggestedPrice")}
+        </label>
         <input
           className="form-input"
           value={form.estimatedAmount || ""}
