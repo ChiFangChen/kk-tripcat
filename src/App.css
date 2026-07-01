@@ -479,6 +479,11 @@ body {
   overflow-wrap: anywhere;
 }
 
+/* Enlarge only the product name in the "everyone's wishlist" review cards. */
+.review-item-title .shopping-item-title {
+  font-size: calc(16px * var(--text-scale));
+}
+
 .shopping-item-spec {
   display: inline-flex;
   align-items: center;
@@ -645,7 +650,13 @@ body {
   font-size: calc(15px * var(--text-scale));
 }
 
-.price-badge-row-emphasized > span > span:last-child {
+.price-badge-row-base {
+  gap: 4px 8px;
+  font-size: calc(14px * var(--text-scale));
+}
+
+.price-badge-row-emphasized > span > span:last-child,
+.price-badge-row-base > span > span:last-child {
   color: var(--color-text);
   font-weight: 600;
 }

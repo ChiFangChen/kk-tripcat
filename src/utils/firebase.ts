@@ -582,6 +582,9 @@ export async function uploadImage(path: string, file: Blob): Promise<string> {
 }
 
 export async function deleteImage(path: string): Promise<void> {
+  // Referenced (shared) images carry no owned path — there is nothing of ours
+  // to delete, and we must never delete another user's original file.
+  if (!path) return;
   if (!app) {
     await initFirebase();
   }

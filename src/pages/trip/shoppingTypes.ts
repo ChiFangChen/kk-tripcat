@@ -30,6 +30,7 @@ export interface TripShoppingItem {
   note?: string;
   checked: boolean;
   private?: boolean;
+  copiedFrom?: string;
   createdBy: string;
   createdAt: string;
   promotedToPoolAt?: string;

@@ -230,7 +230,16 @@ describe("ShoppingTab", () => {
           {
             id: "u2-public",
             textSnapshot: "公開想買",
-            images: [],
+            images: [
+              {
+                id: "u2-img",
+                url: "https://files.local/u2.jpg",
+                path: "tc-images/trips/trip-1/shopping/u2-public/u2-img.jpg",
+                createdAt: "2026-04-25T00:00:00.000Z",
+                width: 320,
+                height: 240,
+              },
+            ],
             checked: false,
             createdBy: "user-2",
             createdAt: "2026-04-25T00:00:00.000Z",
@@ -290,6 +299,198 @@ describe("ShoppingTab", () => {
     const lastCall = mocks.setUserTripData.mock.calls.at(-1);
     const copiedDraft = lastCall?.[1].shopping.at(-1);
     expect(copiedDraft.itemId).toBeUndefined();
+  });
+
+  it("references original images when the byte copy fails", async () => {
+    mocks.state.users = [
+      { id: "user-2", displayName: "Bob", color: "#ff0000" },
+    ];
+    mocks.loadTripMemberData.mockResolvedValue({
+      "user-2": {
+        shopping: [
+          {
+            id: "u2-img-item",
+            textSnapshot: "有圖片的",
+            images: [
+              {
+                id: "u2-img",
+                url: "https://files.local/u2.jpg",
+                path: "tc-images/trips/trip-1/shopping/u2-img-item/u2-img.jpg",
+                createdAt: "2026-04-25T00:00:00.000Z",
+                width: 320,
+                height: 240,
+              },
+            ],
+            checked: false,
+            createdBy: "user-2",
+            createdAt: "2026-04-25T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+    mocks.copyImagesToNewPaths.mockRejectedValue(new Error("CORS blocked"));
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    const reviewButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("查看大家想買的"),
+    );
+    await act(async () => {
+      reviewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    const copyButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("複製到我的購物清單"),
+    );
+    await act(async () => {
+      copyButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // Item is still copied; the image falls back to referencing the original
+    // URL (empty path so deleting the copy never removes the original).
+    expect(mocks.setUserTripData).toHaveBeenCalledWith("trip-1", {
+      shopping: [
+        ...mocks.tripShopping,
+        expect.objectContaining({
+          textSnapshot: "有圖片的",
+          createdBy: "admin-1",
+          copiedFrom: "u2-img-item",
+          images: [
+            expect.objectContaining({
+              url: "https://files.local/u2.jpg",
+              path: "",
+            }),
+          ],
+        }),
+      ],
+    });
+    expect(mocks.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "success" }),
+    );
+  });
+
+  it("marks already-copied wishes via copiedFrom after reopening", async () => {
+    mocks.state.users = [
+      { id: "user-2", displayName: "Bob", color: "#ff0000" },
+    ];
+    mocks.tripShopping = [
+      {
+        id: "mine-copy",
+        textSnapshot: "我已複製的",
+        images: [],
+        checked: false,
+        copiedFrom: "u2-public",
+        createdBy: "admin-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+      },
+    ];
+    mocks.loadTripMemberData.mockResolvedValue({
+      "user-2": {
+        shopping: [
+          {
+            id: "u2-public",
+            textSnapshot: "公開想買",
+            images: [],
+            checked: false,
+            createdBy: "user-2",
+            createdAt: "2026-04-25T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    const reviewButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("查看大家想買的"),
+    );
+    await act(async () => {
+      reviewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // Already-copied source item shows the copied tag, not a copy button.
+    expect(document.body.textContent).toContain("已加入清單");
+    const copyButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("複製到我的購物清單"),
+    );
+    expect(copyButton).toBeUndefined();
+  });
+
+  it("filters the wishlist view by person (none selected shows all)", async () => {
+    mocks.state.users = [
+      { id: "user-2", displayName: "Bob", color: "#ff0000" },
+      { id: "user-3", displayName: "Cara", color: "#00ff00" },
+    ];
+    mocks.loadTripMemberData.mockResolvedValue({
+      "user-2": {
+        shopping: [
+          {
+            id: "u2-item",
+            textSnapshot: "Bob想買",
+            images: [],
+            checked: false,
+            createdBy: "user-2",
+            createdAt: "2026-04-25T00:00:00.000Z",
+          },
+        ],
+      },
+      "user-3": {
+        shopping: [
+          {
+            id: "u3-item",
+            textSnapshot: "Cara想買",
+            images: [],
+            checked: false,
+            createdBy: "user-3",
+            createdAt: "2026-04-25T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    const reviewButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("查看大家想買的"),
+    );
+    await act(async () => {
+      reviewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // Nothing selected -> both people's items are shown.
+    expect(document.body.textContent).toContain("Bob想買");
+    expect(document.body.textContent).toContain("Cara想買");
+
+    // Select the "Cara" person filter chip -> only Cara's item remains.
+    const caraChip = Array.from(
+      document.querySelectorAll("button.tag-filter-chip"),
+    ).find((button) => button.textContent === "Cara");
+    await act(async () => {
+      caraChip?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(document.body.textContent).not.toContain("Bob想買");
+    expect(document.body.textContent).toContain("Cara想買");
   });
 
   it("filters already linked pool items from the add-from-pool modal", async () => {

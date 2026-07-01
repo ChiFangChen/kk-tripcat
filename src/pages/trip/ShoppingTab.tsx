@@ -70,7 +70,6 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     setUserTripData,
     getTripData,
     getUserName,
-    isTripAdmin,
     loadTripMemberData,
     showToast,
   } = useApp();
@@ -108,11 +107,23 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const [copiedItemIds, setCopiedItemIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [selectedReviewUsers, setSelectedReviewUsers] = useState<string[]>([]);
   const [promotingItemIds, setPromotingItemIds] = useState<Set<string>>(
     () => new Set(),
   );
 
-  const canManageTrip = !viewOnly && !!trip && isTripAdmin(trip);
+  const reviewUserIds = [...new Set(reviewItems.map((entry) => entry.userId))];
+  const shownReviewItems =
+    selectedReviewUsers.length === 0
+      ? reviewItems
+      : reviewItems.filter((entry) =>
+          selectedReviewUsers.includes(entry.userId),
+        );
+  const copiedSourceIds = new Set(
+    items
+      .map((item) => item.copiedFrom)
+      .filter((id): id is string => Boolean(id)),
+  );
   const unchecked = items.filter((item) => !item.checked);
   const checked = items.filter((item) => item.checked);
   const displayed = showCompleted ? items : unchecked;
@@ -269,6 +280,14 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     });
   }
 
+  function toggleReviewUser(userId: string) {
+    setSelectedReviewUsers((current) =>
+      current.includes(userId)
+        ? current.filter((entry) => entry !== userId)
+        : [...current, userId],
+    );
+  }
+
   async function openReviewModal() {
     if (!trip || !state.auth.currentUser) return;
     const memberData = await loadTripMemberData(tripId);
@@ -280,6 +299,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     );
     setReviewItems(nextItems);
     setCopiedItemIds(new Set());
+    setSelectedReviewUsers([]);
     setShowReviewModal(true);
   }
 
@@ -300,6 +320,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
         images: [],
         checked: false,
         private: false,
+        copiedFrom: source.id,
         createdBy: state.auth.currentUser.id,
         createdAt: now,
       };
@@ -314,18 +335,39 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
       if (source.currency !== undefined) draft.currency = source.currency;
       if (source.note !== undefined) draft.note = source.note;
 
-      draft.images = await copyImagesToNewPaths({
-        images: source.images,
-        targetBasePath: `tc-images/trips/${tripId}/shopping/${newId}`,
-        createImageId: generateId,
-        createdAt: now,
-        fetchBlob: async (url) => {
-          const response = await fetch(url);
-          return response.blob();
-        },
-        upload: uploadImage,
-        remove: deleteImage,
-      });
+      // Prefer an owned copy of the image bytes. That re-download can be
+      // blocked by the storage bucket CORS on non-allowed origins, so on
+      // failure we fall back to referencing the original image URL (path left
+      // empty so deleting this copy never removes someone else's original).
+      if (source.images.length > 0) {
+        try {
+          draft.images = await copyImagesToNewPaths({
+            images: source.images,
+            targetBasePath: `tc-images/trips/${tripId}/shopping/${newId}`,
+            createImageId: generateId,
+            createdAt: now,
+            fetchBlob: async (url) => {
+              const response = await fetch(url);
+              return response.blob();
+            },
+            upload: uploadImage,
+            remove: deleteImage,
+          });
+        } catch (imageError) {
+          console.error(
+            "Failed to copy image bytes; referencing originals instead:",
+            imageError,
+          );
+          draft.images = source.images.map((image) => ({
+            id: generateId(),
+            url: image.url,
+            path: "",
+            createdAt: now,
+            width: image.width,
+            height: image.height,
+          }));
+        }
+      }
 
       setUserTripData(tripId, { shopping: [...items, draft] });
       showToast({ type: "success", message: t("shopping.copiedToMyList") });
@@ -522,7 +564,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
         {resolvedDisplayed.map((item) => {
           const linked = isLinkedTripShoppingItem(item.source);
           const canShowStar =
-            canManageTrip &&
+            !viewOnly &&
             !item.private &&
             state.auth.currentUser?.id === item.source.createdBy;
           const canPromoteOwnItem = canShowStar && !linked;
@@ -700,7 +742,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                   onDelete={
                     canShowShoppingModalRemoveAction(
                       shoppingModalMode,
-                      canManageTrip,
+                      !viewOnly,
                     )
                       ? () => setConfirmDeleteItemId(editingItem.id)
                       : undefined
@@ -716,7 +758,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                   onDelete={
                     canShowShoppingModalRemoveAction(
                       shoppingModalMode,
-                      canManageTrip,
+                      !viewOnly,
                     )
                       ? () => setConfirmDeleteItemId(editingItem.id)
                       : undefined
@@ -851,12 +893,32 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
           onClose={() => setShowReviewModal(false)}
         >
           <div className="space-y-3">
-            {reviewItems.length === 0 ? (
+            {reviewUserIds.length > 0 && (
+              <div className="pool-filter-panel">
+                <div className="pool-tag-row">
+                  {reviewUserIds.map((reviewUserId) => {
+                    const active = selectedReviewUsers.includes(reviewUserId);
+                    return (
+                      <button
+                        key={reviewUserId}
+                        type="button"
+                        className={`tag-filter-chip ${active ? "active" : ""}`}
+                        aria-pressed={active}
+                        onClick={() => toggleReviewUser(reviewUserId)}
+                      >
+                        {getUserName(reviewUserId)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {shownReviewItems.length === 0 ? (
               <div className="empty-state">
                 <p>{t("shopping.noReviewItems")}</p>
               </div>
             ) : (
-              reviewItems.map((entry) => {
+              shownReviewItems.map((entry) => {
                 const user = state.users.find(
                   (candidate) => candidate.id === entry.userId,
                 );
@@ -865,43 +927,47 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                     key={`${entry.userId}-${entry.item.id}`}
                     className="card"
                   >
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div>
-                        <div className="font-semibold">
-                          {entry.item.textSnapshot}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                          {user &&
-                            (user.avatarMode === "google" &&
-                            user.googlePhotoURL ? (
-                              <UserAvatar user={user} />
-                            ) : (
-                              <span
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: user.color }}
-                              />
-                            ))}
-                          {t("shopping.createdAt", {
-                            name: getUserName(entry.userId),
-                            date: formatDate(entry.item.createdAt),
-                          })}
-                        </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                        {user &&
+                          (user.avatarMode === "google" &&
+                          user.googlePhotoURL ? (
+                            <UserAvatar user={user} />
+                          ) : (
+                            <span
+                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: user.color }}
+                            />
+                          ))}
+                        {t("shopping.createdAt", {
+                          name: getUserName(entry.userId),
+                          date: formatDate(entry.item.createdAt),
+                        })}
                       </div>
-                      {copiedItemIds.has(entry.item.id) ? (
+                      {copiedItemIds.has(entry.item.id) ||
+                      copiedSourceIds.has(entry.item.id) ? (
                         <span className="tag">
                           {t("shopping.copiedToMyList")}
                         </span>
                       ) : (
                         <button
-                          className="btn btn-primary btn-sm"
+                          className="btn btn-primary btn-sm flex-shrink-0"
                           onClick={() => void copyToMyList(entry)}
                         >
                           {t("shopping.copyToMyList")}
                         </button>
                       )}
                     </div>
+                    <div className="mt-3 mb-2 review-item-title">
+                      {renderShoppingItemTitle(
+                        entry.item.textSnapshot,
+                        entry.item.brand,
+                        entry.item.spec,
+                      )}
+                    </div>
                     <div className="mb-2">
                       <PriceBadges
+                        size="base"
                         badges={buildShoppingPriceBadges({
                           estimatedAmount: entry.item.estimatedAmount,
                           currency: entry.item.currency,
@@ -909,15 +975,8 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                         })}
                       />
                     </div>
-                    {(entry.item.brand || entry.item.spec) && (
-                      <div className="text-sm text-slate-500 mb-2">
-                        {[entry.item.brand, entry.item.spec]
-                          .filter(Boolean)
-                          .join(" / ")}
-                      </div>
-                    )}
                     {entry.item.note && (
-                      <div className="text-sm text-slate-500 whitespace-pre-wrap mb-2">
+                      <div className="text-[13px] text-slate-500 whitespace-pre-wrap mb-2">
                         {entry.item.note}
                       </div>
                     )}
@@ -1033,18 +1092,22 @@ function draftPurchaseSnapshot(item: TripShoppingItem): Purchase[] {
 
 function PriceBadges({
   badges,
-  emphasized,
+  size,
 }: {
   badges: ReturnType<typeof buildShoppingPriceBadges>;
-  emphasized?: boolean;
+  size?: "base" | "lg";
 }) {
   const { t } = useTranslation();
 
   if (badges.length === 0) return null;
+  const sizeClass =
+    size === "lg"
+      ? " price-badge-row-emphasized"
+      : size === "base"
+        ? " price-badge-row-base"
+        : "";
   return (
-    <span
-      className={`price-badge-row${emphasized ? " price-badge-row-emphasized" : ""}`}
-    >
+    <span className={`price-badge-row${sizeClass}`}>
       {badges.map((badge) => (
         <span key={badge.label}>
           <span className="price-badge">
@@ -1569,7 +1632,7 @@ export function ShoppingItemDetail({
       )}
       {(priceBadges.length > 0 || onViewPurchaseHistory) && (
         <div className="flex items-start justify-between gap-2 mb-2">
-          <PriceBadges badges={priceBadges} emphasized />
+          <PriceBadges badges={priceBadges} size="lg" />
           {onViewPurchaseHistory && (
             <button
               type="button"
