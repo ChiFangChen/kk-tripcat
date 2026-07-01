@@ -693,7 +693,19 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                   }
                 />
               ) : (
-                <ShoppingItemDetail item={resolvedItem} />
+                <ShoppingItemDetail
+                  item={resolvedItem}
+                  tags={linkedPoolItem?.tags}
+                  purchases={
+                    linkedPoolItem?.purchases ??
+                    draftPurchaseSnapshot(editingItem)
+                  }
+                  onViewPurchaseHistory={
+                    editingItem.itemId
+                      ? () => setPurchaseHistoryItemId(editingItem.itemId!)
+                      : undefined
+                  }
+                />
               )}
             </Modal>
           );
@@ -973,14 +985,18 @@ function draftPurchaseSnapshot(item: TripShoppingItem): Purchase[] {
 
 function PriceBadges({
   badges,
+  emphasized,
 }: {
   badges: ReturnType<typeof buildShoppingPriceBadges>;
+  emphasized?: boolean;
 }) {
   const { t } = useTranslation();
 
   if (badges.length === 0) return null;
   return (
-    <span className="price-badge-row">
+    <span
+      className={`price-badge-row${emphasized ? " price-badge-row-emphasized" : ""}`}
+    >
       {badges.map((badge) => (
         <span key={badge.label}>
           <span className="price-badge">
@@ -1457,15 +1473,47 @@ function PoolItemForm({
 
 export function ShoppingItemDetail({
   item,
+  tags,
+  purchases,
+  onViewPurchaseHistory,
 }: {
   item: ReturnType<typeof getTripShoppingResolvedContent>;
+  tags?: string[];
+  purchases?: Purchase[];
+  onViewPurchaseHistory?: () => void;
 }) {
+  const { t } = useTranslation();
+  const priceBadges = buildShoppingPriceBadges({
+    estimatedAmount: item.estimatedAmount,
+    currency: item.currency,
+    purchases: purchases ?? [],
+  });
+
   return (
     <div>
-      {(item.estimatedAmount || item.currency) && (
-        <div className="text-sm text-slate-500 mb-2">
-          {item.estimatedAmount || "-"}
-          {item.currency ? ` ${item.currency}` : ""}
+      {tags && tags.length > 0 && (
+        <div className="pool-tag-row mb-1.5">
+          {tags.map((tag) => (
+            <span key={tag} className="pool-tag-chip">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+      {(priceBadges.length > 0 || onViewPurchaseHistory) && (
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <PriceBadges badges={priceBadges} emphasized />
+          {onViewPurchaseHistory && (
+            <button
+              type="button"
+              className="pool-item-icon-button flex-shrink-0"
+              aria-label={t("shopping.viewPurchaseHistory")}
+              title={t("shopping.viewPurchaseHistory")}
+              onClick={onViewPurchaseHistory}
+            >
+              <FontAwesomeIcon icon={faReceipt} />
+            </button>
+          )}
         </div>
       )}
       {item.note && (
