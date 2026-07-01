@@ -6,7 +6,7 @@ import {
   filterPoolItemsByTags,
   getOwnPoolPromotionCandidates,
   getPoolItemTags,
-  getPoolPromotionCandidates,
+  getWishlistShareCandidates,
   getTripShoppingResolvedContent,
   isLinkedTripShoppingItem,
   linkTripShoppingItemToPoolItem,
@@ -198,16 +198,8 @@ describe("shoppingTypes", () => {
     });
   });
 
-  it("filters only unpromoted draft items from other members for the admin review popup", () => {
+  it("shares only non-private, unbought, unlinked draft items in the wishlist view", () => {
     const shoppingItems: TripShoppingItem[] = [
-      {
-        id: "mine",
-        textSnapshot: "我自己的",
-        images: [],
-        checked: false,
-        createdBy: "admin-1",
-        createdAt: "2026-04-25T00:00:00.000Z",
-      },
       {
         id: "draft-open",
         textSnapshot: "別人想買",
@@ -217,20 +209,35 @@ describe("shoppingTypes", () => {
         createdAt: "2026-04-25T00:00:00.000Z",
       },
       {
-        id: "draft-promoted",
-        textSnapshot: "已收編",
+        id: "draft-private",
+        textSnapshot: "秘密的",
         images: [],
         checked: false,
-        createdBy: "user-2",
+        private: true,
+        createdBy: "user-1",
         createdAt: "2026-04-25T00:00:00.000Z",
-        promotedToPoolAt: "2026-04-25T01:00:00.000Z",
-        promotedBy: "admin-1",
+      },
+      {
+        id: "draft-bought",
+        textSnapshot: "已買",
+        images: [],
+        checked: true,
+        createdBy: "user-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+      },
+      {
+        id: "linked",
+        itemId: "pool-1",
+        textSnapshot: "來自魚池",
+        images: [],
+        checked: false,
+        createdBy: "user-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
       },
     ];
 
-    expect(getPoolPromotionCandidates(shoppingItems, "admin-1")).toEqual([
-      shoppingItems[1],
-      shoppingItems[2],
+    expect(getWishlistShareCandidates(shoppingItems)).toEqual([
+      shoppingItems[0],
     ]);
   });
 
@@ -465,6 +472,7 @@ describe("shoppingTypes", () => {
       currency: "TWD",
       note: "伴手禮",
       checked: true,
+      private: true,
       createdBy: "admin-1",
       createdAt: "2026-04-25T00:00:00.000Z",
       promotedToPoolAt: "2026-04-25T01:00:00.000Z",
@@ -482,8 +490,25 @@ describe("shoppingTypes", () => {
       textSnapshot: "草莓巧克力",
       images: [],
       checked: true,
+      private: true,
       createdBy: "admin-1",
       createdAt: "2026-04-25T00:00:00.000Z",
     });
+  });
+
+  it("defaults private to false when linking a trip item without the flag", () => {
+    expect(
+      linkTripShoppingItemToPoolItem({
+        tripItem: {
+          id: "trip-2",
+          textSnapshot: "無私密旗標",
+          images: [],
+          checked: false,
+          createdBy: "user-1",
+          createdAt: "2026-04-25T00:00:00.000Z",
+        },
+        poolItemId: "pool-x",
+      }),
+    ).toMatchObject({ private: false });
   });
 });

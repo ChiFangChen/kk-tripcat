@@ -29,6 +29,7 @@ export interface TripShoppingItem {
   currency?: string;
   note?: string;
   checked: boolean;
+  private?: boolean;
   createdBy: string;
   createdAt: string;
   promotedToPoolAt?: string;
@@ -48,6 +49,7 @@ export interface ResolvedTripShoppingItem {
   currency?: string;
   note?: string;
   checked: boolean;
+  private: boolean;
   isLinked: boolean;
 }
 
@@ -193,6 +195,7 @@ export function getTripShoppingResolvedContent(
       currency: linkedItem.currency,
       note: linkedItem.notes,
       checked: item.checked,
+      private: item.private ?? false,
       isLinked: true,
     };
   }
@@ -210,16 +213,16 @@ export function getTripShoppingResolvedContent(
     currency: item.currency,
     note: item.note,
     checked: item.checked,
+    private: item.private ?? false,
     isLinked: false,
   };
 }
 
-export function getPoolPromotionCandidates(
+export function getWishlistShareCandidates(
   shoppingItems: TripShoppingItem[],
-  adminUserId: string,
 ): TripShoppingItem[] {
   return shoppingItems.filter(
-    (item) => !item.itemId && item.createdBy !== adminUserId,
+    (item) => !item.itemId && !item.private && !item.checked,
   );
 }
 
@@ -340,6 +343,7 @@ export function linkTripShoppingItemToPoolItem({
     textSnapshot: tripItem.textSnapshot,
     images: [],
     checked: tripItem.checked,
+    private: tripItem.private ?? false,
     createdBy: tripItem.createdBy,
     createdAt: tripItem.createdAt,
   };

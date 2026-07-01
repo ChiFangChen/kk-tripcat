@@ -9,6 +9,7 @@ import {
   faTrash,
   faBoxesStacked,
   faUsers,
+  faLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
 import { Modal } from "../../components/Modal";
@@ -22,9 +23,11 @@ import { LoadingImage } from "../../components/LoadingImage";
 import { MultiImageUpload } from "../../components/MultiImageUpload";
 import { EditIconButton } from "../../components/EditIconButton";
 import { UserAvatar } from "../../components/UserAvatar";
+import { SwitchControl } from "../../components/SwitchControl";
 import { useDoubleTap } from "../../hooks/useDoubleTap";
 import { deleteImage, uploadImage } from "../../utils/firebase";
 import {
+  copyImagesToNewPaths,
   createPendingImages,
   persistImagesForRecord,
 } from "../../utils/imageUpload";
@@ -44,7 +47,7 @@ import {
   filterPoolItemsByTags,
   getOwnPoolPromotionCandidates,
   getPoolItemTags,
-  getPoolPromotionCandidates,
+  getWishlistShareCandidates,
   getTripShoppingResolvedContent,
   isLinkedTripShoppingItem,
   linkTripShoppingItemToPoolItem,
@@ -65,7 +68,6 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     state,
     setItems,
     setUserTripData,
-    setTripMemberData,
     getTripData,
     getUserName,
     isTripAdmin,
@@ -103,6 +105,9 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
   const [reviewItems, setReviewItems] = useState<
     Array<{ userId: string; item: TripShoppingItem }>
   >([]);
+  const [copiedItemIds, setCopiedItemIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [promotingItemIds, setPromotingItemIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -208,6 +213,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
       textSnapshot: "",
       images: [],
       checked: false,
+      private: false,
       createdBy: state.auth.currentUser?.id || "anonymous",
       createdAt: new Date().toISOString(),
     };
@@ -234,6 +240,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
       textSnapshot: item.name,
       images: [],
       checked: false,
+      private: false,
       createdBy: state.auth.currentUser?.id || "anonymous",
       createdAt: new Date().toISOString(),
     };
@@ -266,66 +273,70 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     if (!trip || !state.auth.currentUser) return;
     const memberData = await loadTripMemberData(tripId);
     const nextItems = Object.entries(memberData).flatMap(([userId, data]) =>
-      getPoolPromotionCandidates(data.shopping, state.auth.currentUser!.id).map(
-        (item) => ({ userId, item }),
-      ),
+      getWishlistShareCandidates(data.shopping).map((item) => ({
+        userId,
+        item,
+      })),
     );
     setReviewItems(nextItems);
+    setCopiedItemIds(new Set());
     setShowReviewModal(true);
   }
 
-  async function promoteToPool(candidate: {
+  async function copyToMyList(candidate: {
     userId: string;
     item: TripShoppingItem;
   }) {
-    if (!state.auth.currentUser) return;
+    if (!state.auth.currentUser || copiedItemIds.has(candidate.item.id)) return;
+    setCopiedItemIds((current) => new Set(current).add(candidate.item.id));
 
     try {
       const now = new Date().toISOString();
-      const poolItemId = generateId();
-      const poolItem = buildPoolItemFromTripShopping({
-        source: candidate.item,
-        itemId: poolItemId,
-        images: candidate.item.images,
-        now,
-        purchaseId: generateId(),
-        tripId,
-        tripName: trip?.name,
-        tags: trip?.country ? [trip.country] : [],
+      const newId = generateId();
+      const source = candidate.item;
+      const draft: TripShoppingItem = {
+        id: newId,
+        textSnapshot: source.textSnapshot,
+        images: [],
+        checked: false,
+        private: false,
+        createdBy: state.auth.currentUser.id,
+        createdAt: now,
+      };
+      if (source.brand !== undefined) draft.brand = source.brand;
+      if (source.spec !== undefined) draft.spec = source.spec;
+      if (source.purchaseAmount !== undefined)
+        draft.purchaseAmount = source.purchaseAmount;
+      if (source.purchaseCurrency !== undefined)
+        draft.purchaseCurrency = source.purchaseCurrency;
+      if (source.estimatedAmount !== undefined)
+        draft.estimatedAmount = source.estimatedAmount;
+      if (source.currency !== undefined) draft.currency = source.currency;
+      if (source.note !== undefined) draft.note = source.note;
+
+      draft.images = await copyImagesToNewPaths({
+        images: source.images,
+        targetBasePath: `tc-images/trips/${tripId}/shopping/${newId}`,
+        createImageId: generateId,
+        createdAt: now,
+        fetchBlob: async (url) => {
+          const response = await fetch(url);
+          return response.blob();
+        },
+        upload: uploadImage,
+        remove: deleteImage,
       });
 
-      await setItems([poolItem, ...state.items]);
-
-      await setTripMemberData(tripId, candidate.userId, {
-        shopping: (await loadTripMemberData(tripId))[
-          candidate.userId
-        ].shopping.map((item) =>
-          item.id === candidate.item.id
-            ? linkTripShoppingItemToPoolItem({
-                tripItem: item,
-                poolItemId,
-              })
-            : item,
-        ),
-      });
-
-      setReviewItems((current) =>
-        current.map((entry) =>
-          entry.userId === candidate.userId &&
-          entry.item.id === candidate.item.id
-            ? {
-                ...entry,
-                item: linkTripShoppingItemToPoolItem({
-                  tripItem: entry.item,
-                  poolItemId,
-                }),
-              }
-            : entry,
-        ),
-      );
+      setUserTripData(tripId, { shopping: [...items, draft] });
+      showToast({ type: "success", message: t("shopping.copiedToMyList") });
     } catch (error) {
-      console.error("Failed to promote member shopping item to pool:", error);
-      showToast({ type: "error", message: t("shopping.addToPoolFailed") });
+      console.error("Failed to copy member shopping item to my list:", error);
+      showToast({ type: "error", message: t("shopping.copyFailed") });
+      setCopiedItemIds((current) => {
+        const next = new Set(current);
+        next.delete(candidate.item.id);
+        return next;
+      });
     }
   }
 
@@ -476,7 +487,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
         )}
       </div>
 
-      {canManageTrip && (
+      {!viewOnly && (
         <div className="flex gap-2 mb-3">
           <button className="btn btn-secondary btn-sm" onClick={openPoolModal}>
             <FontAwesomeIcon icon={faBoxesStacked} className="mr-1" />
@@ -512,6 +523,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
           const linked = isLinkedTripShoppingItem(item.source);
           const canShowStar =
             canManageTrip &&
+            !item.private &&
             state.auth.currentUser?.id === item.source.createdBy;
           const canPromoteOwnItem = canShowStar && !linked;
           const promoting = promotingItemIds.has(item.source.id);
@@ -571,6 +583,15 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                   <PriceBadges badges={priceBadges} />
                 </span>
               </button>
+              {item.private && (
+                <span
+                  className="shopping-private-icon flex-shrink-0 text-slate-400"
+                  aria-label={t("shopping.privateBadge")}
+                  title={t("shopping.privateBadge")}
+                >
+                  <FontAwesomeIcon icon={faLock} />
+                </span>
+              )}
               {linked && item.source.itemId && (
                 <button
                   type="button"
@@ -866,14 +887,16 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                           })}
                         </div>
                       </div>
-                      {entry.item.promotedToPoolAt ? (
-                        <span className="tag">{t("shopping.promoted")}</span>
+                      {copiedItemIds.has(entry.item.id) ? (
+                        <span className="tag">
+                          {t("shopping.copiedToMyList")}
+                        </span>
                       ) : (
                         <button
                           className="btn btn-primary btn-sm"
-                          onClick={() => promoteToPool(entry)}
+                          onClick={() => void copyToMyList(entry)}
                         >
-                          {t("shopping.addToPool")}
+                          {t("shopping.copyToMyList")}
                         </button>
                       )}
                     </div>
@@ -1295,6 +1318,21 @@ function DraftShoppingForm({
           value={form.note || ""}
           onChange={(event) => setForm({ ...form, note: event.target.value })}
         />
+      </div>
+      <div className="form-group">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="form-label mb-0">{t("shopping.form.private")}</div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {t("shopping.form.privateHint")}
+            </p>
+          </div>
+          <SwitchControl
+            checked={form.private ?? false}
+            onChange={(checked) => setForm({ ...form, private: checked })}
+            ariaLabel={t("shopping.form.private")}
+          />
+        </div>
       </div>
       <div className="form-group">
         <label className="form-label">{t("shopping.form.images")}</label>

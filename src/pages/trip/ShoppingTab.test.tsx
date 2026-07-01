@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   dispatch: vi.fn(),
   setItems: vi.fn(),
   setUserTripData: vi.fn(),
+  loadTripMemberData: vi.fn(),
   showToast: vi.fn(),
   state: {
     auth: {
@@ -28,6 +29,7 @@ const mocks = vi.hoisted(() => ({
         isAdmin: true,
       },
     },
+    users: [] as Array<{ id: string; displayName: string; color: string }>,
     trips: [
       {
         id: "trip-1",
@@ -99,9 +101,11 @@ vi.mock("../../context/AppContext", () => ({
     getTripData: () => ({
       shopping: mocks.tripShopping,
     }),
-    getUserName: vi.fn(),
+    getUserName: (userId: string) =>
+      mocks.state.users.find((user) => user.id === userId)?.displayName ??
+      userId,
     isTripAdmin: () => true,
-    loadTripMemberData: vi.fn(),
+    loadTripMemberData: mocks.loadTripMemberData,
     showToast: mocks.showToast,
   }),
 }));
@@ -117,6 +121,7 @@ describe("ShoppingTab", () => {
       },
     );
     mocks.state.items = [];
+    mocks.state.users = [];
     mocks.tripShopping = [
       {
         id: "shopping-1",
@@ -213,6 +218,78 @@ describe("ShoppingTab", () => {
     expect(mocks.setItems.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.setUserTripData.mock.invocationCallOrder[0],
     );
+  });
+
+  it("hides private wishes and copies a chosen item to my own list", async () => {
+    mocks.state.users = [
+      { id: "user-2", displayName: "Bob", color: "#ff0000" },
+    ];
+    mocks.loadTripMemberData.mockResolvedValue({
+      "user-2": {
+        shopping: [
+          {
+            id: "u2-public",
+            textSnapshot: "公開想買",
+            images: [],
+            checked: false,
+            createdBy: "user-2",
+            createdAt: "2026-04-25T00:00:00.000Z",
+          },
+          {
+            id: "u2-private",
+            textSnapshot: "秘密想買",
+            images: [],
+            checked: false,
+            private: true,
+            createdBy: "user-2",
+            createdAt: "2026-04-25T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+    mocks.copyImagesToNewPaths.mockResolvedValue([]);
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    const reviewButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("查看大家想買的"),
+    );
+    await act(async () => {
+      reviewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(document.body.textContent).toContain("公開想買");
+    expect(document.body.textContent).not.toContain("秘密想買");
+
+    const copyButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("複製到我的購物清單"),
+    );
+    await act(async () => {
+      copyButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(mocks.copyImagesToNewPaths).toHaveBeenCalled();
+    expect(mocks.setUserTripData).toHaveBeenCalledWith("trip-1", {
+      shopping: [
+        ...mocks.tripShopping,
+        expect.objectContaining({
+          textSnapshot: "公開想買",
+          createdBy: "admin-1",
+          checked: false,
+          private: false,
+        }),
+      ],
+    });
+    const lastCall = mocks.setUserTripData.mock.calls.at(-1);
+    const copiedDraft = lastCall?.[1].shopping.at(-1);
+    expect(copiedDraft.itemId).toBeUndefined();
   });
 
   it("filters already linked pool items from the add-from-pool modal", async () => {
