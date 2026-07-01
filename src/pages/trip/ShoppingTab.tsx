@@ -466,10 +466,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
 
       {canManageTrip && (
         <div className="flex gap-2 mb-3">
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={openPoolModal}
-          >
+          <button className="btn btn-secondary btn-sm" onClick={openPoolModal}>
             <FontAwesomeIcon icon={faBoxesStacked} className="mr-1" />
             {t("shopping.addFromPool")}
           </button>
@@ -821,7 +818,10 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                   (candidate) => candidate.id === entry.userId,
                 );
                 return (
-                  <div key={`${entry.userId}-${entry.item.id}`} className="card">
+                  <div
+                    key={`${entry.userId}-${entry.item.id}`}
+                    className="card"
+                  >
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div>
                         <div className="font-semibold">
@@ -933,7 +933,10 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
         </Modal>
       )}
       {editingPurchase && (
-        <Modal title={t("shopping.purchase.edit")} onClose={() => setEditingPurchase(null)}>
+        <Modal
+          title={t("shopping.purchase.edit")}
+          onClose={() => setEditingPurchase(null)}
+        >
           <PurchaseForm
             purchase={editingPurchase.purchase}
             onSave={(purchase) =>
@@ -1206,9 +1209,7 @@ function DraftShoppingForm({
         <input
           className="form-input"
           value={form.brand || ""}
-          onChange={(event) =>
-            setForm({ ...form, brand: event.target.value })
-          }
+          onChange={(event) => setForm({ ...form, brand: event.target.value })}
         />
       </div>
       <div className="form-group">
@@ -1220,7 +1221,9 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">{t("shopping.form.purchaseAmount")}</label>
+        <label className="form-label">
+          {t("shopping.form.purchaseAmount")}
+        </label>
         <input
           className="form-input"
           value={form.purchaseAmount || ""}
@@ -1230,7 +1233,9 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">{t("shopping.form.purchaseCurrency")}</label>
+        <label className="form-label">
+          {t("shopping.form.purchaseCurrency")}
+        </label>
         <input
           className="form-input"
           value={form.purchaseCurrency || ""}
@@ -1240,7 +1245,9 @@ function DraftShoppingForm({
         />
       </div>
       <div className="form-group">
-        <label className="form-label">{t("shopping.form.suggestedPrice")}</label>
+        <label className="form-label">
+          {t("shopping.form.suggestedPrice")}
+        </label>
         <input
           className="form-input"
           value={form.estimatedAmount || ""}
@@ -1373,9 +1380,7 @@ function PoolItemForm({
         <input
           className="form-input"
           value={form.brand || ""}
-          onChange={(event) =>
-            setForm({ ...form, brand: event.target.value })
-          }
+          onChange={(event) => setForm({ ...form, brand: event.target.value })}
         />
       </div>
       <div className="form-group">
@@ -1392,7 +1397,9 @@ function PoolItemForm({
         onChange={(tags) => setForm({ ...form, tags })}
       />
       <div className="form-group">
-        <label className="form-label">{t("shopping.form.suggestedPrice")}</label>
+        <label className="form-label">
+          {t("shopping.form.suggestedPrice")}
+        </label>
         <input
           className="form-input"
           value={form.estimatedAmount || ""}
