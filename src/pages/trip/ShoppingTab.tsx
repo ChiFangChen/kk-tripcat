@@ -1011,7 +1011,7 @@ function PurchaseHistoryView({
   return (
     <div className="space-y-3">
       {!viewOnly && (
-        <button className="btn btn-primary w-full" onClick={onAdd}>
+        <button className="btn btn-primary w-full mt-2" onClick={onAdd}>
           <FontAwesomeIcon icon={faPlus} className="mr-1" />
           {t("shopping.purchase.add")}
         </button>
@@ -1025,13 +1025,15 @@ function PurchaseHistoryView({
           {item.purchases.map((purchase) => (
             <div key={purchase.id} className="card flex items-center gap-3">
               <div className="min-w-0 flex-1 text-sm text-slate-500">
-                <div className="font-medium text-slate-700 dark:text-slate-200">
-                  {formatPurchaseAmount({
-                    amount: purchase.amount,
-                    currency: purchase.currency,
-                  }) || "-"}
+                <div className="flex items-baseline gap-2">
+                  <span>{formatDate(purchase.date)}</span>
+                  <span className="font-medium text-slate-700 dark:text-slate-200">
+                    {formatPurchaseAmount({
+                      amount: purchase.amount,
+                      currency: purchase.currency,
+                    }) || "-"}
+                  </span>
                 </div>
-                <div>{formatDate(purchase.date)}</div>
                 {purchase.tripName && <div>{purchase.tripName}</div>}
                 {purchase.note && (
                   <div className="whitespace-pre-wrap">{purchase.note}</div>
