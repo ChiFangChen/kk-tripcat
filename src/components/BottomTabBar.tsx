@@ -5,7 +5,6 @@ import {
   faGear,
 } from "@fortawesome/free-solid-svg-icons";
 import type { TabType } from "../types";
-import { useApp } from "../context/AppContext";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -21,14 +20,10 @@ const tabs: { key: TabType; label: string; icon: typeof faPlane }[] = [
 
 export function BottomTabBar({ activeTab, onTabChange }: Props) {
   const { t } = useTranslation();
-  const { isCurrentUserAdmin } = useApp();
-  const visibleTabs = isCurrentUserAdmin()
-    ? tabs
-    : tabs.filter((tab) => tab.key !== "notes");
 
   return (
     <div className="tab-bar">
-      {visibleTabs.map((tab) => (
+      {tabs.map((tab) => (
         <button
           key={tab.key}
           className={`tab-bar-item ${activeTab === tab.key ? "active" : ""}`}

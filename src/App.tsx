@@ -60,14 +60,7 @@ function removeLocalSettingsCache() {
 
 function AppContent() {
   const { t } = useTranslation();
-  const {
-    state,
-    loading,
-    updateTrip,
-    updateUser,
-    viewTripId,
-    isCurrentUserAdmin,
-  } = useApp();
+  const { state, loading, updateTrip, updateUser, viewTripId } = useApp();
   const initialSettingsRef = useRef(getInitialSettings());
   const latestUserSettingsRef = useRef<UserSettings>(
     initialSettingsRef.current,
@@ -108,7 +101,7 @@ function AppContent() {
   const visibleTrips = currentUserId
     ? state.trips.filter((trip) => trip.members.includes(currentUserId))
     : [];
-  const canAccessNotes = isCurrentUserAdmin();
+  const canAccessNotes = !!state.auth.currentUser;
   const effectiveActiveTab = getEffectiveMainTab(activeTab, canAccessNotes);
   const effectiveSelectedTripId = getEffectiveSelectedTripId(
     selectedTripId,
