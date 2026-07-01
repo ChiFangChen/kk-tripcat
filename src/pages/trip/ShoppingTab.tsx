@@ -94,6 +94,10 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     itemId: string;
     purchase: Purchase;
   } | null>(null);
+  const [confirmDeletePurchase, setConfirmDeletePurchase] = useState<{
+    itemId: string;
+    purchaseId: string;
+  } | null>(null);
   const modalTitleDoubleTap = useDoubleTap();
   const [reviewItems, setReviewItems] = useState<
     Array<{ userId: string; item: TripShoppingItem }>
@@ -896,13 +900,19 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
               setEditingPurchase({ itemId: purchaseHistoryItem.id, purchase })
             }
             onDelete={(purchaseId) =>
-              void deletePoolPurchase(purchaseHistoryItem.id, purchaseId)
+              setConfirmDeletePurchase({
+                itemId: purchaseHistoryItem.id,
+                purchaseId,
+              })
             }
           />
         </Modal>
       )}
       {addingPurchaseItem && (
-        <Modal title={t("shopping.purchase.add")} onClose={() => setAddingPurchaseTo(null)}>
+        <Modal
+          title={t("shopping.purchase.add")}
+          onClose={() => setAddingPurchaseTo(null)}
+        >
           <PurchaseForm
             onSave={(purchase) =>
               addPoolPurchase(addingPurchaseItem.id, purchase)
@@ -919,6 +929,20 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
             }
           />
         </Modal>
+      )}
+      {confirmDeletePurchase && (
+        <ConfirmDeleteModal
+          title={t("shopping.purchase.delete")}
+          message={t("shopping.purchase.deleteConfirm")}
+          onCancel={() => setConfirmDeletePurchase(null)}
+          onConfirm={() => {
+            void deletePoolPurchase(
+              confirmDeletePurchase.itemId,
+              confirmDeletePurchase.purchaseId,
+            );
+            setConfirmDeletePurchase(null);
+          }}
+        />
       )}
     </div>
   );

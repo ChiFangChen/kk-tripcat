@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ShoppingTab } from "./ShoppingTab";
+import type { Purchase } from "../../types";
 import type { TripShoppingItem } from "./shoppingTypes";
 
 (
@@ -51,7 +52,7 @@ const mocks = vi.hoisted(() => ({
       estimatedAmount?: string;
       currency?: string;
       notes?: string;
-      purchases: [];
+      purchases: Purchase[];
       createdAt: string;
       updatedAt: string;
     }>,
@@ -444,5 +445,76 @@ describe("ShoppingTab", () => {
       type: "DELETE_ITEM",
       itemId: "pool-1",
     });
+  });
+
+  it("requires confirmation before deleting a pool purchase record", async () => {
+    mocks.state.items = [
+      {
+        id: "pool-1",
+        name: "吹風機",
+        images: [],
+        purchases: [
+          {
+            id: "purchase-1",
+            date: "2026-06-20",
+            amount: "4200",
+            currency: "JPY",
+            tripName: "Tokyo",
+          },
+        ],
+        createdAt: "2026-04-25T00:00:00.000Z",
+        updatedAt: "2026-04-25T00:00:00.000Z",
+      },
+    ];
+    mocks.tripShopping = [
+      {
+        id: "shopping-1",
+        itemId: "pool-1",
+        textSnapshot: "吹風機",
+        images: [],
+        checked: false,
+        createdBy: "admin-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+      },
+    ];
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>(
+          'button[aria-label="查看購買紀錄"]',
+        )
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    await act(async () => {
+      document
+        .querySelector<HTMLButtonElement>(
+          'button[aria-label="刪除購買紀錄"]',
+        )
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(document.body.textContent).toContain("確定要刪除這筆購買紀錄嗎？");
+    expect(mocks.setItems).not.toHaveBeenCalled();
+
+    await act(async () => {
+      Array.from(document.querySelectorAll("button"))
+        .filter((button) => button.textContent === "刪除")
+        .at(-1)
+        ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mocks.setItems).toHaveBeenCalledWith([
+      expect.objectContaining({ id: "pool-1", purchases: [] }),
+    ]);
   });
 });
