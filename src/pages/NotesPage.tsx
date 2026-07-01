@@ -1,12 +1,15 @@
-import { useState } from "react";
 import type { NoteTabType } from "../types";
 import { TipsSection } from "./notes/TipsSection";
 import { PoolSection } from "./notes/PoolSection";
 import { useTranslation } from "react-i18next";
+import { usePersistentState } from "../hooks/usePersistentState";
 
 export function NotesPage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<NoteTabType>("tips");
+  const [activeTab, setActiveTab] = usePersistentState<NoteTabType>(
+    "notesTab",
+    "tips",
+  );
 
   return (
     <div>

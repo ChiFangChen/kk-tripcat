@@ -17,6 +17,7 @@ import {
   faUserGear,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../context/AppContext";
+import { usePersistentState } from "../hooks/usePersistentState";
 import { FullScreenModal } from "../components/FullScreenModal";
 import { Modal } from "../components/Modal";
 import { ConfirmDeleteModal } from "../components/ConfirmDeleteModal";
@@ -68,7 +69,10 @@ export function SettingsPage({
   onOpenAccountSettings,
 }: SettingsPageProps) {
   const { t } = useTranslation();
-  const [view, setView] = useState<SettingsView>("index");
+  const [view, setView] = usePersistentState<SettingsView>(
+    "settingsView",
+    "index",
+  );
 
   if (view === "ui") {
     return (
