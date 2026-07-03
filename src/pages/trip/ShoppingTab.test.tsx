@@ -429,6 +429,157 @@ describe("ShoppingTab", () => {
     expect(copyButton).toBeUndefined();
   });
 
+  it("shows 'copied from mine' and hides the button for items copied from my list", async () => {
+    mocks.state.users = [
+      { id: "user-2", displayName: "Bob", color: "#ff0000" },
+    ];
+    mocks.tripShopping = [
+      {
+        id: "my-item-x",
+        textSnapshot: "我原本想買的",
+        images: [],
+        checked: false,
+        createdBy: "admin-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+      },
+    ];
+    mocks.loadTripMemberData.mockResolvedValue({
+      "user-2": {
+        shopping: [
+          {
+            id: "u2-copy",
+            textSnapshot: "我原本想買的",
+            images: [],
+            checked: false,
+            copiedFrom: "my-item-x",
+            createdBy: "user-2",
+            createdAt: "2026-04-26T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    const reviewButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("查看大家想買的"),
+    );
+    await act(async () => {
+      reviewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(document.body.textContent).toContain("複製自我的清單");
+    const copyButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("複製到我的購物清單"),
+    );
+    expect(copyButton).toBeUndefined();
+  });
+
+  it("syncs the owner's item to the copier's edited version after confirming", async () => {
+    mocks.state.users = [
+      { id: "user-2", displayName: "Bob", color: "#ff0000" },
+    ];
+    mocks.tripShopping = [
+      {
+        id: "my-item-x",
+        textSnapshot: "原始品名",
+        note: "原始備註",
+        images: [],
+        checked: false,
+        createdBy: "admin-1",
+        createdAt: "2026-04-25T00:00:00.000Z",
+      },
+    ];
+    mocks.loadTripMemberData.mockResolvedValue({
+      "user-2": {
+        shopping: [
+          {
+            id: "u2-copy",
+            textSnapshot: "改過的品名",
+            note: "改過的備註",
+            images: [
+              {
+                id: "u2-img",
+                url: "https://files.local/u2.jpg",
+                path: "tc-images/trips/trip-1/shopping/u2-copy/u2-img.jpg",
+                createdAt: "2026-04-26T00:00:00.000Z",
+                width: 320,
+                height: 240,
+              },
+            ],
+            checked: false,
+            copiedFrom: "my-item-x",
+            createdBy: "user-2",
+            createdAt: "2026-04-26T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+    mocks.copyImagesToNewPaths.mockResolvedValue([
+      {
+        id: "new-img",
+        url: "https://files.local/new.jpg",
+        path: "tc-images/trips/trip-1/shopping/my-item-x/new-img.jpg",
+        createdAt: "2026-04-27T00:00:00.000Z",
+        width: 320,
+        height: 240,
+      },
+    ]);
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<ShoppingTab tripId="trip-1" />);
+    });
+
+    const reviewButton = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("查看大家想買的"),
+    );
+    await act(async () => {
+      reviewButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // Click the card's sync button (not the danger confirm button).
+    const syncButton = Array.from(document.querySelectorAll("button")).find(
+      (button) =>
+        button.textContent?.includes("同步") &&
+        !button.classList.contains("btn-danger"),
+    );
+    await act(async () => {
+      syncButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    // Confirm modal must appear; nothing written yet.
+    expect(mocks.setUserTripData).not.toHaveBeenCalled();
+    const confirmButton =
+      document.querySelector<HTMLButtonElement>("button.btn-danger");
+    await act(async () => {
+      confirmButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(mocks.copyImagesToNewPaths).toHaveBeenCalled();
+    expect(mocks.setUserTripData).toHaveBeenCalledWith("trip-1", {
+      shopping: [
+        expect.objectContaining({
+          id: "my-item-x",
+          textSnapshot: "改過的品名",
+          note: "改過的備註",
+          createdBy: "admin-1",
+        }),
+      ],
+    });
+  });
+
   it("filters the wishlist view by person (none selected shows all)", async () => {
     mocks.state.users = [
       { id: "user-2", displayName: "Bob", color: "#ff0000" },

@@ -10,6 +10,7 @@ import {
   faBoxesStacked,
   faUsers,
   faLock,
+  faArrowsRotate,
 } from "@fortawesome/free-solid-svg-icons";
 import { useApp } from "../../context/AppContext";
 import { Modal } from "../../components/Modal";
@@ -108,6 +109,13 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     () => new Set(),
   );
   const [selectedReviewUsers, setSelectedReviewUsers] = useState<string[]>([]);
+  const [syncingItemIds, setSyncingItemIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [confirmSyncEntry, setConfirmSyncEntry] = useState<{
+    userId: string;
+    item: TripShoppingItem;
+  } | null>(null);
   const [promotingItemIds, setPromotingItemIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -124,6 +132,7 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
       .map((item) => item.copiedFrom)
       .filter((id): id is string => Boolean(id)),
   );
+  const myItemIds = new Set(items.map((item) => item.id));
   const unchecked = items.filter((item) => !item.checked);
   const checked = items.filter((item) => item.checked);
   const displayed = showCompleted ? items : unchecked;
@@ -377,6 +386,97 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
       setCopiedItemIds((current) => {
         const next = new Set(current);
         next.delete(candidate.item.id);
+        return next;
+      });
+    }
+  }
+
+  // Original owner pulls the (possibly edited) content + images from someone
+  // who copied this item, overwriting their own item to match.
+  async function syncFromCopy(candidate: {
+    userId: string;
+    item: TripShoppingItem;
+  }) {
+    if (!state.auth.currentUser) return;
+    const targetId = candidate.item.copiedFrom;
+    if (!targetId || syncingItemIds.has(targetId)) return;
+    const myItem = items.find((item) => item.id === targetId);
+    if (!myItem) return;
+
+    setSyncingItemIds((current) => new Set(current).add(targetId));
+    try {
+      const now = new Date().toISOString();
+      const source = candidate.item;
+      const synced: TripShoppingItem = {
+        id: myItem.id,
+        textSnapshot: source.textSnapshot,
+        images: [],
+        checked: myItem.checked,
+        createdBy: myItem.createdBy,
+        createdAt: myItem.createdAt,
+      };
+      // Keep the owner's own state; take content from the copier.
+      if (myItem.itemId !== undefined) synced.itemId = myItem.itemId;
+      if (myItem.private !== undefined) synced.private = myItem.private;
+      if (source.brand !== undefined) synced.brand = source.brand;
+      if (source.spec !== undefined) synced.spec = source.spec;
+      if (source.purchaseAmount !== undefined)
+        synced.purchaseAmount = source.purchaseAmount;
+      if (source.purchaseCurrency !== undefined)
+        synced.purchaseCurrency = source.purchaseCurrency;
+      if (source.estimatedAmount !== undefined)
+        synced.estimatedAmount = source.estimatedAmount;
+      if (source.currency !== undefined) synced.currency = source.currency;
+      if (source.note !== undefined) synced.note = source.note;
+
+      if (source.images.length > 0) {
+        try {
+          synced.images = await copyImagesToNewPaths({
+            images: source.images,
+            targetBasePath: `tc-images/trips/${tripId}/shopping/${myItem.id}`,
+            createImageId: generateId,
+            createdAt: now,
+            fetchBlob: async (url) => {
+              const response = await fetch(url);
+              return response.blob();
+            },
+            upload: uploadImage,
+            remove: deleteImage,
+          });
+        } catch (imageError) {
+          console.error(
+            "Failed to copy image bytes while syncing; referencing originals instead:",
+            imageError,
+          );
+          synced.images = source.images.map((image) => ({
+            id: generateId(),
+            url: image.url,
+            path: "",
+            createdAt: now,
+            width: image.width,
+            height: image.height,
+          }));
+        }
+      }
+
+      setUserTripData(tripId, {
+        shopping: items.map((item) => (item.id === myItem.id ? synced : item)),
+      });
+      showToast({ type: "success", message: t("shopping.synced") });
+
+      // Best-effort cleanup of the owner's replaced (owned) images.
+      void Promise.all(
+        myItem.images
+          .filter((image) => image.path)
+          .map((image) => deleteImage(image.path).catch(() => undefined)),
+      );
+    } catch (error) {
+      console.error("Failed to sync item from copy:", error);
+      showToast({ type: "error", message: t("shopping.syncFailed") });
+    } finally {
+      setSyncingItemIds((current) => {
+        const next = new Set(current);
+        next.delete(targetId);
         return next;
       });
     }
@@ -944,8 +1044,28 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
                           date: formatDate(entry.item.createdAt),
                         })}
                       </div>
-                      {copiedItemIds.has(entry.item.id) ||
-                      copiedSourceIds.has(entry.item.id) ? (
+                      {entry.item.copiedFrom &&
+                      myItemIds.has(entry.item.copiedFrom) ? (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="tag">
+                            {t("shopping.copiedFromMine")}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            disabled={syncingItemIds.has(entry.item.copiedFrom)}
+                            onClick={() => setConfirmSyncEntry(entry)}
+                            title={t("shopping.syncFromCopyHint")}
+                          >
+                            <FontAwesomeIcon
+                              icon={faArrowsRotate}
+                              className="mr-1"
+                            />
+                            {t("shopping.syncFromCopy")}
+                          </button>
+                        </div>
+                      ) : copiedItemIds.has(entry.item.id) ||
+                        copiedSourceIds.has(entry.item.id) ? (
                         <span className="tag">
                           {t("shopping.copiedToMyList")}
                         </span>
@@ -1000,6 +1120,21 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
           onConfirm={() => {
             deleteDraftItem(confirmDeleteItemId);
             setConfirmDeleteItemId(null);
+          }}
+        />
+      )}
+      {confirmSyncEntry && (
+        <ConfirmDeleteModal
+          title={t("shopping.syncTitle")}
+          message={t("shopping.syncConfirm", {
+            name: getUserName(confirmSyncEntry.userId),
+          })}
+          confirmLabel="shopping.syncFromCopy"
+          onCancel={() => setConfirmSyncEntry(null)}
+          onConfirm={() => {
+            const entry = confirmSyncEntry;
+            setConfirmSyncEntry(null);
+            void syncFromCopy(entry);
           }}
         />
       )}
