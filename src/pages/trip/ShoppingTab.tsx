@@ -495,10 +495,42 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
     try {
       const now = new Date().toISOString();
       const poolItemId = generateId();
+      const currentUserId = state.auth.currentUser.id;
+
+      // Give the pool item its own copy of the images so it no longer depends
+      // on the trip's storage (survives trip deletion and deletes cleanly).
+      // Falls back to referencing the trip images if the byte copy is blocked
+      // (e.g. storage CORS on a non-allowed origin).
+      let poolImages = item.images;
+      let copiedImages = false;
+      if (item.images.length > 0) {
+        try {
+          poolImages = await copyImagesToNewPaths({
+            images: item.images,
+            targetBasePath: `tc-images/users/${currentUserId}/items/${poolItemId}`,
+            createImageId: generateId,
+            createdAt: now,
+            fetchBlob: async (url) => {
+              const response = await fetch(url);
+              return response.blob();
+            },
+            upload: uploadImage,
+            remove: deleteImage,
+          });
+          copiedImages = true;
+        } catch (imageError) {
+          console.warn(
+            "Failed to copy images to the pool path while promoting; referencing the trip images instead.",
+            imageError,
+          );
+          poolImages = item.images;
+        }
+      }
+
       const poolItem = buildPoolItemFromTripShopping({
         source: item,
         itemId: poolItemId,
-        images: item.images,
+        images: poolImages,
         now,
         purchaseId: generateId(),
         tripId,
@@ -519,6 +551,16 @@ export function ShoppingTab({ tripId, viewOnly, hideEditButtons }: Props) {
         ),
       });
       showToast({ type: "success", message: t("shopping.addedToPool") });
+
+      // The trip item is now linked (its images are dropped); when the pool
+      // item holds its own copies, the original trip image files are orphaned.
+      if (copiedImages) {
+        void Promise.all(
+          item.images
+            .filter((image) => image.path)
+            .map((image) => deleteImage(image.path).catch(() => undefined)),
+        );
+      }
     } catch (error) {
       console.error("Failed to promote shopping item to pool:", error);
       showToast({ type: "error", message: t("shopping.addToPoolFailed") });

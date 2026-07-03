@@ -154,7 +154,19 @@ describe("ShoppingTab", () => {
     );
   });
 
-  it("promotes a shopping item to the pool without copying image bytes", async () => {
+  it("copies the item's images to a pool-owned path when promoting", async () => {
+    const copied = [
+      {
+        id: "pool-img",
+        url: "https://files.local/pool.jpg",
+        path: "tc-images/users/admin-1/items/pool-x/pool-img.jpg",
+        createdAt: "2026-04-25T00:00:00.000Z",
+        width: 320,
+        height: 240,
+      },
+    ];
+    mocks.copyImagesToNewPaths.mockResolvedValue(copied);
+
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -170,19 +182,34 @@ describe("ShoppingTab", () => {
 
     await act(async () => {
       button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(mocks.copyImagesToNewPaths).not.toHaveBeenCalled();
-    expect(mocks.setItems).toHaveBeenCalledWith([
+    expect(mocks.copyImagesToNewPaths).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: "抹茶",
-        images: mocks.tripShopping[0].images,
+        targetBasePath: expect.stringContaining(
+          "tc-images/users/admin-1/items/",
+        ),
       }),
+    );
+    expect(mocks.setItems).toHaveBeenCalledWith([
+      expect.objectContaining({ name: "抹茶", images: copied }),
     ]);
   });
 
   it("persists a promoted pool item before linking the trip shopping item", async () => {
+    const copied = [
+      {
+        id: "pool-img",
+        url: "https://files.local/pool.jpg",
+        path: "tc-images/users/admin-1/items/pool-x/pool-img.jpg",
+        createdAt: "2026-04-25T00:00:00.000Z",
+        width: 320,
+        height: 240,
+      },
+    ];
+    mocks.copyImagesToNewPaths.mockResolvedValue(copied);
+
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -197,13 +224,13 @@ describe("ShoppingTab", () => {
 
     await act(async () => {
       button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     expect(mocks.setItems).toHaveBeenCalledWith([
       expect.objectContaining({
         name: "抹茶",
-        images: mocks.tripShopping[0].images,
+        images: copied,
       }),
     ]);
     expect(mocks.setUserTripData).toHaveBeenCalledWith("trip-1", {
