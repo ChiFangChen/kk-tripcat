@@ -13,11 +13,7 @@ import {
   getDownloadURL,
   deleteObject,
 } from "firebase/storage";
-import {
-  deleteImagePathWithRetry,
-} from "./imageDelete";
-import { emitGlobalToast } from "./toastBus";
-import i18n from "../i18n";
+import { deleteImagePathWithRetry } from "./imageDelete";
 import {
   getFirestore,
   collection,
@@ -601,10 +597,9 @@ export async function deleteImage(path: string): Promise<void> {
   });
 
   if (!deleted) {
-    emitGlobalToast({
-      type: "error",
-      message: i18n.t("images.deleteFailed"),
-    });
+    // The referenced content is already removed; a leftover storage file is a
+    // harmless orphan. Don't alarm the user — just log it.
+    console.warn(`Image cleanup failed for "${path}"; leaving an orphaned file.`);
   }
 }
 
