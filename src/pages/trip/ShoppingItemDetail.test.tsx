@@ -37,6 +37,7 @@ function renderShoppingItemDetail() {
     spec: "23-25cm",
     images: [],
     checked: false,
+    private: false,
     isLinked: false,
     estimatedAmount: "100",
     currency: "JPY",
